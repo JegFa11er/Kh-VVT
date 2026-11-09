@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PF2e Web Engine</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #12151c;
+        color: #e6e9ef;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+
+      #app canvas {
+        display: block;
+      }
+
+      /* React UI overlay: the root ignores pointer events, windows opt in. */
+      #ui-root {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      #status {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.55);
+        font-size: 13px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="ui-root"></div>
+    <div id="status">Connecting…</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

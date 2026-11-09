@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PF2e Core — Test Runner</title>
+    <link rel="stylesheet" href="css/main.css?v=20.9" />
+  </head>
+  <body class="test-page">
+    <div class="test-wrap">
+      <header class="test-header">
+        <div>
+          <h1>PF2e Core — Test Runner</h1>
+          <p>
+            Full rules suite · Grid, geometry, obstacles, terrain, hazards,
+            verticality, occupancy, LoS, cover, checks, modifiers, saves,
+            skills, conditions, durations, afflictions, visibility, flanking,
+            MAP, typed damage, IWR, persistent damage, weapon traits, prone,
+            Stand, Trip, Shove, Grapple, Escape, spells, stealth, equipment,
+            shields, AI, initiative, event bus, and serialization
+          </p>
+        </div>
+        <a class="button-link" href="index.html">← Back to battlefield</a>
+      </header>
+
+      <div id="test-summary" class="test-summary">Running tests…</div>
+      <div id="test-results" class="test-results"></div>
+
+      <p class="test-hint">
+        Node CLI: <code>npm test</code> or <code>node tests/run-node.js</code>
+      </p>
+    </div>
+
+    <script src="src/Core/Rules/size.js?v=20.9"></script>
+    <script src="src/Core/Grid/grid-math.js?v=20.9"></script>
+    <script src="src/Core/Grid/grid-map.js?v=20.9"></script>
+    <script src="src/Core/Grid/pathfinding.js?v=20.9"></script>
+    <script src="src/Core/Grid/occupancy.js?v=20.9"></script>
+    <script src="src/Core/Grid/los-math.js?v=20.9"></script>
+    <script src="src/Core/Grid/distance.js?v=20.9"></script>
+    <script src="src/Core/Grid/cover.js?v=20.9"></script>
+    <script src="src/Core/Grid/aoe.js?v=20.9"></script>
+    <script src="src/Core/Grid/illumination.js?v=20.9"></script>
+
+    <script src="src/Core/Rules/modifiers.js?v=20.9"></script>
+    <script src="src/Core/Rules/map.js?v=20.9"></script>
+    <script src="src/Core/Rules/damage.js?v=20.9"></script>
+    <script src="src/Core/Rules/iwr.js?v=20.9"></script>
+    <script src="src/Core/Rules/checks.js?v=20.9"></script>
+    <script src="src/Core/Rules/weapon-traits.js?v=20.9"></script>
+    <script src="src/Core/Rules/spells.js?v=20.9"></script>
+    <script src="src/Core/Rules/afflictions.js?v=20.9"></script>
+    <script src="src/Core/Grid/flanking.js?v=20.9"></script>
+
+    <script src="src/Core/Entities/equipment.js?v=20.9"></script>
+    <script src="src/Core/Entities/shield.js?v=20.9"></script>
+    <script src="src/Core/Entities/conditions.js?v=20.9"></script>
+    <script src="src/Core/Entities/persistent-damage.js?v=20.9"></script>
+    <script src="src/Core/Entities/hazard.js?v=20.9"></script>
+    <script src="src/Core/Entities/combatant.js?v=20.9"></script>
+
+    <script src="src/Core/Encounter/initiative.js?v=20.9"></script>
+    <script src="src/Core/Encounter/encounter.js?v=20.9"></script>
+    <script src="src/Core/State/event-bus.js?v=20.9"></script>
+    <script src="src/Core/State/serializer.js?v=20.9"></script>
+
+    <script src="src/Core/Actions/strike.js?v=20.9"></script>
+    <script src="src/Core/Actions/reactive-strike.js?v=20.9"></script>
+    <script src="src/Core/Actions/stride.js?v=20.9"></script>
+    <script src="src/Core/Actions/step.js?v=20.9"></script>
+    <script src="src/Core/Actions/raise-shield.js?v=20.9"></script>
+    <script src="src/Core/Actions/take-cover.js?v=20.9"></script>
+    <script src="src/Core/Actions/trip.js?v=20.9"></script>
+    <script src="src/Core/Actions/stand.js?v=20.9"></script>
+    <script src="src/Core/Actions/athletics-maneuver.js?v=20.9"></script>
+    <script src="src/Core/Actions/shove.js?v=20.9"></script>
+    <script src="src/Core/Actions/grapple.js?v=20.9"></script>
+    <script src="src/Core/Actions/escape.js?v=20.9"></script>
+    <script src="src/Core/Actions/reload.js?v=20.9"></script>
+    <script src="src/Core/Actions/cast-spell.js?v=20.9"></script>
+    <script src="src/Core/Actions/sustain-spell.js?v=20.9"></script>
+    <script src="src/Core/Actions/interact.js?v=20.9"></script>
+    <script src="src/Core/Actions/shield-block.js?v=20.9"></script>
+    <script src="src/Core/Actions/stealth.js?v=20.9"></script>
+    <script src="src/Core/Actions/disable-hazard.js?v=20.9"></script>
+
+    <script src="src/Core/AI/tactical-ai.js?v=20.9"></script>
+
+    <script src="tests/harness.js?v=20.9"></script>
+    <script src="tests/Grid/distance.test.js?v=20.9"></script>
+    <script src="tests/Grid/pathfinding.test.js?v=20.9"></script>
+    <script src="tests/Grid/terrain-occupancy.test.js?v=20.9"></script>
+    <script src="tests/Grid/hazards-verticality.test.js?v=20.9"></script>
+    <script src="tests/Grid/los.test.js?v=20.9"></script>
+    <script src="tests/Grid/cover.test.js?v=20.9"></script>
+    <script src="tests/Grid/flanking.test.js?v=20.9"></script>
+    <script src="tests/Rules/checks.test.js?v=20.9"></script>
+    <script src="tests/Rules/modifiers.test.js?v=20.9"></script>
+    <script src="tests/Rules/saves-skills.test.js?v=20.9"></script>
+    <script src="tests/Rules/iwr.test.js?v=20.9"></script>
+    <script src="tests/Rules/weapon-traits.test.js?v=20.9"></script>
+    <script src="tests/Rules/canonical-compliance.test.js?v=20.9"></script>
+    <script src="tests/Rules/reach-and-restrictions.test.js?v=20.9"></script>
+    <script src="tests/Entities/conditions.test.js?v=20.9"></script>
+    <script src="tests/Entities/dying.test.js?v=20.9"></script>
+    <script src="tests/Entities/persistent-damage.test.js?v=20.9"></script>
+    <script src="tests/Entities/afflictions-durations.test.js?v=20.9"></script>
+    <script src="tests/Entities/combatant-size.test.js?v=20.9"></script>
+    <script src="tests/Entities/equipment-shields.test.js?v=20.9"></script>
+    <script src="tests/Actions/step-strike.test.js?v=20.9"></script>
+    <script src="tests/Actions/strike.test.js?v=20.9"></script>
+    <script src="tests/Actions/raise-shield.test.js?v=20.9"></script>
+    <script src="tests/Actions/take-cover.test.js?v=20.9"></script>
+    <script src="tests/Actions/trip.test.js?v=20.9"></script>
+    <script src="tests/Actions/shove.test.js?v=20.9"></script>
+    <script src="tests/Actions/grapple.test.js?v=20.9"></script>
+    <script src="tests/Actions/escape.test.js?v=20.9"></script>
+    <script src="tests/Actions/stand.test.js?v=20.9"></script>
+    <script src="tests/Actions/reactive-strike.test.js?v=20.9"></script>
+    <script src="tests/Actions/ranged-strike.test.js?v=20.9"></script>
+    <script src="tests/Actions/cast-spell.test.js?v=20.9"></script>
+    <script src="tests/Actions/advanced-spells.test.js?v=20.9"></script>
+    <script src="tests/Actions/stealth-senses.test.js?v=20.9"></script>
+    <script src="tests/Encounter/encounter.test.js?v=20.9"></script>
+    <script src="tests/State/initiative-serialization.test.js?v=20.9"></script>
+    <script src="tests/AI/tactical-ai.test.js?v=20.9"></script>
+    <script src="tests/run-browser.js?v=20.9"></script>
+  </body>
+</html>

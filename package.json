@@ -1,0 +1,14 @@
+{
+  "name": "pf2e-web-engine",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test:core": "npm run test --workspace=@pf2e/core",
+    "start:server": "npm run start --workspace=@pf2e/server",
+    "dev:client": "npm run dev --workspace=@pf2e/client",
+    "build:data": "npm run build:data --workspace=@pf2e/server"
+  }
+}
