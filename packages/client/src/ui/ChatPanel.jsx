@@ -12,7 +12,7 @@ import { useStore } from "./StoreContext.jsx";
  * same result.
  */
 
-const VISIBILITIES = [
+export const VISIBILITIES = [
   {
     id: "public",
     icon: "🌐",
@@ -39,7 +39,7 @@ const VISIBILITIES = [
   },
 ];
 
-const VISIBILITY_LABELS = {
+export const VISIBILITY_LABELS = {
   public: "🌐",
   gm: "🎭",
   blind: "👁️‍🗨️",

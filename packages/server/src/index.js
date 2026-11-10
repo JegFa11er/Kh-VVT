@@ -30,6 +30,15 @@ try {
   console.error("Failed to create uploads directory:", error.message);
 }
 
+// Step 4.7: directories and chat history are persisted to this file. Tests and
+// embedders that `require` this module stay in memory; `npm run start:server`
+// (the main module) enables persistence, and PF2E_PERSIST=1 forces it on.
+const SESSION_FILE =
+  process.env.SESSION_FILE || path.join(__dirname, "..", "data", "session.json");
+const PERSISTENCE_ENABLED =
+  process.env.PF2E_PERSIST === "1" ||
+  (process.env.PF2E_PERSIST !== "0" && require.main === module);
+
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const UPLOAD_EXTENSIONS = {
   "image/png": ".png",
@@ -78,7 +87,11 @@ function getSession(sessionId) {
   const id = typeof sessionId === "string" && sessionId.trim() !== "" ? sessionId : "default";
   let session = sessions.get(id);
   if (!session) {
-    session = new EncounterSession({ id: id, catalogService: catalogService });
+    session = new EncounterSession({
+      id: id,
+      catalogService: catalogService,
+      dataFile: PERSISTENCE_ENABLED ? SESSION_FILE : null,
+    });
     sessions.set(id, session);
   }
   return session;
@@ -149,6 +162,19 @@ function parseIndexFilters(searchParams) {
   const type = searchParams.get("type");
   if (type) {
     filters.type = type;
+  }
+
+  const ancestry = searchParams.get("ancestry");
+  if (ancestry) {
+    filters.ancestry = ancestry;
+  }
+  const includeVersatile = searchParams.get("includeVersatile");
+  if (includeVersatile !== null) {
+    filters.includeVersatile = includeVersatile;
+  }
+  const versatile = searchParams.get("versatile");
+  if (versatile !== null) {
+    filters.versatile = versatile;
   }
 
   const limit = searchParams.get("limit");
@@ -591,8 +617,15 @@ wss.on("connection", function (ws) {
         // Subscribe before adding the member so the joining client also gets
         // the initial room:users-update broadcast.
         attachSession(ws, session);
+        const memberId =
+          payload.memberId || "member-" + Math.random().toString(36).slice(2, 8);
+        // A page reload reconnects with the same stable id. Drop the stale
+        // roster entry (if any) so reconnecting never fails with a duplicate.
+        if (session.getMember(memberId)) {
+          session.removeMember(memberId);
+        }
         const member = session.addMember({
-          id: payload.memberId || "member-" + Math.random().toString(36).slice(2, 8),
+          id: memberId,
           name: payload.name,
           role: payload.role,
           controlledIds: payload.controlledIds,
@@ -703,8 +736,73 @@ wss.on("connection", function (ws) {
         return;
       }
 
+      // Step 4.8: active-scene manager. Activation broadcasts the scene id and
+      // its canvas arrays; canvas updates replace the complete arrays for the
+      // scene so every client renders the same walls/drawings/lights.
+      if (type === "room:activate-scene") {
+        session.activateScene(payload.sceneId);
+        return;
+      }
+
+      if (type === "room:scene-canvas-update") {
+        session.updateSceneCanvas(
+          payload.sceneId,
+          payload.canvas || {},
+          member.id,
+        );
+        return;
+      }
+
+      // Step 5.3: fog-of-war persistence. The client debounces the accumulated
+      // RenderTexture to a Base64 PNG and both events are broadcast to the
+      // whole room, so exploration and resets stay in sync.
+      if (type === "room:update-fog") {
+        session.updateFog(
+          payload.sceneId,
+          payload.fogExploration,
+          member.id,
+        );
+        return;
+      }
+
+      if (type === "room:reset-fog") {
+        session.resetFog(payload.sceneId, member.id);
+        return;
+      }
+
       if (type === "room:create-actor") {
         session.createDirectoryEntry("actors", payload);
+        return;
+      }
+
+      // Step 4.8.5: an actor card dropped on the canvas becomes a scene token
+      // bound to that actor. The server stores it in `scenes[id].tokens` and
+      // rebroadcasts the scene canvas so every client renders it immediately.
+      if (type === "room:create-token") {
+        const token = session.createToken(
+          {
+            actorId: payload.actorId,
+            sceneId: payload.sceneId,
+            x: payload.x,
+            y: payload.y,
+          },
+          member.id,
+        );
+        sendRaw(ws, {
+          type: "room:token-created",
+          token: token,
+          requestId: requestId || null,
+        });
+        return;
+      }
+
+      if (type === "room:update-actor") {
+        session.updateActor(
+          payload.actorId,
+          { name: payload.name, system: payload.system, items: payload.items },
+          member.id,
+          member.role,
+        );
         return;
       }
 
@@ -905,8 +1003,12 @@ wss.on("connection", function (ws) {
         state.unsubscribe();
       }
       if (state.member) {
-        state.session.removeMember(state.member.id);
-        broadcast(state.session, "session:snapshot", state.session.snapshot());
+        // Only remove the roster entry if it still belongs to this socket. A
+        // fast reconnect can replace the member object under the same id.
+        if (state.session.getMember(state.member.id) === state.member) {
+          state.session.removeMember(state.member.id);
+          broadcast(state.session, "session:snapshot", state.session.snapshot());
+        }
       }
       clients.delete(ws);
     }
@@ -914,44 +1016,64 @@ wss.on("connection", function (ws) {
 });
 
 function startServer(port, host) {
-  return new Promise(function (resolve, reject) {
-    if (server.listening) {
-      resolve(server);
-      return;
-    }
-    function onError(error) {
-      server.removeListener("listening", onListening);
-      reject(error);
-    }
-    function onListening() {
-      server.removeListener("error", onError);
-      resolve(server);
-    }
-    server.once("error", onError);
-    server.once("listening", onListening);
-    server.listen(
-      port === undefined ? PORT : port,
-      host === undefined ? HOST : host,
-    );
-  });
+  return loadPersistedSession()
+    .catch(function (error) {
+      console.warn("Failed to load persisted session: " + error.message);
+    })
+    .then(function () {
+      return new Promise(function (resolve, reject) {
+        if (server.listening) {
+          resolve(server);
+          return;
+        }
+        function onError(error) {
+          server.removeListener("listening", onListening);
+          reject(error);
+        }
+        function onListening() {
+          server.removeListener("error", onError);
+          resolve(server);
+        }
+        server.once("error", onError);
+        server.once("listening", onListening);
+        server.listen(
+          port === undefined ? PORT : port,
+          host === undefined ? HOST : host,
+        );
+      });
+    });
+}
+
+/** Restore directories/chat from `data/session.json` before accepting clients. */
+function loadPersistedSession() {
+  if (!PERSISTENCE_ENABLED) {
+    return Promise.resolve(null);
+  }
+  return getSession("default").loadFromDisk();
 }
 
 function closeServer() {
-  return new Promise(function (resolve) {
-    for (const ws of clients.keys()) {
-      try {
-        ws.close();
-      } catch (error) {
-        // The socket may already be closed.
+  return Promise.all(
+    Array.from(sessions.values()).map(function (session) {
+      return session.flushPersistence();
+    }),
+  ).then(function () {
+    return new Promise(function (resolve) {
+      for (const ws of clients.keys()) {
+        try {
+          ws.close();
+        } catch (error) {
+          // The socket may already be closed.
+        }
       }
-    }
-    wss.close(function () {
-      if (!server.listening) {
-        resolve();
-        return;
-      }
-      server.close(function () {
-        resolve();
+      wss.close(function () {
+        if (!server.listening) {
+          resolve();
+          return;
+        }
+        server.close(function () {
+          resolve();
+        });
       });
     });
   });
@@ -988,6 +1110,8 @@ module.exports = {
   sessions,
   catalogService,
   clientDistDir: CLIENT_DIST_DIR,
+  sessionFile: SESSION_FILE,
+  persistenceEnabled: PERSISTENCE_ENABLED,
   getSession,
   startServer,
   closeServer,

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useStore } from "../StoreContext.jsx";
+import { ACTOR_TOKEN_PAYLOAD_TYPE, setDragPayload } from "../drag-payloads.js";
 
 const PLACEHOLDER_IMAGE = "/assets/ui/item-placeholder.svg";
 const DEFAULT_FOLDER_COLOR = "#3a4356";
@@ -296,13 +297,38 @@ function CreateEntryModal({ kind, folders, initialFolderId, onCancel, onCreate }
   );
 }
 
-function EntryRow({ kind, entry, onOpenJournal }) {
+function EntryRow({
+  kind,
+  entry,
+  onOpenJournal,
+  onOpenActor,
+  activeSceneId,
+  onActivateScene,
+}) {
   if (kind === "scenes") {
+    const isActive = entry.id === activeSceneId;
+    const activate = () => {
+      if (typeof onActivateScene === "function") {
+        onActivateScene(entry.id);
+      }
+    };
     return (
-      <button
-        type="button"
-        className="directory-scene-card"
+      <div
+        className={
+          "directory-scene-card" +
+          (isActive ? " directory-scene-card--active" : "")
+        }
         title={entry.name}
+        role="button"
+        tabIndex={0}
+        aria-pressed={isActive}
+        onClick={activate}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            activate();
+          }
+        }}
       >
         <img
           className="directory-scene-card__image"
@@ -316,22 +342,68 @@ function EntryRow({ kind, entry, onOpenJournal }) {
         <span className="directory-scene-card__body">
           <span className="directory-scene-card__name">{entry.name}</span>
           <span className="directory-scene-card__meta">
-            {entry.folderId ? "В папке" : "Без папки"}
+            {isActive ? "Активная сцена" : entry.folderId ? "В папке" : "Без папки"}
           </span>
         </span>
-      </button>
+        <button
+          type="button"
+          className="ui-button directory-scene-card__activate"
+          title={
+            isActive
+              ? '"' + entry.name + '" уже активна'
+              : 'Активировать сцену "' + entry.name + '"'
+          }
+          aria-label={
+            isActive
+              ? "Сцена " + entry.name + " уже активна"
+              : "Активировать сцену " + entry.name
+          }
+          onClick={(event) => {
+            event.stopPropagation();
+            activate();
+          }}
+        >
+          {isActive ? "✓ Активна" : "Активировать"}
+        </button>
+      </div>
     );
   }
 
   const isJournal = kind === "journals";
+  const isActor = kind === "actors";
+  const openEntry = isJournal
+    ? () => onOpenJournal(entry.id)
+    : isActor && typeof onOpenActor === "function"
+      ? () => onOpenActor(entry.id)
+      : undefined;
+  const actorDragProps = isActor
+    ? {
+        draggable: true,
+        onDragStart: (event) =>
+          setDragPayload(event, {
+            type: ACTOR_TOKEN_PAYLOAD_TYPE,
+            actorId: entry.id,
+            name: entry.name,
+            img: entry.img || null,
+          }),
+      }
+    : {};
   return (
     <button
       type="button"
       className={
-        "directory-entry" + (isJournal ? " directory-entry--journal" : "")
+        "directory-entry" +
+        (isJournal ? " directory-entry--journal" : "") +
+        (isActor ? " directory-entry--actor" : "") +
+        (isActor ? " directory-entry--draggable" : "")
       }
-      title={entry.name}
-      onClick={isJournal ? () => onOpenJournal(entry.id) : undefined}
+      title={
+        isActor
+          ? entry.name + " — перетащите на холст, чтобы создать токен"
+          : entry.name
+      }
+      onClick={openEntry}
+      {...actorDragProps}
     >
       <span className="directory-entry__icon" aria-hidden="true">
         {kind === "actors"
@@ -348,7 +420,7 @@ function EntryRow({ kind, entry, onOpenJournal }) {
           {entrySubtitle(kind, entry)}
         </span>
       </span>
-      {isJournal ? (
+      {isJournal || isActor ? (
         <span className="directory-entry__open" aria-hidden="true">
           ↗
         </span>
@@ -362,8 +434,8 @@ function EntryRow({ kind, entry, onOpenJournal }) {
  * Journals. Folders carry their own colour and sort mode; each folder header
  * has a "+" shortcut that pre-selects that folder in the creation modal.
  */
-export default function DirectoryPanel({ kind, onOpenJournal }) {
-  const { directories, networkClient } = useStore();
+export default function DirectoryPanel({ kind, onOpenJournal, onOpenActor }) {
+  const { directories, networkClient, activeSceneId } = useStore();
   const config = DIRECTORY_CONFIG[kind];
   const directory = (directories && directories[kind]) || {
     folders: [],
@@ -450,6 +522,15 @@ export default function DirectoryPanel({ kind, onOpenJournal }) {
     });
   };
 
+  const activateScene = (sceneId) => {
+    if (!requireClient()) {
+      return;
+    }
+    networkClient.activateScene(sceneId).catch((activateError) => {
+      setError(activateError.message || "Не удалось активировать сцену.");
+    });
+  };
+
   const openCreate = (folderId = null) => {
     setCreateState({ folderId });
   };
@@ -497,6 +578,9 @@ export default function DirectoryPanel({ kind, onOpenJournal }) {
                   kind={kind}
                   entry={entry}
                   onOpenJournal={onOpenJournal}
+                  onOpenActor={onOpenActor}
+                  activeSceneId={activeSceneId}
+                  onActivateScene={activateScene}
                 />
               ))
             )}
@@ -582,6 +666,9 @@ export default function DirectoryPanel({ kind, onOpenJournal }) {
                     kind={kind}
                     entry={entry}
                     onOpenJournal={onOpenJournal}
+                    onOpenActor={onOpenActor}
+                    activeSceneId={activeSceneId}
+                    onActivateScene={activateScene}
                   />
                 ))
               )}

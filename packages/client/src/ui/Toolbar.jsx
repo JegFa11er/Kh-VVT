@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useStore } from "./StoreContext.jsx";
 
@@ -33,22 +33,6 @@ const DICE_TYPES = [2, 4, 6, 8, 10, 12, 20, 100];
 const DICE_COUNTS = [2, 3, 4, 5, 6, 7, 8];
 
 const CATEGORIES = [
-  {
-    id: "dice",
-    icon: "🎲",
-    title: "Кубики",
-    description:
-      "Матрица бросков: выберите тип кубика слева и количество справа.",
-    tools: [
-      {
-        id: "roll",
-        icon: "🎲",
-        name: "Бросок кубиков",
-        description:
-          "Клик по типу бросает один кубик, клик по количеству — NdX (2–8).",
-      },
-    ],
-  },
   {
     id: "token",
     icon: "👤",
@@ -233,7 +217,8 @@ const CATEGORIES = [
         id: "reset-fog",
         icon: "☁️",
         name: "Сброс тумана войны",
-        description: "Сброс исследованных областей тумана войны (заглушка).",
+        description:
+          "Полностью очищает исследованные области тумана войны на текущей сцене и синхронизирует сброс со всеми участниками.",
         kind: "action",
       },
       {
@@ -242,6 +227,22 @@ const CATEGORIES = [
         name: "Удалить свет",
         description: "Удаление всех источников света на сцене.",
         kind: "action",
+      },
+    ],
+  },
+  {
+    id: "dice",
+    icon: "🎲",
+    title: "Кубики",
+    description:
+      "Матрица бросков: выберите тип кубика слева и количество справа.",
+    tools: [
+      {
+        id: "roll",
+        icon: "🎲",
+        name: "Бросок кубиков",
+        description:
+          "Клик по типу бросает один кубик, клик по количеству — NdX (2–8).",
       },
     ],
   },
@@ -275,15 +276,36 @@ export default function Toolbar() {
   const [doorLocked, setDoorLocked] = useState(false);
   const [status, setStatus] = useState("");
 
-  const activeCategory = categoryById(activeTool) || CATEGORIES[0];
+  const activeCategory = categoryById(activeTool);
   const darkness = DARKNESS_LEVELS[darknessIndex];
 
-  const handleCategoryClick = (category) => {
-    if (activeTool !== category.id) {
-      setActiveTool(category.id);
-      setActiveSubTool(category.tools[0].id);
-      setPaletteOpen(false);
+  // Let the PixiJS camera/interaction layers react to scene-control changes.
+  // This is a global DOM event so canvas modules do not need React context.
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
     }
+    window.dispatchEvent(
+      new CustomEvent("pf2e:tool-change", {
+        detail: { category: activeTool, tool: activeSubTool },
+      }),
+    );
+  }, [activeTool, activeSubTool]);
+
+  const handleCategoryClick = (category) => {
+    // Clicking the already-active category collapses the second column so it
+    // stops covering the map. Clicking it again re-opens the tool list.
+    if (activeTool === category.id) {
+      setActiveTool(null);
+      setActiveSubTool(null);
+      setPaletteOpen(false);
+      setStatus(category.title + ": панель инструментов свёрнута");
+      return;
+    }
+
+    setActiveTool(category.id);
+    setActiveSubTool(category.tools[0].id);
+    setPaletteOpen(false);
     setStatus(category.title + ": выберите инструмент справа");
   };
 
@@ -321,13 +343,13 @@ export default function Toolbar() {
     };
 
     if (category.id === "draw" && tool.id === "clear") {
-      setStatus("Все рисунки сцены удалены (слой рисования подключается позже)");
+      setStatus("Очистка рисунков: подтвердите действие в диалоге");
     } else if (category.id === "wall" && tool.id === "clear") {
-      setStatus("Все стены текущего слоя удалены (слой стен подключается позже)");
+      setStatus("Очистка стен: подтвердите действие в диалоге");
     } else if (category.id === "light" && tool.id === "clear") {
-      setStatus("Все источники света удалены (слой света подключается позже)");
+      setStatus("Очистка света: подтвердите действие в диалоге");
     } else if (category.id === "light" && tool.id === "reset-fog") {
-      setStatus("Туман войны сброшен (заглушка)");
+      setStatus("Туман войны сброшен: карта снова полностью чёрная");
     } else if (category.id === "light" && tool.id === "gm-vision") {
       const next = !gmVision;
       setGmVision(next);
@@ -444,95 +466,101 @@ export default function Toolbar() {
           ))}
         </div>
 
-        <div className="toolbar__column toolbar__column--tools">
-          {activeCategory.id === "dice" ? (
-            <div
-              className="dice-matrix"
-              role="group"
-              aria-label="Матрица бросков кубиков"
-            >
-              <div className="dice-matrix__caption">
-                <span>Тип</span>
-                <span>Количество</span>
-              </div>
-              {DICE_TYPES.map((sides) => (
-                <div className="dice-matrix__row" key={sides}>
-                  <button
-                    type="button"
-                    className="dice-matrix__type"
-                    title={"Бросить 1d" + sides}
-                    aria-label={"Бросить 1d" + sides}
-                    onClick={() => handleDiceRoll(sides, 1)}
-                  >
-                    d{sides}
-                  </button>
-                  <div className="dice-matrix__counts">
-                    {DICE_COUNTS.map((count) => (
-                      <button
-                        key={count}
-                        type="button"
-                        className="dice-matrix__count"
-                        title={"Бросить " + count + "d" + sides}
-                        aria-label={"Бросить " + count + "d" + sides}
-                        onClick={() => handleDiceRoll(sides, count)}
-                      >
-                        {count}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            activeCategory.tools.map((tool) => (
-              <button
-                key={tool.id}
-                type="button"
-                className={
-                  "toolbar__button toolbar__button--tool" +
-                  (isToolActive(activeCategory, tool)
-                    ? " toolbar__button--active"
-                    : "")
-                }
-                title={tooltipFor(activeCategory, tool)}
-                aria-label={tool.name}
-                aria-pressed={isToolActive(activeCategory, tool)}
-                data-tool={tool.id}
-                onClick={() => handleToolClick(activeCategory, tool)}
-                onContextMenu={(event) =>
-                  handleToolContextMenu(event, activeCategory, tool)
-                }
+        {activeCategory ? (
+          <div className="toolbar__column toolbar__column--tools">
+            {activeCategory.id === "dice" ? (
+              <div
+                className="dice-matrix"
+                role="group"
+                aria-label="Матрица бросков кубиков"
               >
-                <span aria-hidden="true">{tool.icon}</span>
-                {activeCategory.id === "draw" && tool.id === "color" ? (
-                  <span
-                    className="toolbar__color-indicator"
-                    style={{ backgroundColor: drawColor }}
-                  />
-                ) : null}
-              </button>
-            ))
-          )}
-
-          {activeCategory.id === "draw" && paletteOpen ? (
-            <div className="toolbar__palette" role="group" aria-label="Цвет рисунков">
-              {DRAW_COLORS.map((color) => (
+                <div className="dice-matrix__caption">
+                  <span>Тип</span>
+                  <span>Количество</span>
+                </div>
+                {DICE_TYPES.map((sides) => (
+                  <div className="dice-matrix__row" key={sides}>
+                    <button
+                      type="button"
+                      className="dice-matrix__type"
+                      title={"Бросить 1d" + sides}
+                      aria-label={"Бросить 1d" + sides}
+                      onClick={() => handleDiceRoll(sides, 1)}
+                    >
+                      d{sides}
+                    </button>
+                    <div className="dice-matrix__counts">
+                      {DICE_COUNTS.map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          className="dice-matrix__count"
+                          title={"Бросить " + count + "d" + sides}
+                          aria-label={"Бросить " + count + "d" + sides}
+                          onClick={() => handleDiceRoll(sides, count)}
+                        >
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              activeCategory.tools.map((tool) => (
                 <button
-                  key={color}
+                  key={tool.id}
                   type="button"
                   className={
-                    "toolbar__swatch" +
-                    (color === drawColor ? " toolbar__swatch--active" : "")
+                    "toolbar__button toolbar__button--tool" +
+                    (isToolActive(activeCategory, tool)
+                      ? " toolbar__button--active"
+                      : "")
                   }
-                  style={{ backgroundColor: color }}
-                  title={"Цвет обводки/заливки: " + color}
-                  aria-label={"Выбрать цвет " + color}
-                  onClick={() => handleSwatchClick(color)}
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
+                  title={tooltipFor(activeCategory, tool)}
+                  aria-label={tool.name}
+                  aria-pressed={isToolActive(activeCategory, tool)}
+                  data-tool={tool.id}
+                  onClick={() => handleToolClick(activeCategory, tool)}
+                  onContextMenu={(event) =>
+                    handleToolContextMenu(event, activeCategory, tool)
+                  }
+                >
+                  <span aria-hidden="true">{tool.icon}</span>
+                  {activeCategory.id === "draw" && tool.id === "color" ? (
+                    <span
+                      className="toolbar__color-indicator"
+                      style={{ backgroundColor: drawColor }}
+                    />
+                  ) : null}
+                </button>
+              ))
+            )}
+
+            {activeCategory.id === "draw" && paletteOpen ? (
+              <div
+                className="toolbar__palette"
+                role="group"
+                aria-label="Цвет рисунков"
+              >
+                {DRAW_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={
+                      "toolbar__swatch" +
+                      (color === drawColor ? " toolbar__swatch--active" : "")
+                    }
+                    style={{ backgroundColor: color }}
+                    title={"Цвет обводки/заливки: " + color}
+                    aria-label={"Выбрать цвет " + color}
+                    onClick={() => handleSwatchClick(color)}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {status ? (

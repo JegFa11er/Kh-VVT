@@ -58,6 +58,50 @@ function readNonNegativeInteger(value) {
   return parsed;
 }
 
+function readInteger(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = typeof value === "number" ? value : Number.parseInt(String(value), 10);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+/**
+ * Read an entry level from either the compact index shape (`level: 3`) or the
+ * full Foundry document shape (`system.level.value: 3`).
+ */
+function readEntryLevel(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  if (typeof entry.level === "number" && Number.isFinite(entry.level)) {
+    return entry.level;
+  }
+  const system = entry.system;
+  if (system && system.level && typeof system.level.value === "number") {
+    return system.level.value;
+  }
+  return null;
+}
+
+/**
+ * Step 4.7: level is the primary sort key, name is only a tie-breaker.
+ * Entries without a level (most equipment) sort after levelled entries.
+ */
+function compareCatalogEntries(a, b) {
+  const levelA = readEntryLevel(a);
+  const levelB = readEntryLevel(b);
+  const rankA = levelA === null ? Number.POSITIVE_INFINITY : levelA;
+  const rankB = levelB === null ? Number.POSITIVE_INFINITY : levelB;
+  if (rankA !== rankB) {
+    return rankA - rankB;
+  }
+  return String((a && a.name) || "").localeCompare(String((b && b.name) || ""), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
 function parseLevelFilter(value) {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -240,8 +284,8 @@ class CatalogService {
     const normalizedName = nameFilter === null ? null : normalizeText(nameFilter);
 
     const levelFilter = parseLevelFilter(opts.level);
-    const minLevel = readNonNegativeInteger(opts.minLevel);
-    const maxLevel = readNonNegativeInteger(opts.maxLevel);
+    const minLevel = readInteger(opts.minLevel);
+    const maxLevel = readInteger(opts.maxLevel);
     const traits = normalizeTraitsFilter(
       opts.traits !== undefined ? opts.traits : opts.trait,
     );
@@ -249,6 +293,15 @@ class CatalogService {
       ? "any"
       : "all";
     const type = isNonEmptyString(opts.type) ? opts.type.trim().toLowerCase() : null;
+    const ancestry = isNonEmptyString(opts.ancestry) ? normalizeText(opts.ancestry) : null;
+    const includeVersatile =
+      opts.includeVersatile === true ||
+      String(opts.includeVersatile || "").toLowerCase() === "1" ||
+      String(opts.includeVersatile || "").toLowerCase() === "true";
+    const versatileOnly =
+      opts.versatile === true ||
+      String(opts.versatile || "").toLowerCase() === "1" ||
+      String(opts.versatile || "").toLowerCase() === "true";
     const limit = readNonNegativeInteger(opts.limit);
     const offset = readNonNegativeInteger(opts.offset);
 
@@ -257,13 +310,28 @@ class CatalogService {
         return false;
       }
 
+      if (versatileOnly && entry.versatile !== true) {
+        return false;
+      }
+
+      if (ancestry !== null) {
+        const entryAncestry = normalizeText(entry.ancestry || "");
+        const entryAncestryName = normalizeText(entry.ancestryName || "");
+        const isVersatile = entry.versatile === true;
+        const matchesAncestry =
+          entryAncestry === ancestry || entryAncestryName === ancestry;
+        if (!matchesAncestry && !(includeVersatile && isVersatile)) {
+          return false;
+        }
+      }
+
       if (normalizedName !== null) {
         if (!isNonEmptyString(entry.name) || !normalizeText(entry.name).includes(normalizedName)) {
           return false;
         }
       }
 
-      const level = typeof entry.level === "number" ? entry.level : null;
+      const level = readEntryLevel(entry);
       if (levelFilter !== null) {
         if (level === null) {
           return false;
@@ -312,6 +380,11 @@ class CatalogService {
 
       return true;
     });
+
+    // Step 4.7: sort by level first, then by name. Without this the index
+    // file's alphabetical order decided the result and the level filter
+    // appeared to be ignored whenever the alphabet disagreed with it.
+    result.sort(compareCatalogEntries);
 
     if (offset !== null && offset > 0) {
       result = result.slice(offset);

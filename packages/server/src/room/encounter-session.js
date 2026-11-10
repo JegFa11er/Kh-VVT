@@ -1,5 +1,8 @@
 "use strict";
 
+const fs = require("node:fs/promises");
+const path = require("node:path");
+
 const core = require("@pf2e/core");
 const roles = require("../auth/roles.js");
 
@@ -57,7 +60,29 @@ const DIRECTORY_KIND_ALIASES = Object.freeze({
   journals: "journals",
 });
 const MAX_DIRECTORY_NAME_LENGTH = 120;
+// Step 4.8: a character sheet may carry a large `system` payload. Cap it so a
+// malicious/broken client cannot bloat session.json or the write queue.
+const MAX_ACTOR_SYSTEM_BYTES = 256 * 1024;
 const DEFAULT_FOLDER_COLOR = "#3a4356";
+// Step 4.8: every scene owns a canvas payload. Arrays are capped so a broken
+// client cannot exhaust the persistence queue with an unbounded object list.
+const MAX_SCENE_OBJECTS = 4000;
+// Step 5.3: fog of war is persisted as a Base64 PNG of the accumulated
+// RenderTexture. Cap it so a broken client cannot bloat session.json.
+const MAX_FOG_DATA_LENGTH = 8 * 1024 * 1024;
+const FOG_DATA_URL_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
+
+// Step 4.7: room data survives a server restart. The server passes an explicit
+// `dataFile`; direct sessions (tests, embedders) stay purely in memory unless
+// they opt in, and the public save/load methods still default to this path.
+const DEFAULT_SESSION_FILE = path.join(
+  __dirname,
+  "..",
+  "..",
+  "data",
+  "session.json",
+);
+const SESSION_FILE_VERSION = 1;
 
 function normalizeDirectoryKind(kind) {
   if (typeof kind !== "string") {
@@ -74,6 +99,18 @@ function normalizeHexColor(value) {
   return /^#[0-9a-fA-F]{6}$/.test(color) ? color.toLowerCase() : null;
 }
 
+/**
+ * Grid coordinates are non-negative integers. The client snaps the drop point
+ * to the cell before sending it; the server still clamps hostile/broken input.
+ */
+function normalizeGridCoordinate(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1000, Math.trunc(number)));
+}
+
 function clonePlainData(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -84,6 +121,165 @@ function createEmptyDirectories() {
     directories[kind] = { folders: [], entries: [] };
   }
   return directories;
+}
+
+/** Shape of the canvas payload stored per scene (Step 4.8). */
+function createEmptySceneCanvas() {
+  return { walls: [], drawings: [], lights: [], tokens: [] };
+}
+
+function cloneSceneObjectList(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .slice(0, MAX_SCENE_OBJECTS)
+    .filter(function (item) {
+      return item !== null && typeof item === "object" && !Array.isArray(item);
+    })
+    .map(clonePlainData);
+}
+
+/** Coerce arbitrary client data into the scene-canvas contract. */
+function sanitizeSceneCanvas(raw) {
+  const source =
+    raw !== null && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  return {
+    walls: cloneSceneObjectList(source.walls),
+    drawings: cloneSceneObjectList(source.drawings),
+    lights: cloneSceneObjectList(source.lights),
+    tokens: cloneSceneObjectList(source.tokens),
+  };
+}
+
+/**
+ * Step 5.3: validate an encoded fog-of-war texture.
+ *
+ * The client sends the output of `renderer.extract.base64(fogTexture)`, i.e. a
+ * PNG data URL. `null`/empty is a valid "no exploration" value.
+ */
+function sanitizeFogExploration(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (typeof value !== "string") {
+    throw new TypeError("Fog exploration must be a PNG data URL string.");
+  }
+  const dataUrl = value.trim();
+  if (dataUrl === "") {
+    return null;
+  }
+  if (!FOG_DATA_URL_PATTERN.test(dataUrl)) {
+    throw new TypeError("Fog exploration must be a PNG data URL.");
+  }
+  if (dataUrl.length > MAX_FOG_DATA_LENGTH) {
+    throw new RangeError("Fog exploration payload is too large.");
+  }
+  return dataUrl;
+}
+
+/** Tolerant variant used for data coming from disk. */
+function sanitizePersistedFog(value) {
+  try {
+    return sanitizeFogExploration(value);
+  } catch (error) {
+    return null;
+  }
+}
+
+/** Validate and deep-copy a player character sheet payload (Step 4.8). */
+function sanitizeActorSystem(raw) {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new TypeError("Actor system must be an object.");
+  }
+  let serialized;
+  try {
+    serialized = JSON.stringify(raw);
+  } catch (error) {
+    throw new TypeError("Actor system must be JSON-serializable.");
+  }
+  if (typeof serialized !== "string") {
+    throw new TypeError("Actor system must be JSON-serializable.");
+  }
+  if (serialized.length > MAX_ACTOR_SYSTEM_BYTES) {
+    throw new RangeError("Actor system payload is too large.");
+  }
+  return JSON.parse(serialized);
+}
+
+/**
+ * Step 4.8.1: the actor's embedded item collection (class features,
+ * spellcasting entries, ...). Kept as a deep-copied, JSON-serializable array.
+ */
+function sanitizeActorItems(raw) {
+  if (raw === undefined || raw === null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new TypeError("Actor items must be an array.");
+  }
+  let serialized;
+  try {
+    serialized = JSON.stringify(raw);
+  } catch (error) {
+    throw new TypeError("Actor items must be JSON-serializable.");
+  }
+  if (typeof serialized !== "string") {
+    throw new TypeError("Actor items must be JSON-serializable.");
+  }
+  if (serialized.length > MAX_ACTOR_SYSTEM_BYTES) {
+    throw new RangeError("Actor items payload is too large.");
+  }
+  return JSON.parse(serialized);
+}
+
+/** Coerce a persisted directory tree back into the expected shape. */
+function mergeDirectories(raw) {  const directories = createEmptyDirectories();
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return directories;
+  }
+  for (const kind of DIRECTORY_KINDS) {
+    const source = raw[kind];
+    if (source === null || typeof source !== "object") {
+      continue;
+    }
+    if (Array.isArray(source.folders)) {
+      directories[kind].folders = source.folders
+        .filter(function (folder) {
+          return folder !== null && typeof folder === "object";
+        })
+        .map(clonePlainData);
+    }
+    if (Array.isArray(source.entries)) {
+      directories[kind].entries = source.entries
+        .filter(function (entry) {
+          return entry !== null && typeof entry === "object";
+        })
+        .map(function (entry) {
+          const copy = clonePlainData(entry);
+          if (kind === "journals" && !Array.isArray(copy.pages)) {
+            copy.pages = [];
+          }
+          return copy;
+        });
+    }
+  }
+  return directories;
+}
+
+/** Highest numeric suffix in ids such as `chat-12` or `page-3`. */
+function maxSequenceFrom(ids, pattern) {
+  let max = 0;
+  for (const id of ids) {
+    const match = pattern.exec(String(id || ""));
+    if (match) {
+      const value = Number.parseInt(match[1], 10);
+      if (Number.isInteger(value) && value > max) {
+        max = value;
+      }
+    }
+  }
+  return max;
 }
 
 const GM_ONLY_ACTIONS = new Set(["roll-initiative"]);
@@ -483,6 +679,34 @@ class EncounterSession {
     this._directoryEntrySequence = 0;
     this._journalPageSequence = 0;
 
+    /**
+     * Active-scene manager (Step 4.8). Scene canvas arrays live directly on the
+     * scene directory entries (`scenes[id].walls/drawings/lights`), so they are
+     * persisted together with the directory tree. The `null` scene id maps to a
+     * dedicated empty base scene.
+     */
+    this.activeSceneId = null;
+    this.baseSceneCanvas = createEmptySceneCanvas();
+    // Step 5.3: the base scene (activeSceneId === null) owns the same fog
+    // texture contract as numbered scenes.
+    this.baseSceneFogExploration = null;
+    // Step 4.8.5: actor-linked scene tokens get their own id sequence so a
+    // reload never reuses an id that is already in session.json.
+    this._sceneTokenSequence = 0;
+
+    /**
+     * Persistence (Step 4.7). When a data file is configured every directory
+     * and chat mutation is queued for a JSON write; `saveToDisk()` and
+     * `loadFromDisk()` are always available for explicit snapshots.
+     *
+     * @type {string|null}
+     */
+    this.dataFile =
+      typeof opts.dataFile === "string" && opts.dataFile.trim() !== ""
+        ? path.resolve(opts.dataFile)
+        : null;
+    this._saveChain = Promise.resolve();
+
     this._listeners = new Set();
 
     this._busUnsubscribe = this.eventBus.on(
@@ -640,11 +864,205 @@ class EncounterSession {
     }
   }
 
+  // ------------------------------------------------------------- persistence
+
+  /**
+   * Queue a write of the persisted room data. No-op for purely in-memory
+   * sessions (no `dataFile` was configured).
+   */
+  _scheduleSave() {
+    if (!this.dataFile) {
+      return;
+    }
+    const write = () =>
+      this.saveToDisk().catch(function (error) {
+        console.warn("Failed to persist session data: " + error.message);
+      });
+    // Serialize writes so two rapid mutations cannot interleave file content.
+    this._saveChain = this._saveChain.then(write, write);
+  }
+
+  /** Resolve when every queued persistence write has finished. */
+  flushPersistence() {
+    return this._saveChain;
+  }
+
+  /**
+   * Write `directories` and `chatLog` to disk as JSON.
+   *
+   * @param {string} [filePath] defaults to the configured file or
+   *   `packages/server/data/session.json`
+   * @returns {Promise<string>} absolute path written
+   */
+  async saveToDisk(filePath) {
+    const target = filePath
+      ? path.resolve(filePath)
+      : this.dataFile || DEFAULT_SESSION_FILE;
+
+    const payload = {
+      version: SESSION_FILE_VERSION,
+      sessionId: this.id,
+      savedAt: new Date().toISOString(),
+      directories: this.getDirectories(),
+      chatLog: clonePlainData(this.chatLog),
+      activeSceneId: this.activeSceneId,
+      baseSceneCanvas: clonePlainData(this.baseSceneCanvas),
+      baseSceneFogExploration: this.baseSceneFogExploration,
+      sequences: {
+        folder: this._folderSequence,
+        directoryEntry: this._directoryEntrySequence,
+        journalPage: this._journalPageSequence,
+        chat: this._chatSequence,
+        sceneToken: this._sceneTokenSequence,
+      },
+    };
+
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    const temporary = target + ".tmp";
+    await fs.writeFile(temporary, JSON.stringify(payload, null, 2), "utf8");
+    await fs.rename(temporary, target);
+    return target;
+  }
+
+  /**
+   * Restore `directories` and `chatLog` from disk.
+   *
+   * @param {string} [filePath] defaults to the configured file or
+   *   `packages/server/data/session.json`
+   * @returns {Promise<{ok:boolean,reason?:string,path:string}>}
+   */
+  async loadFromDisk(filePath) {
+    const target = filePath
+      ? path.resolve(filePath)
+      : this.dataFile || DEFAULT_SESSION_FILE;
+
+    let raw;
+    try {
+      raw = await fs.readFile(target, "utf8");
+    } catch (error) {
+      if (error && error.code === "ENOENT") {
+        return { ok: false, reason: "file-not-found", path: target };
+      }
+      throw error;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      return { ok: false, reason: "invalid-json", path: target };
+    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, reason: "invalid-format", path: target };
+    }
+
+    this.directories = mergeDirectories(parsed.directories);
+    this.baseSceneCanvas = sanitizeSceneCanvas(parsed.baseSceneCanvas);
+    this.baseSceneFogExploration = sanitizePersistedFog(
+      parsed.baseSceneFogExploration,
+    );
+    const requestedSceneId =
+      typeof parsed.activeSceneId === "string" ? parsed.activeSceneId : null;
+    this.activeSceneId =
+      requestedSceneId &&
+      this.directories.scenes.entries.some(function (entry) {
+        return entry.id === requestedSceneId;
+      })
+        ? requestedSceneId
+        : null;
+    this.chatLog = Array.isArray(parsed.chatLog)
+      ? parsed.chatLog
+          .filter(function (message) {
+            return message !== null && typeof message === "object";
+          })
+          .map(clonePlainData)
+      : [];
+
+    // Recover id counters so newly created entries never collide with loaded
+    // ones, even if the file predates the `sequences` block.
+    const folderIds = [];
+    const entryIds = [];
+    const pageIds = [];
+    for (const kind of DIRECTORY_KINDS) {
+      for (const folder of this.directories[kind].folders) {
+        folderIds.push(folder.id);
+      }
+      for (const entry of this.directories[kind].entries) {
+        entryIds.push(entry.id);
+        if (Array.isArray(entry.pages)) {
+          for (const page of entry.pages) {
+            pageIds.push(page.id);
+          }
+        }
+      }
+    }
+    const sequences =
+      parsed.sequences !== null && typeof parsed.sequences === "object"
+        ? parsed.sequences
+        : {};
+    this._folderSequence = Math.max(
+      Number.isInteger(sequences.folder) ? sequences.folder : 0,
+      maxSequenceFrom(folderIds, /-(\d+)$/),
+    );
+    this._directoryEntrySequence = Math.max(
+      Number.isInteger(sequences.directoryEntry) ? sequences.directoryEntry : 0,
+      maxSequenceFrom(entryIds, /-(\d+)$/),
+    );
+    this._journalPageSequence = Math.max(
+      Number.isInteger(sequences.journalPage) ? sequences.journalPage : 0,
+      maxSequenceFrom(pageIds, /-(\d+)$/),
+    );
+    this._chatSequence = Math.max(
+      Number.isInteger(sequences.chat) ? sequences.chat : 0,
+      maxSequenceFrom(
+        this.chatLog.map(function (message) {
+          return message.id;
+        }),
+        /-(\d+)$/,
+      ),
+    );
+    // Recover the scene-token counter from every persisted canvas (scenes and
+    // the base scene), so a newly dropped actor token never collides.
+    const tokenIds = [];
+    for (const token of Array.isArray(this.baseSceneCanvas.tokens)
+      ? this.baseSceneCanvas.tokens
+      : []) {
+      tokenIds.push(token && token.id);
+    }
+    for (const scene of this.directories.scenes.entries) {
+      for (const token of Array.isArray(scene.tokens) ? scene.tokens : []) {
+        tokenIds.push(token && token.id);
+      }
+    }
+    this._sceneTokenSequence = Math.max(
+      Number.isInteger(sequences.sceneToken) ? sequences.sceneToken : 0,
+      maxSequenceFrom(tokenIds, /^token-(\d+)$/),
+    );
+
+    return { ok: true, path: target };
+  }
+
   // ----------------------------------------------------------- directories
 
-  /** Deep, JSON-safe copy of every directory tree. */
-  getDirectories() {
-    return clonePlainData(this.directories);
+  /**
+   * Deep, JSON-safe copy of every directory tree.
+   *
+   * Fog textures are stored on scene entries (`scenes[id].fogExploration`) so
+   * they persist with the world. They are huge Base64 strings, though, and are
+   * only needed by the active scene, which receives them through the dedicated
+   * `sceneFogExploration` field. Broadcasts therefore omit them by default.
+   *
+   * @param {{includeFog?:boolean}} [options]
+   */
+  getDirectories(options = {}) {
+    const includeFog = !(options && options.includeFog === false);
+    const copy = clonePlainData(this.directories);
+    if (!includeFog) {
+      for (const scene of copy.scenes.entries) {
+        delete scene.fogExploration;
+      }
+    }
+    return copy;
   }
 
   /**
@@ -654,7 +1072,7 @@ class EncounterSession {
   _emitDirectoriesUpdate() {
     const payload = {
       sessionId: this.id,
-      directories: this.getDirectories(),
+      directories: this.getDirectories({ includeFog: false }),
     };
     for (const listener of this._listeners) {
       try {
@@ -708,6 +1126,7 @@ class EncounterSession {
     this._folderSequence += 1;
     this.directories[normalized].folders.push(folder);
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return clonePlainData(folder);
   }
 
@@ -743,6 +1162,10 @@ class EncounterSession {
         typeof input.img === "string" && input.img.trim() !== ""
           ? input.img.trim()
           : null;
+      entry.walls = [];
+      entry.drawings = [];
+      entry.lights = [];
+      entry.tokens = [];
     } else if (normalized === "actors") {
       entry.actorType =
         input.actorType === "npc" || input.type === "npc" ? "npc" : "character";
@@ -753,6 +1176,15 @@ class EncounterSession {
         typeof input.img === "string" && input.img.trim() !== ""
           ? input.img.trim()
           : null;
+      // Step 4.8: the sheet reads/writes this payload atomically.
+      entry.system =
+        input.system !== null &&
+        typeof input.system === "object" &&
+        !Array.isArray(input.system)
+          ? sanitizeActorSystem(input.system)
+          : {};
+      // Step 4.8.1: embedded class features / spellcasting entries.
+      entry.items = sanitizeActorItems(input.items);
     } else if (normalized === "items") {
       entry.itemType =
         asNonEmptyString(input.itemType) !== null
@@ -764,7 +1196,378 @@ class EncounterSession {
 
     this.directories[normalized].entries.push(entry);
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return clonePlainData(entry);
+  }
+
+  // -------------------------------------------------------- actor sheets (4.8)
+
+  /**
+   * Atomically replace a character actor's sheet payload.
+   *
+   * Permission mirrors the UI: the GM may edit any actor, a player only the
+   * actor linked to their profile. An unclaimed actor is editable by anyone so
+   * the GM can prepare sheets before handing them out.
+   *
+   * @param {string} actorId
+   * @param {{name?:string,system?:object}} data
+   * @param {string} [memberId]
+   * @param {"gm"|"player"} [role]
+   */
+  updateActor(actorId, data, memberId, role) {
+    const actor = this.directories.actors.entries.find(function (entry) {
+      return entry.id === actorId;
+    });
+    if (!actor) {
+      throw new RangeError("Unknown actor: " + String(actorId) + ".");
+    }
+
+    if (role !== "gm") {
+      const users = Array.from(this.users.values());
+      const claimedBy = users.find(function (user) {
+        return user.characterId === actorId;
+      });
+      if (claimedBy && claimedBy.id !== memberId) {
+        throw new Error("Only the owner or the GM can edit this actor.");
+      }
+    }
+
+    const input =
+      data !== null && typeof data === "object" && !Array.isArray(data) ? data : {};
+
+    if (typeof input.name === "string") {
+      const name = input.name.trim();
+      if (name !== "") {
+        actor.name = name.slice(0, MAX_DIRECTORY_NAME_LENGTH);
+      }
+    }
+
+    if (input.system !== undefined) {
+      actor.system = sanitizeActorSystem(input.system);
+      const level = actor.system.details && actor.system.details.level;
+      if (level && Number.isFinite(Number(level.value))) {
+        actor.level = Math.trunc(Number(level.value));
+      }
+    }
+
+    if (input.items !== undefined) {
+      actor.items = sanitizeActorItems(input.items);
+    }
+
+    this._emitDirectoriesUpdate();
+    // Step 4.8.5: the PixiJS token layer repaints HP bars from this focused
+    // event without diffing the whole directory tree. Directories remain the
+    // source of truth and carry the same actor payload.
+    this._emitActorUpdate({
+      sessionId: this.id,
+      actorId: actor.id,
+      actor: clonePlainData(actor),
+    });
+    this._scheduleSave();
+    return clonePlainData(actor);
+  }
+
+  // -------------------------------------------------------- active scene (4.8)
+
+  _findSceneEntry(sceneId) {
+    if (typeof sceneId !== "string" || sceneId.trim() === "") {
+      return null;
+    }
+    return (
+      this.directories.scenes.entries.find(function (entry) {
+        return entry.id === sceneId;
+      }) || null
+    );
+  }
+
+  /**
+   * Canvas payload for one scene. `null` addresses the base scene, which is
+   * always present even when no scene directory entry is active.
+   */
+  getSceneCanvas(sceneId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    if (id === null) {
+      return Object.assign({ sceneId: null }, sanitizeSceneCanvas(this.baseSceneCanvas));
+    }
+    const scene = this._findSceneEntry(id);
+    if (!scene) {
+      return { sceneId: id, walls: [], drawings: [], lights: [], tokens: [] };
+    }
+    const canvas = sanitizeSceneCanvas(scene);
+    return {
+      sceneId: id,
+      walls: canvas.walls,
+      drawings: canvas.drawings,
+      lights: canvas.lights,
+      tokens: canvas.tokens,
+    };
+  }
+
+  /**
+   * Persisted fog-of-war texture for one scene (`null` = nothing explored).
+   * The scene canvas itself stays a compact arrays-only contract; the encoded
+   * texture travels next to it in activation/snapshot payloads.
+   *
+   * @param {string|null} sceneId
+   * @returns {string|null}
+   */
+  getSceneFog(sceneId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    if (id === null) {
+      return this.baseSceneFogExploration;
+    }
+    const scene = this._findSceneEntry(id);
+    return scene ? sanitizePersistedFog(scene.fogExploration) : null;
+  }
+
+  /**
+   * Activate a scene directory entry. Unknown ids fall back to the empty base
+   * scene, which keeps a stale client from breaking the room.
+   */
+  activateScene(sceneId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    this.activeSceneId = id !== null && this._findSceneEntry(id) ? id : null;
+    const canvas = this.getSceneCanvas(this.activeSceneId);
+    this._emitSceneActivated({
+      sessionId: this.id,
+      activeSceneId: this.activeSceneId,
+      canvas: canvas,
+      fogExploration: this.getSceneFog(this.activeSceneId),
+    });
+    this._scheduleSave();
+    return canvas;
+  }
+
+  /**
+   * Replace the canvas arrays for a scene. The client sends complete arrays,
+   * matching the "load this scene" contract on activation.
+   */
+  updateSceneCanvas(sceneId, canvasData, sourceMemberId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    const canvas = sanitizeSceneCanvas(canvasData);
+
+    if (id === null) {
+      this.baseSceneCanvas = canvas;
+    } else {
+      const scene = this._findSceneEntry(id);
+      if (!scene) {
+        throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+      }
+      scene.walls = canvas.walls;
+      scene.drawings = canvas.drawings;
+      scene.lights = canvas.lights;
+      scene.tokens = canvas.tokens;
+    }
+
+    this._scheduleSave();
+    const payload = {
+      sessionId: this.id,
+      sceneId: id,
+      canvas: this.getSceneCanvas(id),
+      sourceMemberId: sourceMemberId || null,
+    };
+    this._emitSceneCanvasUpdate(payload);
+    return payload.canvas;
+  }
+
+  /**
+   * Step 5.3: persist the accumulated fog-of-war texture for a scene.
+   *
+   * The texture lives on `scenes[sceneId].fogExploration` (or the base-scene
+   * counterpart) and is written to `session.json`. A dedicated broadcast keeps
+   * every client's fog in sync without touching the scene-canvas contract.
+   *
+   * @param {string|null} sceneId
+   * @param {string|null} fogExploration PNG data URL or null
+   * @param {string} [sourceMemberId]
+   * @returns {string|null} stored value
+   */
+  updateFog(sceneId, fogExploration, sourceMemberId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    const fog = sanitizeFogExploration(fogExploration);
+
+    if (id === null) {
+      this.baseSceneFogExploration = fog;
+    } else {
+      const scene = this._findSceneEntry(id);
+      if (!scene) {
+        throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+      }
+      scene.fogExploration = fog;
+    }
+
+    this._scheduleSave();
+    this._emitFogUpdate({
+      sessionId: this.id,
+      sceneId: id,
+      fogExploration: fog,
+      sourceMemberId: sourceMemberId || null,
+    });
+    return fog;
+  }
+
+  /**
+   * Step 5.3: wipe one scene's fog texture and broadcast `room:fog-reset`.
+   * Every client clears its local `RenderTexture`; no exploration survives.
+   *
+   * @param {string|null} sceneId
+   * @param {string} [sourceMemberId]
+   * @returns {null}
+   */
+  resetFog(sceneId, sourceMemberId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    if (id === null) {
+      this.baseSceneFogExploration = null;
+    } else {
+      const scene = this._findSceneEntry(id);
+      if (!scene) {
+        throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+      }
+      scene.fogExploration = null;
+    }
+
+    this._scheduleSave();
+    this._emitFogReset({
+      sessionId: this.id,
+      sceneId: id,
+      sourceMemberId: sourceMemberId || null,
+    });
+    return null;
+  }
+
+  /**
+   * Step 4.8.5: create an actor-linked token on a scene canvas.
+   *
+   * The token references a directory actor (`actorId`) and a grid cell. It is
+   * stored inside `scenes[sceneId].tokens` (or the base scene) together with
+   * the wall/drawing/light arrays, so it persists in `session.json`.
+   *
+   * @param {{actorId?:string,sceneId?:string|null,x?:number,y?:number}} data
+   * @param {string} [sourceMemberId]
+   * @returns {object} the created token
+   */
+  createToken(data, sourceMemberId) {
+    const input =
+      data !== null && typeof data === "object" && !Array.isArray(data) ? data : {};
+    const actorId = asNonEmptyString(input.actorId);
+    if (actorId === null) {
+      throw new TypeError("A token requires an actorId.");
+    }
+
+    const actor = this.directories.actors.entries.find(function (entry) {
+      return entry.id === actorId;
+    });
+    if (!actor) {
+      throw new RangeError("Unknown actor: " + actorId + ".");
+    }
+
+    // Empty/omitted scene ids target the always-present base scene.
+    const sceneId =
+      typeof input.sceneId === "string" && input.sceneId.trim() !== ""
+        ? input.sceneId.trim()
+        : null;
+    if (sceneId !== null && !this._findSceneEntry(sceneId)) {
+      throw new RangeError("Unknown scene: " + sceneId + ".");
+    }
+
+    this._sceneTokenSequence += 1;
+    const actorImg =
+      typeof actor.img === "string" && actor.img.trim() !== "" ? actor.img : null;
+    const token = {
+      id: "token-" + this._sceneTokenSequence,
+      actorId: actor.id,
+      sceneId: sceneId,
+      name: actor.name,
+      img: actorImg,
+      gridX: normalizeGridCoordinate(input.x),
+      gridY: normalizeGridCoordinate(input.y),
+    };
+
+    if (sceneId === null) {
+      this.baseSceneCanvas.tokens.push(token);
+    } else {
+      const scene = this._findSceneEntry(sceneId);
+      if (!Array.isArray(scene.tokens)) {
+        scene.tokens = [];
+      }
+      scene.tokens.push(token);
+    }
+
+    this._scheduleSave();
+    this._emitSceneCanvasUpdate({
+      sessionId: this.id,
+      sceneId: sceneId,
+      canvas: this.getSceneCanvas(sceneId),
+      sourceMemberId: null,
+      reason: "token-created",
+      createdBy: sourceMemberId || null,
+      token: clonePlainData(token),
+    });
+    return clonePlainData(token);
+  }
+
+  /**
+   * Scene broadcasts are UI metadata, not combat events: notify room listeners
+   * directly so they never pollute the combat log.
+   */
+  _emitSceneActivated(payload) {
+    for (const listener of this._listeners) {
+      try {
+        listener("room:scene-activated", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
+  }
+
+  _emitSceneCanvasUpdate(payload) {
+    for (const listener of this._listeners) {
+      try {
+        listener("room:scene-canvas-update", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
+  }
+
+  _emitFogUpdate(payload) {
+    for (const listener of this._listeners) {
+      try {
+        listener("room:fog-update", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
+  }
+
+  _emitFogReset(payload) {
+    for (const listener of this._listeners) {
+      try {
+        listener("room:fog-reset", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
+  }
+
+  /**
+   * Focused actor-sheet update (Step 4.8.5). Sent alongside the directory
+   * broadcast so the canvas token layer can repaint HP bars immediately.
+   */
+  _emitActorUpdate(payload) {
+    for (const listener of this._listeners) {
+      try {
+        listener("room:update-actor", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
   }
 
   /** Find a journal entry or throw a descriptive error. */
@@ -797,6 +1600,7 @@ class EncounterSession {
     };
     journal.pages.push(page);
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return clonePlainData(page);
   }
 
@@ -817,6 +1621,7 @@ class EncounterSession {
       page.content = input.content;
     }
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return clonePlainData(page);
   }
 
@@ -830,6 +1635,7 @@ class EncounterSession {
     }
     const removed = journal.pages.splice(index, 1)[0];
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return { ok: true, page: clonePlainData(removed) };
   }
 
@@ -853,6 +1659,7 @@ class EncounterSession {
     }
     journal.pages = ordered;
     this._emitDirectoriesUpdate();
+    this._scheduleSave();
     return clonePlainData(journal.pages);
   }
 
@@ -880,15 +1687,25 @@ class EncounterSession {
     };
 
     if (user && user.characterId) {
-      const combatant = this.combatants.get(user.characterId);
-      if (combatant) {
-        author.name = combatant.name;
-        author.characterName = combatant.name;
-        author.avatar =
-          combatant.img ||
-          combatant.avatar ||
-          (combatant.data && (combatant.data.img || combatant.data.avatar)) ||
-          null;
+      // Step 4.8: profiles can now point at a directory character sheet.
+      const actorEntry = this.directories.actors.entries.find(function (entry) {
+        return entry.id === user.characterId;
+      });
+      if (actorEntry) {
+        author.name = actorEntry.name;
+        author.characterName = actorEntry.name;
+        author.avatar = actorEntry.img || null;
+      } else {
+        const combatant = this.combatants.get(user.characterId);
+        if (combatant) {
+          author.name = combatant.name;
+          author.characterName = combatant.name;
+          author.avatar =
+            combatant.img ||
+            combatant.avatar ||
+            (combatant.data && (combatant.data.img || combatant.data.avatar)) ||
+            null;
+        }
       }
     }
 
@@ -931,6 +1748,7 @@ class EncounterSession {
 
     this._chatSequence += 1;
     this.chatLog.push(message);
+    this._scheduleSave();
     return cloneChatMessage(message);
   }
 
@@ -957,6 +1775,7 @@ class EncounterSession {
     }
 
     this.chatLog.splice(index, 1);
+    this._scheduleSave();
     return { ok: true, message: cloneChatMessage(message) };
   }
 
@@ -964,6 +1783,9 @@ class EncounterSession {
   clearChat() {
     const removed = this.chatLog.length;
     this.chatLog.length = 0;
+    if (removed > 0) {
+      this._scheduleSave();
+    }
     return removed;
   }
 
@@ -980,6 +1802,7 @@ class EncounterSession {
       return { ok: false, reason: "permission-denied" };
     }
     message.visibility = normalizeChatVisibility(visibility);
+    this._scheduleSave();
     return { ok: true, message: cloneChatMessage(message) };
   }
 
@@ -1077,6 +1900,12 @@ class EncounterSession {
     if (!combatant || !spec || typeof spec !== "object") {
       return;
     }
+    // Step 4.8: tokens belong to the scene that was active when they were added.
+    if (typeof spec.sceneId === "string" && spec.sceneId.trim() !== "") {
+      combatant.sceneId = spec.sceneId.trim();
+    } else if (combatant.sceneId === undefined) {
+      combatant.sceneId = this.activeSceneId;
+    }
     if (!combatant.img && typeof spec.img === "string" && spec.img.trim() !== "") {
       combatant.img = spec.img.trim();
     }
@@ -1086,6 +1915,15 @@ class EncounterSession {
       spec.avatar.trim() !== ""
     ) {
       combatant.avatar = spec.avatar.trim();
+    }
+    // Step 4.8.5: keep the directory actor binding on the combatant so the
+    // canvas can match an actor token to its combat tracker entry.
+    if (
+      typeof spec.actorId === "string" &&
+      spec.actorId.trim() !== "" &&
+      combatant.actorId === undefined
+    ) {
+      combatant.actorId = spec.actorId.trim();
     }
   }
 
@@ -1556,6 +2394,7 @@ class EncounterSession {
       return {
         version: Serializer.SERIALIZATION_VERSION,
         status: this.status,
+        activeSceneId: this.activeSceneId,
         encounter: null,
         map: Serializer.serializeMap(this.map),
         combatants: [],
@@ -1568,6 +2407,17 @@ class EncounterSession {
       combatants: encounter.getOrder(),
     });
     state.status = this.status;
+    // The headless serializer does not know about presentation-scoped scenes,
+    // so re-attach the room-level scene binding for the client token filter.
+    state.activeSceneId = this.activeSceneId;
+    state.combatants = state.combatants.map((combatant) => {
+      const source = this.combatants.get(combatant.id);
+      return Object.assign({}, combatant, {
+        sceneId: source && source.sceneId !== undefined ? source.sceneId : null,
+        actorId:
+          source && source.actorId !== undefined ? source.actorId : null,
+      });
+    });
     return state;
   }
 
@@ -1637,13 +2487,20 @@ class EncounterSession {
           currentHP: combatant.currentHP,
           maxHP: combatant.maxHP,
           defeated: Boolean(combatant.isDefeated),
+          sceneId: combatant.sceneId === undefined ? null : combatant.sceneId,
+          actorId:
+            combatant.actorId === undefined ? null : combatant.actorId,
         };
       }),
       members: Array.from(this.members.values()).map(function (member) {
         return { id: member.id, name: member.name, role: member.role };
       }),
       users: this.getUsers(),
-      directories: this.getDirectories(),
+      directories: this.getDirectories({ includeFog: false }),
+      activeSceneId: this.activeSceneId,
+      sceneCanvas: this.getSceneCanvas(this.activeSceneId),
+      // Step 5.3: encoded fog texture of the active scene.
+      sceneFogExploration: this.getSceneFog(this.activeSceneId),
     };
   }
 }

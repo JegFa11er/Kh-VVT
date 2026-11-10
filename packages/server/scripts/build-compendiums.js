@@ -42,6 +42,10 @@ const INCLUDED_TYPES = Object.freeze({
   feats: new Set(["feat"]),
   monsters: new Set(["npc"]),
   actions: new Set(["action"]),
+  ancestries: new Set(["ancestry"]),
+  heritages: new Set(["heritage"]),
+  backgrounds: new Set(["background"]),
+  classes: new Set(["class"]),
 });
 
 const CATEGORY_CONFIG = Object.freeze({
@@ -69,6 +73,26 @@ const CATEGORY_CONFIG = Object.freeze({
     label: "Actions",
     packs: ["actions", "adventure-specific-actions"],
     includeTypes: INCLUDED_TYPES.actions,
+  },
+  ancestries: {
+    label: "Ancestries",
+    packs: ["ancestries"],
+    includeTypes: INCLUDED_TYPES.ancestries,
+  },
+  heritages: {
+    label: "Heritages",
+    packs: ["heritages"],
+    includeTypes: INCLUDED_TYPES.heritages,
+  },
+  backgrounds: {
+    label: "Backgrounds",
+    packs: ["backgrounds"],
+    includeTypes: INCLUDED_TYPES.backgrounds,
+  },
+  classes: {
+    label: "Classes",
+    packs: ["classes"],
+    includeTypes: INCLUDED_TYPES.classes,
   },
 });
 
@@ -683,14 +707,31 @@ function normalizeItem(raw, category, source) {
 }
 
 function makeIndexEntry(item) {
-  return {
+  const entry = {
     id: item.id,
     name: item.name,
     type: item.type,
     level: item.level,
     traits: item.traits,
     img: item.img,
+    source: item.source,
   };
+
+  // Step 4.8.2: heritages are filtered by their ancestry. Versatile heritages
+  // (Nephilim, Dhampir, ...) have no ancestry link and are available to every
+  // character, so the flag has to be part of the compact index.
+  if (item.type === "heritage") {
+    const ancestry = item.system && item.system.ancestry;
+    const traits = Array.isArray(item.traits) ? item.traits : [];
+    entry.ancestry = ancestry && typeof ancestry.slug === "string" ? ancestry.slug : null;
+    entry.ancestryName =
+      ancestry && typeof ancestry.name === "string" ? ancestry.name : null;
+    // Versatile heritages have no ancestry link. The explicit trait is also
+    // honoured for future data packs that mark them directly.
+    entry.versatile = !ancestry || traits.includes("versatile");
+  }
+
+  return entry;
 }
 
 // -------------------------------------------------------------- file helpers

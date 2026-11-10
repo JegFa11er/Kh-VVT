@@ -30,6 +30,7 @@ const StoreContext = createContext({
   directories: EMPTY_DIRECTORIES,
   activeRole: "player",
   connected: false,
+  activeSceneId: null,
   activeTool: "token",
   activeSubTool: "select",
   setCombatState: () => {},
@@ -79,6 +80,8 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
   // Folders/entities for the right-sidebar directories (Step 4.5).
   const [directories, setDirectories] = useState(EMPTY_DIRECTORIES);
   const [activeRole, setActiveRole] = useState(normalizeRole(initialRole));
+  // Active scene selected in the Scenes directory (Step 4.8).
+  const [activeSceneId, setActiveSceneId] = useState(null);
   const [connected, setConnected] = useState(
     Boolean(networkClient && networkClient.connected),
   );
@@ -113,6 +116,9 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
       }
       if (payload && payload.session) {
         setCombatState((current) => current || payload.session);
+        if (payload.session.activeSceneId !== undefined) {
+          setActiveSceneId(payload.session.activeSceneId || null);
+        }
         if (Array.isArray(payload.session.users)) {
           setUsers(payload.session.users);
         }
@@ -125,6 +131,9 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
     const unsubscribeSnapshot = networkClient.on("session:snapshot", (snapshot) => {
       if (snapshot) {
         setCombatState((current) => mergeRoomSnapshot(current, snapshot));
+        if (snapshot.activeSceneId !== undefined) {
+          setActiveSceneId(snapshot.activeSceneId || null);
+        }
         if (Array.isArray(snapshot.users)) {
           setUsers(snapshot.users);
         }
@@ -140,6 +149,14 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
 
     const unsubscribeChat = networkClient.onChatUpdate((nextChatLog) => {
       setChatLog(Array.isArray(nextChatLog) ? nextChatLog : []);
+    });
+
+    // Scene activation changes the PixiJS canvas; the directory panel still
+    // needs the id to highlight the active card.
+    const unsubscribeScene = networkClient.onSceneActivated((payload) => {
+      if (payload) {
+        setActiveSceneId(payload.activeSceneId || null);
+      }
     });
 
     const unsubscribeDirectories = networkClient.onDirectoriesUpdate(
@@ -159,6 +176,7 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
       unsubscribeSnapshot();
       unsubscribeUsers();
       unsubscribeChat();
+      unsubscribeScene();
       unsubscribeDirectories();
       unsubscribeOpen();
       unsubscribeClose();
@@ -175,6 +193,7 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
       directories,
       activeRole,
       connected,
+      activeSceneId,
       activeTool,
       activeSubTool,
       setCombatState,
@@ -191,6 +210,7 @@ export function StoreProvider({ networkClient, initialRole = "player", children 
       directories,
       activeRole,
       connected,
+      activeSceneId,
       activeTool,
       activeSubTool,
     ],

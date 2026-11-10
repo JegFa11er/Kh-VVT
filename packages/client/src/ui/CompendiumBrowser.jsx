@@ -19,7 +19,7 @@ const TABS = [
   { id: "equipment", label: "Снаряжение", category: "equipment" },
 ];
 
-function buildUrl(tab, search, limit) {
+function buildUrl(tab, search, limit, minLevel, maxLevel) {
   const params = new URLSearchParams();
   if (search.trim() !== "") {
     params.set("search", search.trim());
@@ -31,6 +31,12 @@ function buildUrl(tab, search, limit) {
     // The server's filter contract only understands `type`, while the bestiary
     // catalog stores creatures with `type: "npc"`.
     params.set("type", "npc");
+  }
+  if (minLevel.trim() !== "") {
+    params.set("minLevel", minLevel.trim());
+  }
+  if (maxLevel.trim() !== "") {
+    params.set("maxLevel", maxLevel.trim());
   }
   params.set("limit", String(limit));
   const query = params.toString();
@@ -51,10 +57,37 @@ function buildDragPayload(tab, entry) {
   };
 }
 
-function CompendiumCard({ tab, entry }) {
+function descriptionFor(entry) {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+  if (typeof entry.description === "string" && entry.description.trim() !== "") {
+    return entry.description;
+  }
+  const systemDescription = entry.system && entry.system.description;
+  if (
+    systemDescription &&
+    typeof systemDescription.value === "string" &&
+    systemDescription.value.trim() !== ""
+  ) {
+    return systemDescription.value;
+  }
+  return "";
+}
+
+function imageFor(entry) {
+  return entry && typeof entry.img === "string" && entry.img.trim() !== ""
+    ? entry.img
+    : PLACEHOLDER_IMAGE;
+}
+
+function CompendiumCard({ tab, entry, onOpen }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const pressRef = useRef(null);
+  const draggedRef = useRef(false);
 
   const handleDragStart = (event) => {
+    draggedRef.current = true;
     const payload = buildDragPayload(tab, entry);
     const serialized = JSON.stringify(payload);
 
@@ -63,13 +96,56 @@ function CompendiumCard({ tab, entry }) {
     event.dataTransfer.setData("text/plain", serialized);
   };
 
+  const handleDragEnd = () => {
+    // A trailing click can fire right after dragend; keep the guard for a
+    // moment so dragging a card never opens the detail modal.
+    setTimeout(() => {
+      draggedRef.current = false;
+    }, 150);
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    pressRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handlePointerUp = (event) => {
+    const start = pressRef.current;
+    pressRef.current = null;
+    if (!start || draggedRef.current) {
+      return;
+    }
+    const distance = Math.hypot(
+      event.clientX - start.x,
+      event.clientY - start.y,
+    );
+    if (distance <= 5) {
+      onOpen(entry);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpen(entry);
+    }
+  };
+
   const tags = Array.isArray(entry.traits) ? entry.traits : [];
 
   return (
     <article
       className="compendium-card"
       draggable
+      role="button"
+      tabIndex={0}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onKeyDown={handleKeyDown}
       title={entry.name}
     >
       <img
@@ -117,7 +193,7 @@ function CompendiumCard({ tab, entry }) {
  * typing quickly only hits the backend with the latest query. Cards are
  * HTML5-draggable: the drag payload is
  * `{ type: "compendium-item", category, entry }` for future character-sheet
- * drop targets.
+ * drop targets. A regular click opens a read-only detail modal instead.
  */
 export default function CompendiumBrowser({ onClose, initialTabId }) {
   const [activeTabId, setActiveTabId] = useState(() =>
@@ -125,12 +201,23 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
   );
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [minLevel, setMinLevel] = useState("");
+  const [maxLevel, setMaxLevel] = useState("");
+  const [debouncedMinLevel, setDebouncedMinLevel] = useState("");
+  const [debouncedMaxLevel, setDebouncedMaxLevel] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [entries, setEntries] = useState([]);
   const [total, setTotal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [position, setPosition] = useState(null);
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
   const abortRef = useRef(null);
+  const detailAbortRef = useRef(null);
+  const dragRef = useRef(null);
 
   const activeTab = useMemo(
     () => TABS.find((tab) => tab.id === activeTabId) || TABS[0],
@@ -145,13 +232,17 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
   }, [initialTabId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setDebouncedMinLevel(minLevel);
+      setDebouncedMaxLevel(maxLevel);
+    }, 250);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, minLevel, maxLevel]);
 
   useEffect(() => {
     setLimit(PAGE_SIZE);
-  }, [activeTabId, debouncedSearch]);
+  }, [activeTabId, debouncedSearch, debouncedMinLevel, debouncedMaxLevel]);
 
   useEffect(() => {
     if (abortRef.current) {
@@ -164,10 +255,19 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
     setLoading(true);
     setError(null);
 
-    fetch(buildUrl(activeTab, debouncedSearch, limit), {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    })
+    fetch(
+      buildUrl(
+        activeTab,
+        debouncedSearch,
+        limit,
+        debouncedMinLevel,
+        debouncedMaxLevel,
+      ),
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      },
+    )
       .then((response) => {
         if (!response.ok) {
           throw new Error("HTTP " + response.status + " " + response.statusText);
@@ -197,11 +297,144 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
       cancelled = true;
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, limit]);
+  }, [
+    activeTab,
+    debouncedSearch,
+    debouncedMinLevel,
+    debouncedMaxLevel,
+    limit,
+  ]);
+
+  // Close any open detail modal when the user switches catalogs.
+  useEffect(() => {
+    if (detailAbortRef.current) {
+      detailAbortRef.current.abort();
+      detailAbortRef.current = null;
+    }
+    setSelectedEntry(null);
+    setDetail(null);
+    setDetailLoading(false);
+    setDetailError(null);
+  }, [activeTabId]);
+
+  const closeDetail = () => {
+    if (detailAbortRef.current) {
+      detailAbortRef.current.abort();
+      detailAbortRef.current = null;
+    }
+    setSelectedEntry(null);
+    setDetail(null);
+    setDetailLoading(false);
+    setDetailError(null);
+  };
+
+  const openDetail = (entry) => {
+    if (detailAbortRef.current) {
+      detailAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    detailAbortRef.current = controller;
+
+    setSelectedEntry(entry);
+    setDetail(null);
+    setDetailLoading(true);
+    setDetailError(null);
+
+    fetch(
+      "/api/compendiums/" +
+        activeTab.category +
+        "/" +
+        encodeURIComponent(entry.id),
+      { signal: controller.signal, headers: { Accept: "application/json" } },
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status + " " + response.statusText);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setDetail(data);
+        setDetailLoading(false);
+      })
+      .catch((fetchError) => {
+        if (controller.signal.aborted || fetchError.name === "AbortError") {
+          return;
+        }
+        setDetailError(fetchError.message);
+        setDetailLoading(false);
+      });
+  };
+
+  // Drag the window by its header. Pointer capture keeps the window attached
+  // to the cursor even when it leaves the header area.
+  const handleHeaderPointerDown = (event) => {
+    if (event.button !== 0 || event.target.closest("button")) {
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+    if (event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    event.preventDefault();
+  };
+
+  const handleHeaderPointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || event.pointerId !== drag.pointerId) {
+      return;
+    }
+    const maxX = Math.max(0, window.innerWidth - 120);
+    const maxY = Math.max(0, window.innerHeight - 48);
+    setPosition({
+      x: Math.min(maxX, Math.max(0, event.clientX - drag.offsetX)),
+      y: Math.min(maxY, Math.max(0, event.clientY - drag.offsetY)),
+    });
+  };
+
+  const handleHeaderPointerUp = (event) => {
+    const drag = dragRef.current;
+    if (!drag || event.pointerId !== drag.pointerId) {
+      return;
+    }
+    dragRef.current = null;
+    if (event.currentTarget.releasePointerCapture) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const hasSearch = debouncedSearch.trim() !== "";
+  const hasLevelFilter =
+    debouncedMinLevel.trim() !== "" || debouncedMaxLevel.trim() !== "";
+  const isFiltered = hasSearch || Boolean(activeTab.type) || hasLevelFilter;
+
+  const detailEntry = detail || selectedEntry;
+  const detailDescription = descriptionFor(detailEntry);
+  const detailTraits = Array.isArray(detailEntry && detailEntry.traits)
+    ? detailEntry.traits
+    : [];
 
   return (
-    <section className="ui-window compendium-browser" aria-label="Compendium Browser">
-      <header className="ui-window__header">
+    <section
+      className="ui-window compendium-browser"
+      aria-label="Compendium Browser"
+      style={position ? { left: position.x, top: position.y } : undefined}
+    >
+      <header
+        className="ui-window__header compendium-browser__header"
+        onPointerDown={handleHeaderPointerDown}
+        onPointerMove={handleHeaderPointerMove}
+        onPointerUp={handleHeaderPointerUp}
+        onPointerCancel={handleHeaderPointerUp}
+      >
         <div className="ui-window__title">
           <span className="ui-window__icon" aria-hidden="true">
             📖
@@ -246,10 +479,38 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
           onChange={(event) => setSearch(event.target.value)}
           aria-label="Поиск в компендиуме"
         />
+        <div className="compendium-levels" role="group" aria-label="Фильтр по уровню">
+          <label className="compendium-levels__field">
+            <span>От</span>
+            <input
+              type="number"
+              className="ui-input compendium-levels__input"
+              min={-1}
+              max={30}
+              step={1}
+              value={minLevel}
+              onChange={(event) => setMinLevel(event.target.value)}
+              aria-label="Минимальный уровень"
+            />
+          </label>
+          <label className="compendium-levels__field">
+            <span>До</span>
+            <input
+              type="number"
+              className="ui-input compendium-levels__input"
+              min={-1}
+              max={30}
+              step={1}
+              value={maxLevel}
+              onChange={(event) => setMaxLevel(event.target.value)}
+              aria-label="Максимальный уровень"
+            />
+          </label>
+        </div>
         <span className="compendium-browser__count">
           {loading
             ? "Загрузка…"
-            : debouncedSearch.trim() !== "" || activeTab.type
+            : isFiltered
               ? "Показано: " + entries.length
               : total !== null
                 ? "Показано: " + entries.length + " из " + total
@@ -274,6 +535,7 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
               key={String(entry.id)}
               tab={activeTab}
               entry={entry}
+              onOpen={openDetail}
             />
           ))}
         </div>
@@ -285,11 +547,7 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
             onClick={() => setLimit((current) => current + PAGE_SIZE)}
           >
             Показать ещё ({entries.length}
-            {total !== null &&
-            debouncedSearch.trim() === "" &&
-            !activeTab.type
-              ? " из " + total
-              : ""})
+            {total !== null && !isFiltered ? " из " + total : ""})
           </button>
         ) : null}
       </div>
@@ -298,6 +556,80 @@ export default function CompendiumBrowser({ onClose, initialTabId }) {
         Перетащите карточку на лист персонажа — payload:{" "}
         <code>{'{ type: "compendium-item", category, entry }'}</code>
       </footer>
+
+      {selectedEntry ? (
+        <div
+          className="compendium-detail__backdrop"
+          role="presentation"
+          onClick={closeDetail}
+        >
+          <div
+            className="compendium-detail"
+            role="dialog"
+            aria-modal="true"
+            aria-label={detailEntry ? detailEntry.name : "Описание"}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="compendium-detail__header">
+              <img
+                className="compendium-detail__image"
+                src={imageFor(detailEntry)}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.src = PLACEHOLDER_IMAGE;
+                }}
+              />
+              <div className="compendium-detail__heading">
+                <h2 className="compendium-detail__name">
+                  {detailEntry ? detailEntry.name : selectedEntry.name}
+                </h2>
+                <div className="compendium-detail__meta">
+                  <span className="compendium-detail__type">
+                    {detailEntry ? detailEntry.type : selectedEntry.type}
+                  </span>
+                  {typeof selectedEntry.level === "number" ? (
+                    <span className="compendium-detail__level">
+                      Уровень {selectedEntry.level}
+                    </span>
+                  ) : null}
+                </div>
+                {detailTraits.length > 0 ? (
+                  <div className="compendium-detail__traits">
+                    {detailTraits.map((trait) => (
+                      <span className="compendium-tag" key={trait}>
+                        {trait}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="ui-window__close"
+                onClick={closeDetail}
+                aria-label="Закрыть описание"
+              >
+                ×
+              </button>
+            </header>
+            <div className="compendium-detail__body">
+              {detailLoading ? (
+                <div className="compendium-detail__state">Загрузка описания…</div>
+              ) : detailError ? (
+                <div className="compendium-detail__state compendium-detail__state--error">
+                  Не удалось загрузить описание: {detailError}
+                </div>
+              ) : detailDescription !== "" ? (
+                <p>{detailDescription}</p>
+              ) : (
+                <div className="compendium-detail__state">
+                  Описание отсутствует.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

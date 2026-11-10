@@ -16,6 +16,9 @@ const backendUrl = process.env.PF2E_SERVER_URL || "http://localhost:3000";
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ["@pf2e/core/src/actor/prepare-data.js"],
+  },
   server: {
     host: true,
     port: 5173,
@@ -34,5 +37,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    commonjsOptions: {
+      include: [/node_modules/, /packages[\\/]core[\\/]/],
+    },
   },
 });

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 import CompendiumBrowser from "./CompendiumBrowser.jsx";
+import Hotbar from "./Hotbar.jsx";
 import PlayerList from "./PlayerList.jsx";
+import ToastHost from "./ToastHost.jsx";
 import Toolbar from "./Toolbar.jsx";
 import RightSidebar from "./sidebar/RightSidebar.jsx";
 import { useStore } from "./StoreContext.jsx";
@@ -52,6 +54,8 @@ export default function App() {
     <div className="ui-layer">
       <Toolbar />
       <PlayerList />
+      <Hotbar />
+      <ToastHost />
       <RightSidebar onOpenCompendium={openCompendium} />
 
       <div className="ui-topbar">

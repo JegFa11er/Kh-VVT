@@ -74,6 +74,10 @@ const State = {
   Serializer: require("./Core/State/serializer.js"),
 };
 
+const Actor = {
+  PrepareData: require("./actor/prepare-data.js"),
+};
+
 module.exports = {
   Encounter,
   Initiative,
@@ -88,4 +92,5 @@ module.exports = {
   Grid,
   AI,
   State,
+  Actor,
 };

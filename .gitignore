@@ -5,3 +5,5 @@ dist/
 
 packages/server/data/uploads/*
 !packages/server/data/uploads/.gitkeep
+packages/server/data/session.json
+packages/server/data/session.json.tmp

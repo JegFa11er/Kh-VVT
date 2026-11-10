@@ -18,7 +18,7 @@ function normalizeColor(value) {
  * actor that is already on the scene.
  */
 export default function PlayerConfigModal({ user, onClose }) {
-  const { networkClient, combatState } = useStore();
+  const { networkClient, combatState, directories } = useStore();
   const [name, setName] = useState(user.name || "");
   const [color, setColor] = useState(normalizeColor(user.color));
   const [pronouns, setPronouns] = useState(user.pronouns || "");
@@ -30,6 +30,14 @@ export default function PlayerConfigModal({ user, onClose }) {
     combatState && Array.isArray(combatState.combatants)
       ? combatState.combatants
       : [];
+  // Step 4.8: player-character sheets are owned by linking a directory actor.
+  // Combatants remain selectable for battle-token identity binding.
+  const actorEntries = (
+    directories && directories.actors && Array.isArray(directories.actors.entries)
+      ? directories.actors.entries
+      : []
+  ).filter((entry) => entry.actorType !== "npc");
+  const actorIds = new Set(actorEntries.map((entry) => entry.id));
   // `input[type=color]` only accepts a full hex value; keep the text field
   // free-form so the user can type a hex code directly.
   const pickerColor = HEX_COLOR.test(color) ? color : FALLBACK_COLOR;
@@ -156,11 +164,26 @@ export default function PlayerConfigModal({ user, onClose }) {
               onChange={(event) => setCharacterId(event.target.value)}
             >
               <option value="">— Без персонажа —</option>
-              {combatants.map((combatant) => (
-                <option key={combatant.id} value={combatant.id}>
-                  {combatant.name || combatant.id}
-                </option>
-              ))}
+              {actorEntries.length > 0 ? (
+                <optgroup label="Листы персонажей">
+                  {actorEntries.map((actor) => (
+                    <option key={actor.id} value={actor.id}>
+                      {actor.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {combatants.filter((combatant) => !actorIds.has(combatant.id)).length > 0 ? (
+                <optgroup label="Токены боя">
+                  {combatants
+                    .filter((combatant) => !actorIds.has(combatant.id))
+                    .map((combatant) => (
+                      <option key={combatant.id} value={combatant.id}>
+                        {combatant.name || combatant.id}
+                      </option>
+                    ))}
+                </optgroup>
+              ) : null}
             </select>
           </label>
 

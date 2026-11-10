@@ -297,8 +297,56 @@ export class NetworkClient {
     return this.send(type, data, { expectReply: false });
   }
 
-  addJournalPage(journalId, data = {}) {
+  /**
+   * Persist a player-character sheet (Step 4.8). The server replaces the
+   * actor's `system` payload atomically and broadcasts the updated directory.
+   */
+  updateActor(actorId, data = {}) {
     return this.send(
+      "room:update-actor",
+      {
+        actorId,
+        name: data.name,
+        system: data.system,
+        items: data.items,
+      },
+      { expectReply: false },
+    );
+  }
+
+  /**
+   * Step 4.8.5: bind a directory actor to a scene token. The server stores the
+   * token inside `scenes[sceneId].tokens` and rebroadcasts the scene canvas.
+   */
+  createToken(data = {}) {
+    return this.send(
+      "room:create-token",
+      {
+        actorId: data.actorId,
+        sceneId: data.sceneId || null,
+        x: data.x,
+        y: data.y,
+      },
+      { expectReply: false },
+    );
+  }
+
+  /**
+   * Subscribe to the focused actor-sheet update (`room:update-actor`). The
+   * payload carries the complete actor entry, so canvas layers can refresh HP
+   * bars without walking the directory tree.
+   */
+  onActorUpdate(callback) {
+    return this.on("room:update-actor", (payload) => {
+      if (payload && payload.actor) {
+        callback(payload.actor, payload);
+        return;
+      }
+      callback(payload || null, payload || null);
+    });
+  }
+
+  addJournalPage(journalId, data = {}) {    return this.send(
       "room:journal-page-add",
       { journalId, name: data.name, content: data.content },
       { expectReply: false },
@@ -329,9 +377,95 @@ export class NetworkClient {
     );
   }
 
+  /**
+   * Active-scene manager (Step 4.8). Activating a scene broadcasts
+   * `room:scene-activated` with the scene canvas payload.
+   */
+  activateScene(sceneId) {
+    return this.send(
+      "room:activate-scene",
+      { sceneId: sceneId || null },
+      { expectReply: false },
+    );
+  }
+
+  /**
+   * Replace the canvas arrays of a scene. The server stores them on the scene
+   * directory entry (`scenes[id].walls/drawings/lights`) and persists
+   * `data/session.json`.
+   */
+  updateSceneCanvas(sceneId, canvas = {}) {
+    return this.send(
+      "room:scene-canvas-update",
+      {
+        sceneId: sceneId || null,
+        canvas: {
+          walls: Array.isArray(canvas.walls) ? canvas.walls : [],
+          drawings: Array.isArray(canvas.drawings) ? canvas.drawings : [],
+          lights: Array.isArray(canvas.lights) ? canvas.lights : [],
+          tokens: Array.isArray(canvas.tokens) ? canvas.tokens : [],
+        },
+      },
+      { expectReply: false },
+    );
+  }
+
+  onSceneActivated(callback) {
+    return this.on("room:scene-activated", callback);
+  }
+
+  onSceneCanvasUpdate(callback) {
+    return this.on("room:scene-canvas-update", callback);
+  }
+
+  /**
+   * Step 5.3: persist the accumulated fog-of-war texture. The payload is a
+   * `data:image/png;base64,…` string produced by `renderer.extract.base64()`.
+   */
+  updateFog(sceneId, fogExploration) {
+    return this.send(
+      "room:update-fog",
+      { sceneId: sceneId || null, fogExploration: fogExploration || null },
+      { expectReply: false },
+    );
+  }
+
+  /** Step 5.3: wipe the server copy of the fog and broadcast the reset. */
+  resetFog(sceneId) {
+    return this.send(
+      "room:reset-fog",
+      { sceneId: sceneId || null },
+      { expectReply: false },
+    );
+  }
+
+  /** Subscribe to fog texture updates from other clients. */
+  onFogUpdate(callback) {
+    return this.on("room:fog-update", callback);
+  }
+
+  /** Subscribe to fog resets from other clients / the GM. */
+  onFogReset(callback) {
+    return this.on("room:fog-reset", callback);
+  }
+
+  /** Step 4.8.5: acknowledgement of a successfully created scene token. */
+  onTokenCreated(callback) {
+    return this.on("room:token-created", (payload) => {
+      callback(payload && payload.token ? payload.token : payload);
+    });
+  }
+
+  removeCombatant(combatantId) {
+    return this.send(
+      "room:remove-combatant",
+      { combatantId },
+      { expectReply: false },
+    );
+  }
+
   /** Combat Tracker controls (Step 4.5). */
-  startEncounter(initiative = {}) {
-    return this.send("room:start", { initiative }, { expectReply: false });
+  startEncounter(initiative = {}) {    return this.send("room:start", { initiative }, { expectReply: false });
   }
 
   nextTurn(options = {}) {

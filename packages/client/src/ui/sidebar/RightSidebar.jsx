@@ -1,10 +1,13 @@
 import { useState } from "react";
 
 import ChatPanel from "../ChatPanel.jsx";
+import CharacterSheet from "../windows/CharacterSheet.jsx";
 import JournalSheet from "../windows/JournalSheet.jsx";
+import { useStore } from "../StoreContext.jsx";
 import ChatToasts from "./ChatToasts.jsx";
 import CombatTracker from "./CombatTracker.jsx";
 import DirectoryPanel from "./DirectoryPanel.jsx";
+import FloatingChatInput from "./FloatingChatInput.jsx";
 import LibraryPanel from "./LibraryPanel.jsx";
 import SettingsPanel from "./SettingsPanel.jsx";
 
@@ -27,9 +30,32 @@ const TABS = [
  * control and remain visible over every other window.
  */
 export default function RightSidebar({ onOpenCompendium }) {
+  const { users, myUserId, activeRole } = useStore();
   const [activeTab, setActiveTab] = useState("chat");
   const [collapsed, setCollapsed] = useState(false);
   const [openJournalId, setOpenJournalId] = useState(null);
+  const [openActorId, setOpenActorId] = useState(null);
+  const [notice, setNotice] = useState("");
+
+  const showNotice = (message) => {
+    setNotice(message);
+    window.setTimeout(() => {
+      setNotice((current) => (current === message ? "" : current));
+    }, 4000);
+  };
+
+  /**
+   * Step 4.8: clicking a player-character actor opens the full sheet. A player
+   * may only open their own actor (or an unclaimed one); the GM opens any.
+   */
+  const openActor = (actorId) => {
+    const owner = (users || []).find((user) => user.characterId === actorId);
+    if (activeRole !== "gm" && owner && myUserId && owner.id !== myUserId) {
+      showNotice("Лист принадлежит игроку " + owner.name + ".");
+      return;
+    }
+    setOpenActorId(actorId);
+  };
 
   const selectTab = (tabId) => {
     setActiveTab(tabId);
@@ -45,7 +71,7 @@ export default function RightSidebar({ onOpenCompendium }) {
       case "scenes":
         return <DirectoryPanel kind="scenes" />;
       case "actors":
-        return <DirectoryPanel kind="actors" />;
+        return <DirectoryPanel kind="actors" onOpenActor={openActor} />;
       case "items":
         return <DirectoryPanel kind="items" />;
       case "journals":
@@ -113,10 +139,27 @@ export default function RightSidebar({ onOpenCompendium }) {
         onOpenChat={() => selectTab("chat")}
       />
 
+      {collapsed ? (
+        <FloatingChatInput onExpand={() => selectTab("chat")} />
+      ) : null}
+
+      {notice ? (
+        <div className="right-sidebar__notice" role="status">
+          {notice}
+        </div>
+      ) : null}
+
       {openJournalId ? (
         <JournalSheet
           journalId={openJournalId}
           onClose={() => setOpenJournalId(null)}
+        />
+      ) : null}
+
+      {openActorId ? (
+        <CharacterSheet
+          actorId={openActorId}
+          onClose={() => setOpenActorId(null)}
         />
       ) : null}
     </>
