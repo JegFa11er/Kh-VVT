@@ -27,6 +27,87 @@ function sourceLabel(entry) {
   return typeof source.pack === "string" ? source.pack : entry.type || "";
 }
 
+function normalizeFilterText(value) {
+  if (value && typeof value === "object") {
+    return normalizeFilterText(value.slug || value.name || "");
+  }
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+/**
+ * Step 5.5: heritage picks accept only universal heritages (`versatile`) or
+ * heritages strictly bound to the selected ancestry. The server already filters
+ * this way; the client repeats the predicate so a stale/loose API response can
+ * never leak a foreign ancestry into the picker.
+ */
+function filterCompendiumEntries(category, entries, filters) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (category !== "heritages") {
+    return list;
+  }
+  const active = filters || {};
+  const ancestry = normalizeFilterText(active.ancestry);
+  if (ancestry !== "") {
+    return list.filter((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return false;
+      }
+      if (entry.versatile === true) {
+        return true;
+      }
+      return (
+        normalizeFilterText(entry.ancestry) === ancestry ||
+        normalizeFilterText(entry.ancestryName) === ancestry
+      );
+    });
+  }
+  // Without an ancestry, only universal heritages are valid.
+  return list.filter((entry) => entry && entry.versatile === true);
+}
+
+/**
+ * Step 5.6: ancestry-bound heritages are listed first, universal (`versatile`)
+ * heritages after them. Both groups are alphabetical. The server sorts the same
+ * way; repeating it here keeps the picker correct for cached/loose payloads.
+ */
+function sortCompendiumEntries(category, entries, filters) {
+  const list = Array.isArray(entries) ? [...entries] : [];
+  if (category !== "heritages") {
+    return list;
+  }
+  const ancestry = normalizeFilterText((filters || {}).ancestry);
+  const groupOf = (entry) => {
+    if (!entry) {
+      return 1;
+    }
+    if (entry.versatile === true) {
+      return 1;
+    }
+    if (ancestry === "") {
+      return 0;
+    }
+    return normalizeFilterText(entry.ancestry) === ancestry ||
+      normalizeFilterText(entry.ancestryName) === ancestry
+      ? 0
+      : 1;
+  };
+  return list.sort((a, b) => {
+    const groupDelta = groupOf(a) - groupOf(b);
+    if (groupDelta !== 0) {
+      return groupDelta;
+    }
+    return String((a && a.name) || "").localeCompare(
+      String((b && b.name) || ""),
+      "ru",
+      { numeric: true, sensitivity: "base" },
+    );
+  });
+}
+
 /**
  * Minimal compendium picker used by the character sheet's ABC fields
  * (ancestry, heritage, background, class). It reads the same
@@ -82,7 +163,13 @@ export default function CompendiumSelectModal({
         return response.json();
       })
       .then((data) => {
-        setEntries(Array.isArray(data) ? data : []);
+        setEntries(
+          sortCompendiumEntries(
+            category,
+            filterCompendiumEntries(category, Array.isArray(data) ? data : [], activeFilters),
+            activeFilters,
+          ),
+        );
         setLoading(false);
       })
       .catch((fetchError) => {

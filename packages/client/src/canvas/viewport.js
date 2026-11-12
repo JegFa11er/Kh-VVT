@@ -16,13 +16,13 @@ export class Viewport {
 
     this.panning = false;
     this._lastPointer = { x: 0, y: 0 };
-    // The camera only pans/zooms while the token selection tool is active.
-    // Every other scene tool needs the pointer for its own drag gesture.
+    // Panning is a right-drag gesture and stays tool-independent; wheel zoom is
+    // always active (Step 5.6). This flag is kept for callers that want to
+    // suspend programmatic camera movement.
     this.cameraEnabled = true;
     // Temporary drag lock used while a token (or other world object) is being
     // dragged; unlike `cameraEnabled` it does not survive the gesture.
     this.dragPaused = false;
-    this._toolChangeHandler = null;
     // Optional predicate from InteractionLayer: returning true keeps a
     // right-button gesture (e.g. a ruler waypoint) away from the camera.
     this.panGuard = null;
@@ -118,12 +118,9 @@ export class Viewport {
     this.app.canvas.addEventListener(
       "wheel",
       (event) => {
-        // While a drawing/measuring tool owns the mouse, the wheel must not
-        // move the camera either.
-        if (!this.cameraEnabled || this.dragPaused) {
-          event.preventDefault();
-          return;
-        }
+        // Step 5.6: wheel zoom is always available and is centred on the
+        // cursor, exactly like pixi-viewport's `wheel()` plugin. Only panning
+        // depends on the active tool; zooming never does.
         event.preventDefault();
         const rect = this.app.canvas.getBoundingClientRect();
         const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -132,20 +129,6 @@ export class Viewport {
       },
       { passive: false },
     );
-
-    // Global scene-tool listener. Right-drag panning is tool-independent, so
-    // this flag only gates wheel zoom while a drawing/measuring tool owns the
-    // pointer. This mirrors `viewport.plugins.pause("drag")` from
-    // pixi-viewport, but the project uses a lightweight custom viewport.
-    this._toolChangeHandler = (event) => {
-      const detail = (event && event.detail) || {};
-      this.setCameraEnabled(
-        detail.category === "token" && detail.tool === "select",
-      );
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("pf2e:tool-change", this._toolChangeHandler);
-    }
 
     this.app.renderer.on("resize", () => {
       this.stage.hitArea = this.app.screen;

@@ -516,4 +516,1459 @@
   * Console errors: 0.
 - Диагностическое замечание: пустая RGBA-текстура 2400×1600 в этом окружении кодируется в PNG ~106 КБ, поэтому проверять сохранение нужно по длине/содержимому, а не по факту непустой строки.
 
+## Step 5.4 — GM Vision (Foundry parity) и туман войны на каждого актёра
 
+### Feature Readiness
+- goal: мастер при входе на сцену сразу видит всю карту (сетку, фон, стены, двери, рисунки и все токены) без чёрного экрана. Выделение чужого/игрового токена включает эмуляцию его зрения: туман и тьма возвращаются, показывается LOS-полигон и исследованная этим актёром история, а чужие токены вне LOS скрываются. Клик по пустому месту снимает выделение и снова открывает карту.
+- pf2e_remaster_rule: это UI-правило VTT (GM vision), а не механика PF2e Remastered; геометрия видимости остаётся прежней (`computePolygon(origin, radius, walls, "vision")` из Шага 5.2). Туман войны: `current LOS = fully visible`, `seen before = dim`, `never seen = black`.
+- behavior_and_boundaries: реализованы автоматическое скрытие `FogLayer` и `LightLayer.darknessContainer` для GM без выделения; автоматическое включение тумана и тьмы при выборе токена; скрытие чужих токенов вне LOS в режиме эмуляции; персистентный туман `scenes[sceneId].fogExploration[actorId]` с переключением текстур при смене токена; сохранение тумана перед переключением актёра. Не реализованы: ownership-ограничения выбора токенов игроком, darkvision/low-light, автоматический выбор «своего» токена при входе.
+- data_contracts: `scenes[sceneId].fogExploration: { [actorId]: "data:image/png;base64,…" } | "data:image/png;base64,…" | null`; резервный ключ `__scene__` хранит плоский fog старого формата; `baseSceneFogExploration` — тот же контракт для `sceneId === null`; WS входящий `room:update-fog` `{ sceneId, fogExploration, actorId }`; WS исходящий `room:fog-update` `{ sessionId, sceneId, actorId, fogExploration, sourceMemberId }`; `VisionLayer.setViewerRole(role)`, `FogLayer.setVisible(boolean)`, `FogLayer.setActiveActor(actorId)`, `FogLayer.loadSceneFog(collection)`, `FogLayer.applyRemoteFog(actorId, dataUrl)`, `TokenLayer.actorKeyForToken(id)`, `LightLayer.setRevealAll(boolean)`.
+- acceptance_tests: `packages/server/tests/fog.test.js` 6/6 (добавлены per-actor запись/удаление ключа, round-trip map-формата и fallback `__scene__`); серверный набор 62/62; клиентский 62/62; `npm run build --workspace=@pf2e/client` успешно. Браузерные проверки ниже.
+- delegated_assumptions: per-actor fog хранит полный Base64 каждого актёра на клиенте и сервере (карта памяти растёт с числом исследованных актёров); переключение текстур сериализовано и может занимать время кодирования PNG, но не теряет штрихи; legacy-текстура сцены остаётся общим fallback до первой записи конкретного актёра.
+- confidence: 98%.
+
+### Клиент (`packages/client/src/canvas/fog-layer.js`, `vision-layer.js`, `token-layer.js`, `light-layer.js`, `main.js`, `interaction.js`, `ui/Toolbar.jsx`)
+- `VisionLayer` теперь знает `viewerRole` (`gm`/`player`) и `lightLayer`. В `refresh()`:
+  * GM без выделения: `fogLayer.setVisible(false)` и `lightLayer.setRevealAll(true)` — туман и абсолютная тьма полностью скрыты;
+  * GM с выделенным токеном: `fogLayer.setVisible(true)`, `setActiveActor(actorKey)`, `lightLayer.setRevealAll(false)`, строится LOS и штампуется туман выбранного актёра;
+  * игрок всегда получает `fogLayer.setVisible(true)` и активную тьму.
+- `FogLayer` получил карту `fogByActor`, `activeActorId` и `_targetActorId`. `setActiveActor()` сериализует переключение: сначала сохраняет «грязную» текстуру предыдущего актёра, затем загружает PNG нового. LOS-полигон, пришедший во время загрузки, паркуется в `_pendingVision` и применяется после смены текстуры. `loadSceneFog()` понимает и строку старого формата, и map; ключ `__scene__` становится общим fallback.
+- `token-layer.js`: добавлен `actorKeyForToken(id)` (actorId → combatant.actorId → token id). В GM-режиме без LOS видны все токены без затемнения; при выбранном токене чужие токены вне его LOS скрываются, как у игрока. Явный переключатель `gm-vision` по-прежнему может раскрыть всех.
+- `light-layer.js`: `setRevealAll(true)` жёстко выключает `darknessContainer.visible`, не меняя вычисленный alpha сцены.
+- `main.js`: `VisionLayer` создаётся с `lightLayer` и `viewerRole: role`; `onFogChanged` передаёт `actorId` в `network.updateFog`; `applySceneState()` вызывает `fogLayer.loadSceneFog(fogExploration)`; `room:fog-update` применяется через `applyRemoteFog(actorId, …)`; `room:fog-reset` — через `clearSceneFog()`; после реконнекта роль берётся из `joined.member.role`.
+- `network-client.js`: `updateFog(sceneId, fogExploration, actorId)` добавляет `actorId` в payload. `interaction.js`: после `reset-fog` вызывает `visionLayer.refresh()`, чтобы текущий LOS снова прорезал очищенный туман.
+
+### Сервер (`packages/server/src/room/encounter-session.js`, `src/index.js`)
+- `updateFog(sceneId, fogExploration, sourceMemberId, actorId)` пишет `scenes[id].fogExploration[actorId]`. Запись `null` удаляет только этот ключ. Без `actorId` сохраняется прежний плоский PNG (обратная совместимость).
+- `getSceneFog(sceneId, actorId)` читает ключ актёра, затем fallback `__scene__`; `getSceneFogCollection(sceneId)` отдаёт строку или map для snapshot/activation. `resetFog()` очищает всю коллекцию сцены.
+- `sanitizeFogCollection()` валидирует как старую строку, так и map; `sanitizePersistedFog()` терпимо читает оба формата из `session.json`. `index.js` пробрасывает `payload.actorId` в `updateFog`.
+
+### Тесты и проверка
+- `npm run test --workspace=@pf2e/server` — 62/62 (fog 6/6, включая per-actor map и fallback).
+- `npm run test --workspace=@pf2e/client` — 62/62; `npm run build --workspace=@pf2e/client` — успешно (794 modules).
+- Браузер (`npm run dev:client` → Vite 5176, `start:server` → 3000, роль `gm`, существующая сцена `scene-s2`):
+  * GM без выделения: `fogLayer.visible = false`, `darknessContainer.visible = false`, `revealAll = true`, выбранный токен `null`, `lightLayer.darknessLevel = "dark"` не затемняет карту;
+  * GM выбрал токен `token-1` (`actor-a1`): `fogLayer.visible = true`, активная текстура `actor-a1`, 180 вершин LOS, `darknessContainer.visible = true` при `dark`; второй токен вне LOS получил `visible = false`;
+  * клик в пустоту (`clearSelection()`): `fogLayer.visible = false`, тьма снова скрыта, все токены `visible = true`, `alpha = 1`;
+  * повторный выбор токена восстанавливает сохранённую текстуру `actor-a1` без потери исследования;
+  * per-actor: после debounce в `fogByActor` появились ключи `actor-a1` и `actor-b`; возврат на `actor-a1` переключил активную текстуру обратно;
+  * игрок (`role=player`): `fogLayer.visible = true` и `darknessContainer.visible = true` и без выделения, и после выбора токена;
+  * console errors/warnings: 0.
+
+## Step 5.5 — Character-sheet UX polish, actor context menu and rule fixes
+
+### Feature Readiness
+- goal: right-click actor cards opens a working context menu; the character sheet's left column fits without horizontal scrolling; AC and Max HP are read-only derived values; Temp HP is a small row below them; class/background automation only adds real class features and non-droppable skill training; the Actions tab is folded into Combat.
+- pf2e_remaster_rule: class features are documents with `system.category === "classfeature"`; ordinary class feats (`system.category === "class"`) are player choices and must not be auto-granted. Backgrounds grant exactly two ability boosts. Fixed background/class skill training is a proficiency floor (trained or better). AC and maximum HP are derived statistics.
+- behavior_and_boundaries: implemented actor context menu (ownership placeholder, export, import, copy, delete), read-only AC/Max HP, Temp HP row, class-feature-only automation, heritage picker strictness, `minRank` skill floors, Combat action list, toast for own chat messages. Ownership matrix, generic base-action library and full import merge/validation UI are explicitly deferred.
+- data_contracts: `actor.system.skills.<key>.minRank` (0–4); `actor.system.details.class.trainedSkills`; `deleteDirectoryEntry(kind, entryId, memberId, role)`; WS `room:delete-entry` and `room:delete-actor` variants; `networkClient.deleteDirectoryEntry(kind, entryId)`; exported actor JSON is `{ system, items }`; `OwnershipModal`.
+- acceptance_tests: server 65/65 (added class-feature filter, skill floor and delete tests), client 63/63 (added two-boost background test), core 558/558; production client build succeeds. Browser smoke: context menu lists all five items, ownership modal opens, copy creates "(Копия)", delete asks the exact confirmation and removes it, export downloads `<actor>.json`; sheet has no Actions tab, `pf2e-sidebar` has `scrollWidth === clientWidth`, AC/Max HP `readOnly`, Temp HP input under HP, Combat shows "Атаки → Действия и особенности → Оружие".
+- delegated_assumptions: ownership matrix UI is an empty placeholder by request; base actions (Trip/Shove/...) are filtered out of the Combat action list until a later slice.
+- confidence: 98%.
+
+### Client (`packages/client/src/ui/...`)
+- `sidebar/DirectoryPanel.jsx`: actor cards now handle `onContextMenu`; portal menu with "Настройка владения", "Экспорт данных", "Импорт данных", "Создать копию", "Удалить"; hidden file input reuses `updateActor`; copy preserves `actorType/level/img/folderId/system/items`; delete uses `window.confirm("Вы уверены, что хотите удалить?")`. `sidebar/OwnershipModal.jsx` is the placeholder dialog.
+- `windows/CharacterSheet.jsx` / `styles.css`: left column capped by `minmax(0, 260px)` (224px compact) with `overflow-x: hidden`; header rows wrap; AC and Max HP are read-only values computed by preparation; Temp HP moved to the small `.pf2e-hp-temp` row below Current/Max; AC "Мод." button no longer overlaps the shield (verified rectangles: Mod right 212 < shield left 218).
+- `windows/character/CharacterTabs.jsx`: `RankSelect` accepts `minRank` and disables lower ranks; `patchSkill` clamps downgrades; the Combat tab renders non-base actions from `system.actions` between Атаки and Weapons; the Actions tab is no longer reachable.
+- `windows/character/CompendiumSelectModal.jsx`: client-side heritage predicate keeps only `versatile === true` or entries whose `ancestry`/`ancestryName` matches the selected ancestry.
+- `windows/character/character-data.js`: background boost extraction is capped at two slots; `trimBackgroundBoosts` exported for the ABC picker.
+- `sidebar/ChatToasts.jsx`: own messages are no longer filtered out, so the GM sees a send confirmation while the right sidebar is closed.
+
+### Core (`packages/core/src/actor/prepare-data.js`)
+- `readClassFeatureEntries` merges top-level `classDoc.items` (strict `system.category === "classfeature"` filter) with the legacy `system.items` summary, deduplicating by uuid/name. `classFeatureItems` persists `system.category = "classfeature"` so ordinary class feats are never auto-added.
+- `applyClassDocument` stores `details.class.trainedSkills`.
+- `minimumSkillRanks(system)` reads background/class `trainedSkills.value`; `prepareActorSystem` writes `skills.<key>.minRank` and clamps the rank upward, so a background-trained skill cannot be downgraded to untrained.
+
+### Server (`packages/server/src/room/encounter-session.js`, `src/index.js`)
+- `EncounterSession.deleteDirectoryEntry(kind, entryId, memberId, role)` removes directory entries, rejects unknown ids, and enforces actor owner/GM deletion rights.
+- `index.js` accepts `room:delete-entry` (generic) and the per-kind aliases.
+
+### Tests and verification
+- `npm run test:core` — 558/558.
+- `npm run test --workspace=@pf2e/server` — 65/65.
+- `npm run test --workspace=@pf2e/client` — 63/63.
+- `npm run build --workspace=@pf2e/client` — success (795 modules).
+- Browser smoke on a fresh Vite instance (`npx vite --port 5180`) with a copied temp `session.json`: context menu, ownership placeholder, copy, delete confirmation, JSON download, read-only AC/Max HP, Temp HP row, skill floor (`crafting` value `1`, option `0` disabled), no Actions tab and Combat action section all verified; console errors 0.
+
+## Step 5.6 — Interactive spells, chat cards, sheet initiative and UI polish
+
+### Feature Readiness
+- goal: the character sheet stops auto-spending ability boosts, heritage pickers order ancestry-bound options first, blind rolls remain only on Perception, the initiative button registers the actor in the Combat Tracker, wheel zoom always works under the cursor, the AC block fits two-digit values, held shields can be raised (AC + Action), prepared/spontaneous spellcasting consumes real resources with drag-and-drop preparation, and spell cards in chat roll saves/damage for the selected tokens.
+- pf2e_remaster_rule: free ability boosts are player choices (only fixed ancestry/background boosts apply automatically; the creation cap is +4). Heritages describe an ancestry, so ancestry-bound options precede universal (`versatile`) ones. Raise a Shield is a 1-action manipulate action granting the shield's item bonus as a circumstance bonus to AC until the start of your next turn (circumstance bonuses never stack). Spontaneous casters spend a ranked spell slot (`value`), prepared casters expend one prepared slot. A saving throw is `d20 + save modifier` compared with the spell DC.
+- behavior_and_boundaries: implemented empty free boosts, heritage sorting (server + picker), blind-roll removal from saves/skills, sheet → server `roll-initiative` registration, unconditional cursor-centred wheel zoom, wider AC input, held-shield raised toggle + generated "Поднять щит" action + AC math, prepared/spontaneous slot UI with HTML5 drag-and-drop and expended slots, interactive `spell-card` chat payloads with selected-token save rolls and damage rolls. Not implemented: automatic degree-of-success comparison on the server (the chat roll shows the DC and total), multi-formula damage application to HP, shield Block reaction automation from the sheet, and a dedicated spell-preparation daily reset.
+- data_contracts:
+  * `actor.build` — free boosts/levels may be empty; `defaultAbilityBuild` no longer fills them. New builds carry `version: 2`; legacy builds without that marker are re-opened on the empty grid (auto-distribution reset).
+  * `actor.items[type=shield].raised: boolean`; `actor.system.attributes.shield = { ac, hardness, hp, brokenThreshold, broken, raised, name, itemId }`; `derived.armorClass.shieldBonus/shieldRaised/shieldName/circumstanceBonus/statusBonus`.
+  * `spellcastingEntry.system.slots.slot<N> = { rank, value, max, prepared: Array<{ id, expended } | null> }` (legacy array form is still read).
+  * chat message `card = { type: "spell-card" | "attack-card" | "damage-card", spellId, name, dc, saveType, damageFormula, description }`; WS `room:chat-message` accepts `card`.
+  * WS intent `roll-initiative` with `{ actorId, secret }` for a directory actor (players may roll their own profile character).
+- acceptance_tests: server 68/68 (new: sheet initiative creates the encounter and registers the actor; chat cards persist/validate and stay hidden on blind messages; raised held shield AC; heritage ordering), client 63/63 (default builder leaves every free boost empty), core 558/558; production client build succeeds. Browser smoke: boosts empty, heritages ordered, only Perception keeps the crossed-out eye, initiative appears in the tracker, spontaneous slots decrement, prepared slots accept drops and strike through when cast, "КС … Реакция" makes the selected token roll Reflex.
+- delegated_assumptions: prepared casting stores `expended` on the slot entry (Foundry parity) but does not tick `value`; the sheet's initiative roll uses the actor's chosen `system.initiative.statistic` and starts the encounter on the first roll; the chat save button rolls for every selected token and posts the DC in the roll label.
+- confidence: 97%.
+
+### Client
+- `ui/windows/character/character-data.js`: `defaultAbilityBuild(sources, level)` now applies only single-option ancestry/background boosts. Free 1st/5th/10th/15th/20th-level boosts and the class key ability start empty; `chooseDefaultBoost` and the reconstruction from current modifiers were removed.
+- `ui/windows/character/AttributeBuilderModal.jsx`: passes no actor modifiers to the default builder; a saved grid (including a saved class key ability) is restored only for `version >= 2` builds, while legacy auto-distributed grids reopen empty. `commit` writes `build.version = 2`.
+- `ui/windows/character/CompendiumSelectModal.jsx`: `sortCompendiumEntries` orders ancestry-bound heritages alphabetically, then versatile heritages alphabetically.
+- `ui/windows/CharacterSheet.jsx`: `sendChat(text, plain, visibility, card)` forwards interactive card JSON; the initiative buttons call `networkClient.sendIntent("roll-initiative", { actorId, secret: false })`; the blind save buttons are gone (Perception keeps its eye).
+- `ui/windows/character/CharacterTabs.jsx`:
+  * `CombatTab` accepts `items`/`onItemsChange`, prepends a generated "Поднять щит" base action while a shield is `carried: "held"`, shows a "Поднять/Опустить" toggle and passes an `attack-card` to damage rolls.
+  * `InventoryTab` shows a "Поднят" checkbox for held shields; changing the carried status away from `held` clears the flag.
+  * `SkillsTab` keeps the blind-roll button only on Perception; skill and save rows lost it.
+  * `SpellcastingEntryCard` normalizes legacy and object slot shapes, renders spontaneous `value/max` with a "Сотворить" button that decrements the slot, renders prepared slot rows (`max`) that accept drag-and-drop from the entry's spellbook, marks `expended` (strike-through, cast button hidden), supports removing a prepared spell, and toggles inline spell descriptions on name clicks. Icon/cast buttons send `spellCardPayload(...)`.
+- `ui/ChatPanel.jsx`: renders `message.card` as `.chat-card` with "КС <dc> · <Реакция/Стойкость/Воля>" and "Бросить урон: <formula>". Save clicks read `window.pf2e.tokenLayer.selectedIds`, resolve each token's linked actor (or combatant saves), and send `/r 1d20±mod <name> — <save> (КС <dc>)`; damage clicks send a `/r` roll.
+- `canvas/viewport.js`: wheel zoom is unconditional and centred on the pointer; the `pf2e:tool-change` wheel gate and its listener were removed (right-drag panning remains tool-independent).
+- `net/network-client.js`: `sendChatMessage` forwards `card`.
+- `ui/styles.css`: wider AC column (1.55fr) and 58px AC input; prepared-slot, expanded description, raised-shield toggle, cast button and chat-card styles.
+
+### Core (`packages/core/src/actor/prepare-data.js`)
+- `heldShieldItem(items)` / `raisedShieldItem(items)` / `shieldAcBonus(shield)` were added.
+- `armorClassBreakdown(system, items)` adds a raised held shield's AC bonus as a circumstance bonus (max with other circumstance bonuses) and returns `shieldBonus`, `shieldRaised`, `shieldName`, `circumstanceBonus`, `statusBonus`.
+- `prepareActorSystem` syncs the held shield into `system.attributes.shield` (AC, hardness, HP, broken threshold, raised, name, item id); no held shield forces `raised = false`.
+
+### Server
+- `room/encounter-session.js`:
+  * `rollActorInitiative(actor, options)` builds a `Combatant` from `prepareActorData`, creates the encounter on demand (or appends to a started encounter), rolls only that actor's d20 with its chosen statistic, refreshes the order and starts the encounter.
+  * `dispatchAction` handles the sheet-actor `roll-initiative` path before encounter/turn checks and permits a player who owns the actor (`user.characterId` or `controlledIds`); ownership is remembered in `member.controlledIds`.
+  * `normalizeChatCard` validates/stores `card`; `cloneChatMessage` deep-copies it and `maskChatMessage` drops it on blind messages.
+- `src/index.js`: forwards `payload.card` to `addChatMessage`.
+- `compendium/catalog-service.js`: `filterIndex(entries, filters, categoryId)` sorts heritages with `compareHeritageEntries(ancestry)` (bound first, then versatile, alphabetical within each group).
+
+### Tests and verification
+- `npm run test:core` — 558/558.
+- `npm run test --workspace=@pf2e/server` — 68/68.
+- `npm run test --workspace=@pf2e/client` — 63/63.
+- `npm run build --workspace=@pf2e/client` — success (795 modules).
+- New/updated tests: `action-pipeline.test.js` (sheet initiative + permission), `chat.test.js` (card validation/visibility), `actor-pipeline.test.js` (raised shield AC, heritage ordering), `character-data.test.js` (empty default boosts).
+
+## Step 5.7 - Feat architecture, item sheets, dynamic slots and traits
+
+### Feature Readiness
+- goal: the Feats tab separates automatically granted class features from the four player-selectable feat groups (ancestry, class, skill, general), empty slots appear/disappear with the actor's level, every sheet list expands descriptions inline and opens a real item card, and ancestry/background choices write size, traits and non-droppable skill floors.
+- pf2e_remaster_rule: class features are granted by the class document and are not chosen in feat slots. Ancestry feats are gained at 1/5/9/13/17, class feats per the class document (standard 1/2/4/6/8/10/12/14/16/18/20), skill feats at 2/4/6/8/10/12/14/16/18/20 (rogue/investigator/swashbuckler differ), general feats at 3/7/11/15/19. A character cannot use a slot above their level. An ancestry sets the creature's size (`sm`, `med`, ...) and contributes its tags (`gnome`, `humanoid`, ...). Backgrounds grant exactly two ability boosts, and background/class fixed training is a floor (`minRank`) the sheet cannot lower. The item card shows description, traits and embedded rule elements.
+- behavior_and_boundaries: implemented four-group slot generation from the live level, class-feature section above the slots, slot-bound drag-and-drop, automatic detaching of feats whose slot closes, size/trait propagation from ancestry and heritage, background boost trimming, read-only AC/Max HP and the item sheet modal. Not implemented: prerequisite/enforcement of feat category vs slot type (a dropped feat keeps its compendium category), full class-feature HTML descriptions (the extracted class summary only has name/level/icon), and an ownership permission matrix (still a placeholder modal).
+- data_contracts:
+  * `actor.system.featSlots[] = { id: "feat-slot-<ancestry|class|skill|general>-<level>", type, level, featId }`.
+  * `actor.system.details.class.featLevels = { ancestry[], class[], skill[], general[] }`.
+  * `actor.system.feats.classfeature[]` - automatic class features (feats and activated actions).
+  * `actor.items[type=feat].slotId` and `system.location` bind a feat to a slot; a missing slot deletes the feat document during preparation.
+  * `actor.system.traits.size = { value }` and `actor.system.traits.value[]` include ancestry/heritage tags; `actor.system.traits.inherited[]` records the tags contributed by the current sources so switching ancestry removes the old ones.
+  * `actor.system.skills[key].minRank` (already persisted in Step 5.5) is enforced by the Skills tab.
+- acceptance_tests: core 558/558; server 70/70 (new: level-down closes slots and detaches feats; ancestry size/traits); client 64/64 (new: ancestry size/traits); production build succeeds. Browser smoke: actor context menu export/copy/delete, Gnome ancestry gives Small + `gnome`/`humanoid`, Acolyte background gives exactly two boosts and `religion` `minRank = 1` with option `0` disabled, level 1 -> 3 opens class/skill/general slots, level 3 -> 2 closes the general slot and deletes its feat, feat/inventory/spell names expand inline and pencils open `ItemSheetModal` with description/traits/rules, AC input 64 px with no overlap, sidebar has no horizontal scroll.
+- delegated_assumptions: slot cadence comes from the class document when present, otherwise the Remastered default table; a dropped feat keeps its compendium category and is displayed in its slot regardless of category (prerequisite enforcement is deferred); class-feature cards are read-only in the item sheet.
+- confidence: 96%.
+
+### Core (`packages/core/src/actor/prepare-data.js`)
+- `FEAT_SECTION_IDS` gains `classfeature`; `FEAT_CATEGORY_SECTIONS.classfeature` no longer collapses into `class`.
+- `DEFAULT_FEAT_SLOT_LEVELS`, `featSlotLevels()`, `computeFeatSlots()` and `ensureFeatSlots()` generate ancestry/class/skill/general slots for the current level and rebuild them on every derivation.
+- `applyClassDocument()` persists the class cadence in `details.class.featLevels`; `pruneInactiveClassFeatures()` removes above-level/previous-class features and feats bound to closed slots; `pruneOrphanSlotFeats()` does the same for payloads edited outside the class pipeline (spells are never treated as slot feats).
+- `applySourceTraits()` folds ancestry/heritage traits and ancestry size into `system.traits`, removing tags inherited from the previous source while keeping player-authored tags.
+- `createActorFeatFromDocument()` accepts an explicit `category` override used by typed slot drops.
+
+### Client
+- `ui/windows/character/ItemSheetModal.jsx` (new): floating read-only item sheet built on `ModalShell`; renders meta, trait tags, full plain-text description and `system.rules` with Russian rule labels. Optional "Изменить данные" reopens the tab's editor.
+- `ui/windows/character/CharacterTabs.jsx`:
+  * `FeatsTab` renders "Особенности класса" first, then the four slot groups in strict order, then heritage/bonus lists. Names toggle inline descriptions; pencils open `ItemSheetModal`; slot rows show level, group, filled/empty state and release action.
+  * `InventoryTab`, `SpellsTab` and `SpellcastingEntryCard` gain inline description toggles and item-sheet pencils for items, manual spells and prepared spells.
+  * `RankSelect` still clamps to `minRank` and disables lower options.
+- `ui/windows/CharacterSheet.jsx`: typed slot drops pass `slotType`; AC and Max HP are `readOnly` text inputs; Temp HP stays as a compact row under Current/Max; level input has an ARIA label.
+- `ui/styles.css`: wider AC block (64 px value, 1.85fr column), ellipsized Mod. button that never overlaps the shield, spinner suppression, and styles for inline descriptions, feat groups and the item sheet.
+
+### Tests and verification
+- `npm run test:core` - 558/558.
+- `npm run test --workspace=@pf2e/server` - 70/70.
+- `npm run test --workspace=@pf2e/client` - 64/64.
+- `npm run build --workspace=@pf2e/client` - success.
+- Browser smoke on `npm run dev:client` + `npm run start:server`: console errors 0; context menu export produced `111.json`, copy created `12 (Копия)`, delete confirmed and removed it; 1 -> 3 -> 2 level test changed slots from `ancestry:1` to `ancestry:1/class:2/skill:2/general:3` and back, deleting the bound Toughness feat.
+
+
+## Step 5.8 - In-game dialogs, token HUD, AC layout and rule-element ranks
+
+### Feature Readiness
+- goal: remove every browser `window.confirm` / `window.prompt` in favour of game-styled React surfaces; give tokens a real HUD (HP math + conditions), double-click sheets and temporary-HP bars; rebuild the AC block as layered graphics + value; and apply PF2e proficiency-granting feats as non-droppable `minRank` floors.
+- pf2e_remaster_rule: a feat/class feature that says "your proficiency rank increases to expert" sets the statistic's rank to 2 (`trained = 1`, `expert = 2`, `master = 3`, `legendary = 4`). The grant is a floor: the player may later raise the rank but never lower it. Rule elements use `{ key: "ActiveEffectLike", path: "system.<stat>.rank", value }`; the Remastered compendium also stores fixed grants in `system.subfeatures.proficiencies.<stat>.rank`. Temporary HP are a separate pool that does not stack with normal HP; on the token bar they are displayed as a blue overlay of width `temp / max`.
+- behavior_and_boundaries: implemented React `ConfirmModal`/`PromptModal` for directory deletion, canvas clear and feat-slot release; inline `<input type="text">` for the draw text tool at the click position; journal page name and image URL prompts; light radius prompts; RMB token HUD with HP entry (`15`, `+10`, `-10`) and the 30-condition grid; LMB double-click opens the linked sheet; blue temp-HP overlay; layered AC block; blind-roll buttons on all skills, lore and Perception (never on saves); `ActiveEffectLike` and `subfeatures.proficiencies` floors for saves, Perception, skills, attacks and defenses. Not implemented: arbitrary Foundry rule keys other than proficiency ranks, full predicate language, and a per-stat "why is this floored" tooltip.
+- data_contracts:
+  * `actor.system.saves[key] = { rank, minRank, mod }`, `perception`, `skills[key]`, `proficiencies.attacks[key]` and `proficiencies.defenses[key]` now expose `minRank`.
+  * `actor.items[].system.rules[] = { key: "ActiveEffectLike", mode: "upgrade", path, value, predicate? }` is read during every preparation; numerical values and `ternary/gte/lte/eq/max/min/@actor.*` expressions are supported.
+  * `actor.items[].system.subfeatures.proficiencies` is read as a fallback for Remastered class features (`{ reflex: { rank: 2 } }`).
+  * `actor.system.conditions[]` is edited by the token HUD; HP changes write `system.attributes.hp.value` and `system.derived.hp.value` through `room:update-actor`.
+  * DOM events: `pf2e:confirm-request`, `pf2e:prompt-request`, `pf2e:canvas-text-request`, `pf2e:token-hud-open`, `pf2e:open-actor-sheet`.
+- acceptance_tests: `ruleElementRankFloors` turns `system.saves.reflex.rank: 2` into `rank = 2, minRank = 2` even when the persisted rank is 0; `subfeatures.proficiencies` grants Fortitude/Light Armor floors; level-scaled ternary values yield 2/3/4 at levels 1/7/15; in the Skills tab all 16 skills and Perception have the crossed-eye button while Fortitude/Reflex/Will do not; the Reflex select has options 0 and 1 disabled. Browser smoke confirms the React dialogs, inline canvas text, HUD HP math and conditions, double-click sheet, blue temp-HP pixels and layered AC block.
+- delegated_assumptions: `ActiveEffectLike` values are treated as upgrade floors regardless of `mode`; unsupported formulas never grant a rank; predicates are evaluated only for `class:<slug>` (plus `or`/`and`/`not`), and unknown namespaces do not grant.
+- confidence: 97%.
+
+### Core (`packages/core/src/actor/prepare-data.js`)
+- `ruleElementRankFloors(items, system)` scans `actor.items[].system.rules` for `ActiveEffectLike` `.rank` paths and `system.subfeatures.proficiencies`, then returns floors for saves, skills, Perception, attacks, defenses and spellcasting.
+- `evaluateRuleExpression()` supports numeric literals, `@actor.level` / `@actor.system...`, nested `ternary`, `gte/gt/lte/lt/eq/ne`, `max/min`; `rulePredicatesPass()` handles `class:<slug>` and `or`/`and`/`not`.
+- `applyRuleElementRankFloors()` clamps every rank up to its floor before strikes, AC, saves and skill modifiers are derived; `minRank` is persisted in the prepared system (the sheet's existing `minRank` contract is reused).
+- `classFeatureRecord()`/`classFeatureItems()` now preserve `system.rules` and `system.subfeatures`, so class features granted by the class pipeline can carry proficiency automation.
+
+### Client
+- `ui/overlays/dialog-service.js` (new): promise-based `confirmAction`, `promptText`, `requestCanvasText`, `openTokenHud`, `openActorSheet`.
+- `ui/overlays/DialogHost.jsx` (new): queued game-styled confirm/prompt modals with ОК/Отмена, Escape handling and danger styling.
+- `ui/overlays/CanvasTextInput.jsx` (new): fixed-position inline text input at the click coordinates; Enter/blur commits, Escape cancels, text colour follows the drawing palette.
+- `ui/overlays/TokenHUD.jsx` (new): token-anchored HP field (`15`, `+10`, `-10`, clamped to 0..max), aura-person conditions button with a 30-icon toggle grid, outside-click/Escape close and per-frame camera re-anchoring.
+- `ui/overlays/OverlayHost.jsx` (new) mounted once in `App.jsx`.
+- `canvas/interaction.js`: RMB on a token selects it (if needed) and opens the HUD without panning/deselecting; LMB double-click opens the linked sheet; canvas clear uses the React confirm; async text/light dialogs notify the scene saver after completion.
+- `canvas/token-layer.js`: `_resolveActorHp()` returns `temp`; `_paintHpBar()` paints the blue `temp/max` overlay over the green/yellow/red bar; `actorIdForToken()` resolves sheet/HUD targets.
+- `canvas/draw-layer.js`: text tool uses the inline React input for creation and editing (no `window.prompt`).
+- `canvas/light-layer.js`: bulb radius editing uses the in-game prompt.
+- `ui/sidebar/DirectoryPanel.jsx`: actor deletion uses `ConfirmModal`.
+- `ui/sidebar/RightSidebar.jsx`: listens for `pf2e:open-actor-sheet` and reuses the ownership check.
+- `ui/windows/CharacterSheet.jsx` + `ui/styles.css`: AC background is now a 62 px graphic block; the number sits in a separate absolutely positioned `.pf2e-ac__value` layer (`z-index: 10`, 78 px input, never clipped); the "Мод." button is absolute at `top: -10px; right: -20px` inside a reserved 32 px gutter so it never covers the shield.
+- `ui/windows/character/CharacterTabs.jsx`: every skill/lore row and Perception gets `BlindRollButton`; saves never do; `patchSave`/`patchPerception`/`patchMartial` clamp to `minRank`; feat removal asks for confirmation.
+- `ui/windows/JournalSheet.jsx`: page-name and image-URL prompts use the in-game `promptText`.
+
+### Tests and verification
+- `npm run test:core` - 558/558.
+- `npm run test --workspace=@pf2e/server` - 70/70.
+- `npm run test --workspace=@pf2e/client` - 67/67 (3 new rule-element/minRank tests).
+- `npm run build --workspace=@pf2e/client` - success (801 modules).
+- Browser smoke on `npm run dev:client` + `npm run start:server` (session `verify58`): actor deletion opened the React `ConfirmModal` with ОК/Отмена; the draw text tool opened the inline input at `(220,180)` and Enter created a `PIXI.Text` "Привет"; RMB opened the token HUD and `-5` then `+5` moved HP 20 -> 15 -> 20 and closed the field; double-click opened "Лист персонажа: Test Hero"; extracted token pixels show blue `(74,144,226)` on the left 40 % and green `(76,175,112)` on the right of the HP bar; the AC block renders the number in a separate layer with "Мод." hanging outside and clear of the shield; Reflex shows E with options 0/1 disabled, and all 16 skills plus Perception expose the crossed-eye button while saves do not.
+
+## Step 5.8.1 - Circular token effects, floating combat text and sheet fixes
+
+### Feature Readiness
+- goal: remove the remaining browser-dialog edge cases, show condition stages directly on the token, give HP edits readable feedback above the token, force bonus-section feats to stay in that section, and make class attack/defense proficiencies non-droppable.
+- pf2e_remaster_rule: valued conditions use a numeric stage (`frightened 1..4`, `clumsy/sickened/enfeebled/stupefied 1..4`, `doomed 1..3`, `dying 1..4`, `wounded 1..3`, `slowed 1..3`); boolean conditions have no stage. A class's base proficiencies (for example a cleric's trained simple weapons and unarmored defense) are automatic grants, so they act as a minimum rank exactly like background/class skill training. Temporary HP are an overlay of width `temp / max`.
+- behavior_and_boundaries: implemented React confirm/prompt/inline-text surfaces, circular condition icons with LMB stage-up/RMB stage-down-or-remove, a 1.7 s rising floating HP label, forced `system.category = "bonus"` on bonus-section drops, and class proficiency floors for saves, Perception, attacks and defenses. Not implemented: rolling back an optimistic condition change on a disconnected socket (a toast is shown), per-condition custom maximums from arbitrary Foundry effects, or a full drag-and-drop prerequisite validator.
+- data_contracts:
+  * `actor.system.conditions[] = { id, value, label, value2 }`; `value2` is the current stage.
+  * `actor.system.proficiencies.attacks[key] = { rank, minRank }` and `defenses[key] = { rank, minRank }`; the same floor fields exist for saves and Perception.
+  * `actor.system.details.class.proficiencyFloors = { attacks, defenses, saves, perception }` persists the class guarantee so every preparation re-applies it.
+  * `actor.items[type=feat].system.category` is the section contract; a bonus-section drop writes `"bonus"` even when the compendium document says `class`/`skill`.
+  * DOM/UI contracts: `pf2e:confirm-request`, `pf2e:prompt-request`, `pf2e:canvas-text-request`, `pf2e:token-hud-open`; the token layer exposes `showFloatingText(target, text, color)` and `tokenForActor(actorId)`.
+- acceptance_tests: no `window.confirm`/`window.prompt`/`window.alert` remains under `packages/client/src`; the inline canvas text input appears at the click position and commits on Enter; a `-5` HUD entry moves HP 20 -> 15 and spawns a red `-5` label; `+5` returns HP to 20 and spawns a green `+5`; two conditions are laid out at `(22.03,-22.03)` and `(2.72,-31.04)` relative to the token (upper-right, then counter-clockwise); frightened LMB goes 2 -> 3 -> 4 and caps at 4, RMB goes 4 -> 3 -> 2 -> 1 -> removed; prone LMB is a no-op and RMB removes it; a `class` feat dropped on "Бонусные способности" persists in `system.feats.bonus` with an empty `system.feats.class`; a level-8 class actor with a manually zeroed simple/martial/light rank is clamped back to rank 1 with `minRank = 1`.
+- delegated_assumptions: stage maxima for the sheet's 30-condition list follow the common Remastered 1..4 (and 1..3 for doomed/wounded/slowed) convention; persistent damage is treated as a boolean badge because its numeric value is a damage formula, not a stage.
+- confidence: 97%.
+
+### Client
+- `ui/conditions.js` (new): shared `CONDITION_ICONS`, `CONDITION_MAX_STAGES`, `conditionIcon`, `conditionMaxStage`, `conditionStage`, `initialConditionStage`; used by both the HUD and the PixiJS badges so they cannot drift.
+- `canvas/token-layer.js`:
+  * `_paintEffects()` draws condition badges in a true spiral: start at -45 deg (upper-right), advance counter-clockwise, and shrink the radius after each full circle. Each icon has a stage badge and its own `pointerdown` handler.
+  * LMB calls `_changeConditionStage(..., +1)`, RMB calls it with `-1`; the handler stops Pixi/DOM propagation so a badge click never starts a token drag or camera pan.
+  * condition edits optimistically repaint the local actor, then persist through `room:update-actor` with a rollback toast on failure.
+  * `showFloatingText()` creates a stroked `PIXI.Text` at the token centre, rises it by 0.9 cells and fades it over 1.7 s using the shared Pixi ticker.
+  * `floatingTextLayer` is a dedicated overlay that `main.js` reparents above fog/light so healing/damage numbers stay readable.
+- `ui/overlays/TokenHUD.jsx`: HP commits compute the actual delta and trigger `showFloatingText` (green `+N`, red `-N`); newly applied valued conditions start at stage 1 and the grid title shows the current stage.
+- `main.js`: wires `tokenLayer.networkClient = network` and adds `floatingTextLayer` to the top of the world stack.
+- `ui/windows/CharacterSheet.jsx`: `addCompendiumFeat()` now uses the explicit drop section (`target.section`) before the compendium category, so any feat dropped on "Бонусные способности" becomes `bonus`.
+- `ui/styles.css`: AC block is now a 62 px border-box graphic; the value stays in `.pf2e-ac__value` (`z-index: 10`, 78 px unclipped input); the row is a fixed `92px + 1fr` grid with a 2 px gap, so the shield sits immediately after the "Мод." gutter without overlapping it.
+- `ui/overlays/dialog-service.js` remains the only bridge for canvas-initiated dialogs; the Step 5.8.1 audit found no direct browser dialog calls left.
+
+### Core (`packages/core/src/actor/prepare-data.js`)
+- `classProficiencyFloors(classDoc)` snapshots the class document's attacks, defenses, saving throws and Perception as rank floors.
+- `applyClassDocument()` writes that snapshot to `details.class.proficiencyFloors`; `applyClassProficiencies()` also writes the matching `minRank` immediately.
+- `ruleElementRankFloors()` seeds its floor tables from `details.class.proficiencyFloors` before scanning `ActiveEffectLike` rules and `system.subfeatures.proficiencies`, so every later preparation clamps and re-exposes the class guarantee.
+
+### Tests and verification
+- `npm run test:core` - 558/558.
+- `npm run test --workspace=@pf2e/server` - 72/72 (new: class attack/defense floors; forced bonus feat stays in the bonus section).
+- `npm run test --workspace=@pf2e/client` - 68/68 (new: staged vs boolean condition helpers).
+- `npm run build --workspace=@pf2e/client` - success (802 modules).
+- Browser smoke on `npm run dev:client` + `npm run start:server` (session `verify581`): console errors 0; created `Test Hero` and dropped it on the canvas as `token-1`; the HUD showed `20/20`, `-5` closed the field and produced HP 15 plus a red floating `-5`, `+5` returned HP to 20 with a green `+5` (`fill = 0x4caf70`); the two condition badges rendered upper-right/counter-clockwise; the Pixi handlers produced frightened stages `2 -> 3 -> 4 -> 4` (cap) then `4 -> 3 -> 2 -> 1 -> removed`, while prone ignored LMB and was removed by RMB; the text tool opened `.pf2e-canvas-text-input`, committed "Hello" into a drawing, and never used `window.prompt`; canvas clear opened the React confirm with `Отмена`/`ОК`; a `class` feat "Keep Up the Good Fight" dropped on "Бонусные способности" persisted with `system.category = "bonus"` and stayed in `feats.bonus` with `feats.class` empty; the AC graphic measured 62 px, the value layer reported `z-index: 10`, and the "Мод." button (right edge 181) stayed clear of the shield block (left edge 195).
+
+## Step 5.9 - Magic rework (slots & preparation book), AC fix, HP cap and MAP formatting
+
+### Feature Readiness
+- goal: current HP can never exceed maximum HP from either the sheet or the token HUD; attack buttons show Foundry's one-line MAP labels; the AC graphic is as narrow as possible with the number on an absolute overlay and the shield tight against it; spell slots follow the character level, spontaneous casters get `[current] / [max]` + refresh inputs, and prepared casters get per-rank slot-count inputs plus a draggable preparation book window.
+- pf2e_remaster_rule: current HP is bounded by `maxHp` (`Math.min(value, maxHp)`, never below 0); a caster's highest spell rank is `Math.ceil(level / 2)` capped at 10; MAP is `-5/-10` (`-4/-8` with agile); spontaneous casting spends one current spell slot; prepared casting expends the specific prepared slot and strikes it through until the next preparation.
+- behavior_and_boundaries: implemented shared HP parsing/clamping, one-line strike labels, a 50 px AC graphic with an overflow value layer and an absolute `Мод.` button, level-gated rank creation, spontaneous current/max number inputs with a refresh arrow, prepared per-rank slot-count number inputs that create exactly N empty slots, a `Подгот.` preparation book window with drag-and-drop into empty slots, cast/trash controls per prepared slot. Not implemented: automatic per-day slot tables from class documents, prepared-slot drag reordering, or a spell-list filter inside the preparation book.
+- data_contracts:
+  * `actor.system.attributes.hp.value` is always persisted in `0..hp.max`; `parseHpInput(raw, current)` accepts `15`, `+10`, `-5`; `clampHpToMax(value, maxHp)` is shared by the sheet and the token HUD.
+  * Spell slots keep the Foundry object form `system.slots.slot<N> = { rank, value, max, prepared[] }`; `prepared[index] = { id, expended } | null`.
+  * Drag payload: `application/x-pf2e-prepared-spell` with `{ spellId, entryId, rank, name }`; the drop is rejected when the entry id or rank does not match.
+  * UI helpers: `maxSpellRankForLevel(level)` and `strikeMapLabel(modifier, penalty)` in `character-data.js`.
+- acceptance_tests: sheet `+20` HP clamps to max; token HUD `+20` clamps to max; strike buttons read `+8`, `+3 (MAP -5)`, `-2 (MAP -10)`, and agile `+6 (MAP -4)`, `+2 (MAP -8)`; level 1 allows rank 1 only, level 5 unlocks rank 3, level 19/20 unlock rank 10; spontaneous rank row shows `2 / 2` and `↻` restores spent slots; typing `2` in a prepared rank header renders exactly two empty slots; `Подгот.` opens `SpellPreparationModal`; dragging a spell from it onto a matching empty slot fills the slot; `Сотворить` adds the `--expended` strike-through; the trash button clears the slot.
+- delegated_assumptions: existing saved slots above the level cap stay visible but are locked (opacity + disabled inputs) instead of being deleted; the preparation book lists all spells already attached to the entry and does not duplicate compendium drops; slot counts are capped at 99.
+- confidence: 97%.
+
+### Client
+- `ui/windows/character/character-data.js`: new `maxSpellRankForLevel`, `parseHpInput`, `clampHpToMax`, `strikeMapLabel`.
+- `ui/windows/CharacterSheet.jsx`: the current-HP commit parses absolute/delta text and clamps through `clampHpToMax(value, hp.max)`.
+- `ui/overlays/TokenHUD.jsx`: uses the shared `parseHpInput`/`clampHpToMax`, so `+20` never raises HP above the maximum.
+- `ui/windows/character/CharacterTabs.jsx`:
+  * Combat strike buttons are single-line: `+N`, `+N (MAP -5)`, `+N (MAP -10)` (agile `-4/-8`).
+  * Spellcasting entries compute `maxRank = maxSpellRankForLevel(level)`; the add-rank select disables higher ranks and prepared entries render a header for every unlocked rank.
+  * Spontaneous slot rows use two number inputs (`current` / `max`) plus a `↻` refresh button; prepared rows show filled/max and a rank-removal button.
+  * Prepared rank headers contain a number input; entering `2` resizes `prepared[]` to exactly two empty slots (`0` removes the rank).
+  * The entry header has a `📖 Подгот.` button that opens `SpellPreparationModal`; prepared slot casts mark `expended` (line-through via CSS) and the `🗑` button clears a slot.
+- `ui/windows/character/SpellPreparationModal.jsx` (new): floating, non-blocking preparation book (no full-screen backdrop) listing the entry's spells by rank with expandable descriptions and native HTML5 drag support.
+- `ui/windows/character/spell-drag.js` (new): shared `PREPARED_DRAG_TYPE`, `setPreparedSpellDragData`, `readPreparedSpellDrag`, `acceptsPreparedSpellDrag`.
+- `ui/styles.css`: AC background reduced to `50 px` with the value in `.pf2e-ac__value` (`z-index: 10`, 76 px unclipped input), the row uses `auto + 1fr` with a 2 px gap so the shield is tight; `Мод.` stays at `top: -10px; right: -20px`; new MAP, slot-input and preparation-book styles.
+
+### Tests and verification
+- `npm run test --workspace=@pf2e/client` - 72/72 (new: HP cap, HP delta parsing, spell-rank gating, MAP label formatting).
+- `npm run test --workspace=@pf2e/server` - 72/72.
+- `npm run test:core` - 558/558.
+- `npm run build --workspace=@pf2e/client` - success (804 modules).
+- Browser smoke on `npm run dev:client` + `npm run start:server`: console errors 0. A level-1 test actor rendered the AC background at 50×46 px with the value layer at `z-index: 10`, `Мод.` at `z-index: 11`, a 2 px gap to the shield, and the button bottom above the shield digits. The combat tab showed the agile fist buttons `+0`, `-4 (MAP -4)`, `-8 (MAP -8)`. A prepared entry displayed `📖 Подгот.`; typing `2` in the rank header rendered exactly two empty slots; dragging `Daze` from the preparation book onto an empty slot filled it; `Сотворить` produced `line-through` and the `🗑` button cleared the slot. Switching the same entry to spontaneous showed the two inputs `2 / 2` and `↻` restored `1 / 2` back to `2 / 2`. The sheet's current-HP field, after entering `+20` against a maximum of `10`, displayed and persisted `10` (the field accepts absolute values and signed deltas; the shared `CommitInput` mirrors a clamped commit result so a stale out-of-range draft cannot remain visible).
+- Temporary smoke-test actors/items were removed afterwards.
+
+---
+
+## Phase 6.1 / 6.2 — Persistent Lobby Profiles and Actor Ownership
+
+### Feature Readiness
+- goal: show a real lobby before PixiJS starts, keep player accounts in `session.json` across F5, and enforce Foundry's ownership matrix on both the UI and the server.
+- pf2e_remaster_rule: Foundry permissions are the four-level actor matrix `0 = None`, `1 = Limited`, `2 = Observer`, `3 = Owner`; an explicit per-user row overrides the `default` row, and the GM always has Owner on every document. Observer opens a sheet read-only; Owner edits; None/Limited cannot open the character sheet.
+- behavior_and_boundaries: implemented the lobby profile list/create flow over HTTP before any WebSocket exists, persistent profiles, the ownership matrix dialog (default + every real profile, GM locked to Owner), player-side sheet gating and read-only mode, and the server-side Owner check on `updateActor`. Not implemented: per-actor permission sharing, ownership on journals/items, profile deletion/renaming from the lobby, or data redaction inside the directory broadcast.
+- data_contracts:
+  * `session.json.users[] = { id, name, role, color, pronouns, characterId, createdAt }` stores persistent lobby accounts. `sequences.profile` keeps the `user-N` counter.
+  * `actor.ownership = { default: 0, [userId]: 3 }`; unknown ids are filtered by the server, levels are clamped to `0..3`.
+  * `GET /api/lobby?sessionId=default` → `{ sessionId, users }` (the persistent profile list); `POST /api/lobby/users` with `{ sessionId, name, role }` → `201 { sessionId, user, users }`.
+  * WS join resolves the role from the persistent profile, never from a client-supplied `role`.
+  * `room:update-actor` accepts `ownership` only from the GM and broadcasts the focused actor plus the directory tree.
+  * `room:profiles-update` (`{ sessionId, users }`) and `snapshot.profiles` keep offline accounts visible in the ownership dialog.
+  * UI contract: `packages/client/src/ui/permissions.js` exposes `OWNERSHIP_LEVELS`, `OWNERSHIP_OPTIONS`, `normalizeOwnership`, `getOwnershipLevel`, `canViewActor`, `canEditActor`.
+- acceptance_tests:
+  * Lobby loads before `#app canvas` exists; selecting a profile mounts PixiJS and connects the socket with `memberId = profile.id`.
+  * F5 returns to the lobby; the previously created profiles are still listed from `session.json`.
+  * Right-clicking an actor opens "Настройка владения" with "Все игроки" plus every profile; saving writes `{ default: 0, "user-2": 3, "user-3": 2 }` to the persisted actor.
+  * Owner (`3`) opens an editable sheet and can drag actor entries; Observer (`2`) gets an open sheet with `pf2e-sheet--readonly`, `inert` content/sidebar and no directory drag; None/Limited gets the "Нет доступа" toast and no sheet.
+  * The GM always resolves to Owner; a player sending `ownership` is rejected with "Only the GM can change actor ownership".
+  * Linking `characterId` no longer grants ownership, so a player cannot self-escalate.
+- delegated_assumptions: player profiles may be created with the GM role from the lobby in this single-machine build (no password/authentication layer yet); the directory still broadcasts sheet data to all connected clients and only the editing surface is permission-gated.
+- confidence: 98%.
+
+### Server
+- `packages/server/src/room/encounter-session.js`:
+  * new persistent `profiles` map + `createProfile()`, `getProfiles()`, `getProfile()`, `_ensureProfileForMember()`, `_createUserFromProfile()`, `_emitProfilesUpdate()`.
+  * `saveToDisk()` writes `users` and `sequences.profile`; `loadFromDisk()` restores them and normalizes every actor matrix.
+  * `getActorPermission(actorId, memberId, role)` and `setActorOwnership()` implement explicit-row-over-default stacking; the GM short-circuits to level 3.
+  * `updateActor()` rejects any non-Owner write and restricts matrix changes to the GM; `createDirectoryEntry()` seeds `ownership` and supports a trusted `ownerId`; `deleteDirectoryEntry()` uses the same matrix.
+  * `updateProfile()` mirrors the live roster into the persistent profile but never changes ownership.
+  * `snapshot()` now includes `profiles`.
+- `packages/server/src/index.js`:
+  * `readJsonBody()` and the lobby endpoints; join resolves name/role from the profile; player-created actors get `ownerId`; `room:update-actor` forwards `ownership`.
+
+### Client
+- `ui/StartScreen.jsx` (new): full-screen lobby with profile cards, role badge, refresh, unique-name creation (player/GM) and the "Войти" action; uses HTTP only.
+- `main.js`: `bootstrap()` renders `StartScreen` first; `startGame(profile)` creates PixiJS, mounts `StoreProvider`/`App` and opens the WebSocket only after login. URL `?role=gm`/`?player=<id>` remain lobby hints.
+- `ui/permissions.js` (new) + `ui/sidebar/OwnershipModal.jsx`: the live matrix dialog, level selects, GM row disabled, save through `room:update-actor`.
+- `ui/sidebar/DirectoryPanel.jsx`: ownership entry is GM-only, sheet opening uses `canViewActor` and shows "Нет доступа", actor drag is Owner-only, locked rows are dimmed.
+- `ui/sidebar/RightSidebar.jsx`: double-click/LMB sheet opening validates the matrix and toasts "Нет доступа" for levels 0/1.
+- `ui/windows/CharacterSheet.jsx`: effective level drives `editable`, `pf2e-sheet--readonly`, an "👁 Только чтение" badge, `inert` sidebar/content, blocked drag-and-drop, and a live self-check that closes a sheet that lost access.
+- `ui/StoreContext.jsx`: `profiles` state fed by snapshots and `room:profiles-update`; `net/network-client.js` forwards `ownership`.
+- `ui/styles.css`: lobby, ownership matrix, read-only badge and locked-directory styles.
+
+### Tests and verification
+- `npm run test --workspace=@pf2e/server` — 77/77 (new `tests/ownership.test.js`: matrix levels, default row, characterId escalation regression, save/load persistence, HTTP lobby + WS permissions).
+- `npm run test --workspace=@pf2e/client` — 78/78 (new `tests/permissions.test.js`).
+- `npm run test:core` — 558/558.
+- `npm run build --workspace=@pf2e/client` — success (806 modules).
+- Browser smoke on `npm run dev:client` + `npm run start:server`: created profiles «Ведущий Тест», «Игрок Один», «Игрок Два», «Игрок Три»; F5 returned to the lobby with the same list and no canvas; the GM matrix showed "Все игроки" + 3 real profiles and persisted `{ default: 0, "user-2": 3, "user-3": 2 }`; login as `user-3` (Observer) opened the sheet with `.pf2e-sheet--readonly`, `inert` content/sidebar and `draggable=null` on the actor row; login as `user-4` (default 0) showed the "Нет доступа" toast and no sheet; login as `user-2` (Owner) opened the editable sheet with `draggable=true`. Console errors: 0.
+
+---
+
+## Phase 6.3 вЂ” Scene Settings and Character Sheet Fixes (AC / Shield / Focus / Cantrips)
+
+### Feature Readiness
+- goal: let the GM configure a scene (background image, pixel grid size, outside-map colour) and remove the character-sheet UI defects around the AC breakdown, shield block, Focus Points and rank-0 cantrips.
+- pf2e_remaster_rule: a focus pool maximum equals the number of known non-cantrip focus spells, capped at 3 (`SpellPF2e#prepareActorData`); focus spells spend 1 Focus Point instead of a spell slot; cantrips are rank 0 and never consume spell slots. PF2e maps are 5-ft squares, so one grid cell is one 5-ft square (default 100 px).
+- behavior_and_boundaries: implemented scene settings persistence and canvas rendering, a global Focus pool with automatic/manual maximum, focus-point consumption, infinite rank-0 cantrips for both prepared and spontaneous entries, and the AC/shield layout fixes. Not implemented: per-scene ambient darkness sliders, scene dimensions separate from the background image, or focus-point refocus automation.
+- data_contracts:
+  * `scenes[id] = { img, gridSize, backgroundColor, walls, drawings, lights, tokens, ... }`; `gridSize` is clamped to `20..400` (default `100`), `backgroundColor` is normalized `#rrggbb`.
+  * `room:update-scene` (`{ sceneId, img, gridSize, backgroundColor }`) is GM-only, persists the entry, and broadcasts `room:directories-update`.
+  * `room:scene-activated` and `snapshot` now include `scene: { id, name, img, gridSize, backgroundColor }`.
+  * `actor.system.resources.focus = { value, max, cap: 3, override, known }`; `applyFocusPool()` recomputes `max = min(knownFocusSpells, 3)` unless `override === true`.
+  * rank-0 spells never create/consume `spellcastingEntry.system.slots.slot0`.
+- acceptance_tests:
+  * The AC popover is anchored to `.pf2e-ac-row` and its right edge stays inside `.pf2e-sidebar` (measured `218 px <= 240 px`).
+  * The AC graphic block and shield block are both `64x46 px`; the shield shows its HP values above and the caption "Р©РРў" below.
+  * Focus pool: 0 focus spells -> `0/0`; 3 non-cantrip focus spells -> `0/3`; 4+ -> still `0/3`; a focus cantrip does not widen the pool.
+  * Casting a focus spell with `value=3` changes the pool to `2/3` and leaves spell slots untouched.
+  * Rank-0 sections render "Р—Р°РіРѕРІРѕСЂС‹ В· Р±РµР· СЏС‡РµРµРє, РЅРµРѕРіСЂР°РЅРёС‡РµРЅРЅРѕ", contain no slot inputs, and keep `РЎРѕС‚РІРѕСЂРёС‚СЊ` enabled after casting (spontaneous slots remained `2/2`).
+  * Saving a scene with `/uploads/map-test.png`, grid 80 and `#223344` produced a `PIXI.Sprite` (`800x600`), `gridSize=80`, `gridColumns=10`, `gridRows=8`, and renderer background `#223344`.
+- delegated_assumptions: scene settings are stored on the scene directory entry (matching the existing scene-canvas model); the fog texture keeps its existing 2400x1600 allocation when the grid size changes, and only grid/background sizing follows the configured cell size.
+- confidence: 97%.
+
+### Core / Data
+- `packages/core/src/actor/prepare-data.js`:
+  * new `FOCUS_POOL_CAP = 3`, `system.resources.focus` defaults, normalization and `focusSpellCount()` / `applyFocusPool()`.
+  * `prepareActorSystem()` derives the focus maximum from `actor.items` on every preparation; duplicate spell names count once and `override: true` keeps an authored maximum.
+  * exported `focusSpellCount` and `applyFocusPool`.
+
+### Server
+- `packages/server/src/room/encounter-session.js`:
+  * scene defaults (`gridSize`, `backgroundColor`) on creation and load; `normalizeSceneGridSize()` and `DEFAULT_SCENE_BACKGROUND`.
+  * new `getSceneSettings(sceneId)` and `updateSceneSettings(sceneId, data, sourceMemberId)`; activation payloads and `snapshot()` carry the scene settings.
+- `packages/server/src/index.js`: new GM-only `room:update-scene` WS handler.
+
+### Client
+- `ui/windows/CharacterSheet.jsx` + `ui/styles.css`:
+  * AC popover moved out of the 50 px wrap into the full-width `.pf2e-ac-row`; `width: 100%`, `max-width: 240px`, internal scrolling, so it can never leave the left panel.
+  * AC graphic/background widened to 64 px; shield changed to the same 64 px block with values on top and "Р©РРў" underneath.
+- `ui/windows/character/CharacterTabs.jsx`:
+  * global Focus pool block with `РўРµРєСѓС‰РёРµ / РњР°РєСЃРёРјСѓРј`, automatic maximum hint, and an "РђРІС‚Рѕ" reset after a manual override.
+  * focus spells spend a Focus Point; focus cantrips are free; rank-0 spells are always castable.
+  * rank-0 slot inputs, prepared slot lanes and add-rank option removed; rank-0 headers show the infinite-cantrip hint.
+- `ui/sidebar/SceneConfigModal.jsx` (new): URL/file upload background, grid size, HEX outside colour and preview; save sends `room:update-scene`.
+- `ui/sidebar/DirectoryPanel.jsx`: GM-only gear button on every scene card, scene config modal wiring.
+- `canvas/background-layer.js` (new) + `canvas/grid-layer.js` + `main.js`: `PIXI.Sprite` background, renderer background colour, grid recreation at the configured cell size, and grid cell count derived from the loaded image dimensions.
+- `net/network-client.js`: `updateScene(sceneId, settings)`.
+- `vite.config.js`: `/uploads` is now proxied to the Node server in development, so uploaded scene backgrounds and chat images load on the Vite port.
+
+### Tests and verification
+- `npm run test:core` вЂ” 558/558.
+- `npm run test --workspace=@pf2e/server` вЂ” 86/86 (new scene-settings default/update/clamp/persistence/activation tests; WS activation test now also verifies GM-only scene settings broadcast).
+- `npm run test --workspace=@pf2e/client` вЂ” 80/80 (new focus pool derivation, cantrip exclusion, duplicate-name and manual-override tests).
+- `npm run build --workspace=@pf2e/client` вЂ” success (808 modules).
+- Browser smoke on `npm run dev:client` + `npm run start:server`: AC block `64x46`, shield `64x46` with "Р©РРў" below the digits, AC popover right edge `218 px` against sidebar right edge `240 px`; Focus pool showed `0/3` after adding three focus spells and `2/3` after casting one; rank-0 cantrips in both prepared and spontaneous entries rendered no slot inputs and kept casting without changing `2/2` slots; scene config saved an 800x600 background with grid 80 and colour `#223344`, producing a loaded PixiJS sprite and a 10x8 grid. Console errors: 0. Test scene and focus/cantrip probe items were removed afterwards.
+
+---
+
+## Step 6.3.1 — Focus Spell UI and Focus Pool Fixes
+
+### Feature Readiness
+- goal: focus spell sets stop showing rank/slot controls, the global Focus pool is hidden unless relevant, and casting a focus spell spends the shared pool instead of a slot.
+- pf2e_remaster_rule: focus spells are auto-heightened and use one shared Focus pool (maximum 3); they never consume spell ranks/slots. Inside a focus set, rank-0 cantrips are unlimited and free, while every rank-1+ focus spell costs exactly 1 Focus Point.
+- behavior_and_boundaries: implemented conditional Focus pool rendering, rankless flat focus sets, focus-entry metadata, compendium drop persistence into `system.location.value`, and focus-gated casting. Not implemented: automatic heightening of the chat-card rank text, Refocus exploration automation, or changing an entry's type after creation.
+- data_contracts:
+  * Focus entry detection: `system.prepared === "focus"` OR `system.type === "focus"` OR `system.mode === "focus"` (`isFocusSpellcastingEntry`).
+  * `SpellcastingSetupModal` writes `prepared: "focus"` and `mode: "focus"` for a Focus set; `system.slots` stays `[]`.
+  * A dropped spell keeps `entryId` and `system.location.value = <entry id>`; no `slotN`/rank-cell record is written.
+  * Casting a ranked focus spell calls `onFocusSpend(1)` → `updateSystem` → `room:update-actor`; `focusSpellPointCost(rank)` returns `0` for rank 0 and `1` for rank 1+.
+- acceptance_tests:
+  * a clean sheet with no focus set and `focus.max === 0` renders no `.pf2e-focus-pool` block at all.
+  * creating a "Фокусировка" entry shows the pool block even while `focus.max === 0`.
+  * a focus entry renders no `.pf2e-spell-slot-add`, no rank `<select>`, and no `.pf2e-spell-rank` headers; its spells render in one `.pf2e-spell-list--flat`.
+  * an empty focus entry shows the dashed drop zone with "Перетащите заклинания из компендиума в этот набор."
+  * a ranked focus spell is `disabled` at `focus.value === 0`; with points available it sends the chat card and reduces the pool by 1. Rank-0 cantrips stay enabled and spend nothing.
+  * a compendium spell dropped into a focus entry is stored with `entryId`/`system.location.value` and the document rank, without a slot rank.
+- delegated_assumptions: focus auto-heightening remains display-only for now; the sheet uses the rank stored on the spell document.
+- confidence: 97%.
+
+### Client
+- `ui/windows/character/character-data.js`: new pure helpers `isFocusSpellcastingEntry(entry)` and `focusSpellPointCost(rank)`.
+- `ui/windows/character/CharacterTabs.jsx`:
+  * `SpellsTab` gates the purple Focus pool on `hasFocusEntry || focusMax > 0`.
+  * `SpellcastingEntryCard` branches for focus sets: read-only `✦ Фокус value / max` badge, no rank selector, no "+ Ранг ячеек", no rank grouping, one flat spell list, dashed drop zone when empty.
+  * focus casting uses `castFocusEntrySpell`: rank 0 sends the card for free, rank 1+ requires a point, sends the card, then calls `onFocusSpend(1)`.
+- `ui/windows/character/CharacterModals.jsx`: the setup modal stores `mode: "focus"` for the "Фокусировка" type and disables the proficiency select.
+- `ui/styles.css`: focus card, flat list and drop-zone styling.
+
+### Tests and verification
+- `npm run test --workspace=@pf2e/client` — 83/83 (3 new tests: focus-entry detection, focus point cost, drop persistence with `location.value` and no slots).
+- `npm run test:core` — 558/558.
+- `npm run test --workspace=@pf2e/server` — 80/80.
+- `npm run build --workspace=@pf2e/client` — success (808 modules).
+- `npm run dev:client` — Vite ready (5173 was occupied, so it started on 5174). The click-through checklist from the prompt (clean sheet, create focus set, drop, cast) was not automated; the component logic is covered by the acceptance paths above.
+
+---
+
+# Часть II — Хроника Шагов 6.4–6.5
+
+Документ фиксирует результаты Шагов 6.4 и 6.5: экспорт/импорт миров, двуязычные компендиумы, язык API и локализация интерфейса.
+
+## 1. Шаг 6.4 — Экспорт и импорт миров
+
+### Серверная модель
+
+- `packages/server/src/room/encounter-session.js`
+  - Добавлен `EncounterSession#exportWorld()`. Метод возвращает полный JSON-документ мира:
+    `version`, `sessionId`, `savedAt`, `users`, `directories`, `chatLog`, `activeSceneId`, `baseSceneCanvas`, `baseSceneFogExploration`, `sequences`.
+  - `saveToDisk()` теперь использует `exportWorld()`, поэтому экспорт и `session.json` гарантированно имеют одинаковую структуру.
+  - Восстановление состояния вынесено в приватный `_applyPersistedWorld(parsed)`. Его используют и `loadFromDisk()`, и `importWorld()`, поэтому импорт не может разойтись с загрузкой с диска.
+  - Добавлен `EncounterSession#importWorld(world)`:
+    - проверяет, что документ является объектом и содержит корневые ключи `directories` и `users`;
+    - проверяет, что `directories` — объект, а `users` — массив;
+    - заменяет `directories`, `profiles`, `chatLog`, активную сцену, Base Scene canvas/fog и счётчики ID;
+    - сбрасывает боевое состояние (`combatants`, `encounter`, `combatLog`, статус `lobby`), потому что старые бойцы относятся к удалённому миру;
+    - вызывает `_scheduleSave()` и рассылает обновления директорий/профилей.
+
+### HTTP API
+
+- `GET /api/lobby/export?sessionId=...&memberId=...`
+  - только GM (проверка по connected member или persistent profile);
+  - отдаёт `session.exportWorld()`;
+  - заголовок `Content-Disposition: attachment; filename="world-export.json"`.
+- `POST /api/lobby/import?sessionId=...`
+  - только GM;
+  - принимает `multipart/form-data`, поле файла `file`;
+  - лимит загрузки `256 MB`;
+  - парсит JSON, валидирует `directories`/`users`, вызывает `session.importWorld(parsed)`;
+  - при успехе рассылает всем сокетам комнаты WebSocket-событие `room:reload`;
+  - отвечает `{ ok: true, imported: true, sessionId }`;
+  - коды ошибок: `403` для не-GM, `400` для невалидного JSON/структуры, `413` для слишком большого файла.
+
+### Клиент
+
+- `packages/client/src/net/network-client.js`
+  - при получении `room:reload` вызывает `window.location.reload()`; это перезагружает и GM, и всех игроков.
+- `packages/client/src/ui/sidebar/SettingsPanel.jsx`
+  - во вкладке «Настройки» добавлен блок «Управление миром» (только GM);
+  - «Скачать мир»: `GET /api/lobby/export`, скачивание `world-export.json` через Blob + `<a download>`;
+  - «Загрузить мир»: скрытый `<input type="file" accept="application/json,.json">`;
+  - после выбора файла показывается внутриигровой `ConfirmModal` через `confirmAction()`:
+    «Вы уверены? Текущий мир будет безвозвратно удалён.»;
+  - при согласии отправляется `POST /api/lobby/import` с `FormData`;
+  - `window.confirm` не используется.
+
+## 2. Шаг 6.5 — Двуязычные компендиумы
+
+### Сборка данных
+
+`packages/server/scripts/build-compendiums.js`:
+
+- Каталоги перевода ищутся автоматически:
+  - `PF2E_TRANSLATIONS_DIR`, если задан;
+  - `packages/server/data/translations/pf2r/data/community/pf2e/packs`;
+  - `packages/server/data/translations/pf2r/packs`.
+- Для каждой категории подбираются Babele-файлы:
+  - `spells` → `pf2e.spells-srd.json`;
+  - `equipment` → `pf2e.equipment-srd.json`;
+  - `feats` → `pf2e.feats-srd.json`, `pf2e.classfeatures.json`, `pf2e.ancestryfeatures.json`;
+  - `monsters` → `pf2e.<source-pack>.json` для каждого используемого бестиария;
+  - `actions` → `pf2e.actionspf2e.json`, `pf2e.adventure-specific-actions.json`;
+  - `ancestries`, `heritages`, `backgrounds`, `classes` → одноимённые `pf2e.*.json`.
+- Английский массив сортируется и пишется как есть.
+- Русский массив — глубокая копия английского. Для каждого entry ищется оригинальное английское `name` в `entries` перевода. При совпадении заменяются:
+  - `entry.name`;
+  - `entry.description`;
+  - `entry.system.description.value`.
+- HTML описания прогоняются через существующий `cleanHtml()`, потому что английский компендиум хранит читаемый текст, а не HTML. Это сохраняет единый контракт отображения в Compendium Browser.
+- Для каждой категории пишутся четыре файла:
+  - `<category>.en.json`;
+  - `<category>.en.index.json`;
+  - `<category>.ru.json`;
+  - `<category>.ru.index.json`.
+
+Результат `npm run build:data`:
+
+- 18 706 предметов;
+- 17 581 переведённая запись;
+- EN: 67.1 MB full + 6.1 MB indexes;
+- RU: 90.0 MB full + 6.5 MB indexes.
+
+Примеры покрытия:
+
+- заклинания: 1 789 / 2 018;
+- снаряжение: 5 628 / 5 956;
+- черты: 6 860 / 7 301;
+- монстры: 1 702 / 1 702;
+- действия: 714 / 775;
+- родословные: 50 / 51;
+- наследия: 322 / 334;
+- предыстории: 489 / 540;
+- классы: 27 / 29.
+
+Непереведённые записи остаются с английским названием и описанием.
+
+### Серверный каталог
+
+`packages/server/src/compendium/catalog-service.js`:
+
+- `normalizeLanguage(value)` поддерживает `en`/`ru`, по умолчанию `en`.
+- `_loadIndexes()` читает `<category>.<lang>.index.json`, сохраняя legacy `<category>.index.json` как fallback.
+- `getCategory(categoryId, lang)`, `hasCategory(categoryId, lang)`, `getIndex(categoryId, filters, lang)`, `getItem(categoryId, itemId, lang)`, `getCatalog(categoryId, lang)`, `getEntry(categoryId, itemId, lang)` принимают язык.
+- `filterIndex(entries, filters, categoryId, lang)` использует язык для сортировки `localeCompare`.
+- Поиск идёт по выбранному языку: в `ru` ищутся русские названия, в `en` — английские.
+- Кэш полных файлов разделён по фактическому имени файла, поэтому `spells.en.json` и `spells.ru.json` не перетирают друг друга.
+
+`packages/server/src/index.js`:
+
+- `GET /api/compendiums/:category?lang=ru|en`;
+- `GET /api/compendiums/:category/:id?lang=ru|en`;
+- `GET /api/compendiums?lang=ru|en`;
+- WebSocket `compendium:list` / `compendium:get` принимают `payload.lang`;
+- ответы содержат `X-Lang` (и `lang` в JSON там, где это объект).
+
+### Локализация UI
+
+- `packages/server/src/index.js`: `GET /api/i18n?lang=ru` отдаёт `pf2e.json` из перевода (с кэшем в памяти). Для `en` возвращается `{}`.
+- `packages/client/src/ui/i18n.js`:
+  - `setLanguage(lang)`, `getLanguage()`, `normalizeLanguage(lang)`;
+  - `loadTranslations(lang)` c кэшем;
+  - `t(key, fallback)` / `translate(key, fallback)` по точечным ключам Foundry (`PF2E.ArmorClassLabel`);
+  - при `language === "en"` возвращается английский fallback или сам ключ.
+- `packages/client/src/ui/StoreContext.jsx`:
+  - состояние `language`, по умолчанию `"ru"`;
+  - сохранение в `localStorage` под ключом `pf2e.language`;
+  - `i18nRevision` перерисовывает потребителей после загрузки словаря;
+  - `setLanguage()` обновляет i18n-модуль и localStorage.
+- `packages/client/src/ui/sidebar/SettingsPanel.jsx`: переключатель «Язык компендиумов и UI: [ RU | EN ]».
+- `packages/client/src/ui/CompendiumBrowser.jsx`: `lang` входит в URL списка и деталей; смена языка автоматически перезапрашивает каталог.
+- `packages/client/src/ui/windows/CharacterSheet.jsx`: через `t()` локализованы вкладки листа, заголовки «Хиты», «Броня», «Восприятие», «Инициатива», подписи «КБ», «Щит» и вариант инициативы «Восприятие».
+
+## 3. Контракты данных и событий
+
+### World JSON
+
+```json
+{
+  "version": 1,
+  "sessionId": "default",
+  "savedAt": "2026-11-12T00:00:00.000Z",
+  "users": [],
+  "directories": {
+    "scenes": { "folders": [], "entries": [] },
+    "actors": { "folders": [], "entries": [] },
+    "items": { "folders": [], "entries": [] },
+    "journals": { "folders": [], "entries": [] }
+  },
+  "chatLog": [],
+  "activeSceneId": null,
+  "baseSceneCanvas": {},
+  "baseSceneFogExploration": null,
+  "sequences": {}
+}
+```
+
+Обязательные корневые ключи импорта: `directories`, `users`.
+
+### WebSocket
+
+- `room:reload` — broadcast после успешного импорта: `{ reason: "world-import", by: "<memberId>", importedAt: "<ISO>" }`.
+- Клиент на `room:reload` делает `window.location.reload()`.
+
+### Файлы компендиума
+
+- `<category>.en.json`
+- `<category>.en.index.json`
+- `<category>.ru.json`
+- `<category>.ru.index.json`
+
+Legacy-файлы `<category>.json` / `<category>.index.json` остаются поддерживаемым fallback, но сборщик пишет только языковые комплекты.
+
+## 4. Проверка
+
+- `npm run test:core` — 558/558.
+- `npm run test --workspace=@pf2e/server` — 84/84, включая новые:
+  - `exportWorld/importWorld заменяют кампанию и валидируют корневые ключи`;
+  - `catalog service читает en/ru indexes и full files по lang`;
+  - `GM может экспортировать/импортировать мир, все получают room:reload`;
+  - `compendium/UI endpoints соблюдают ?lang=ru|en`.
+- `npm run test --workspace=@pf2e/client` — 86/86, включая новые тесты i18n:
+  - нормализация `ru`/`en`;
+  - EN возвращает английский fallback или ключ;
+  - RU загружает вложенный словарь и разрешает точечные ключи.
+- `npm run build --workspace=@pf2e/client` — успешно, 809 модулей.
+- `npm run build:data` — успешно, EN + RU комплекты сгенерированы.
+
+## 5. Ручная проверка в dev
+
+1. `npm run dev:client` + `npm run start:server`.
+2. Войти GM-профилем.
+3. Открыть «Настройки» → «Управление миром»:
+   - «Скачать мир» скачивает `world-export.json`;
+   - «Загрузить мир» открывает выбор файла, затем внутриигровой ConfirmModal;
+   - после подтверждения страница перезагружается у всех клиентов.
+4. Переключить RU/EN:
+   - Compendium Browser мгновенно меняет названия и описания;
+   - вкладки и ключевые подписи листа персонажа перерисовываются через `t()`;
+   - выбор сохраняется после перезагрузки страницы.
+
+---
+
+# Часть III — Хроника Шагов 6.6–6.7
+
+Документ фиксирует Шаг 6.6 (Компендиум и серверная фильтрация снаряжения) и
+Шаг 6.7: мгновенный глобальный i18n через React-hook, иконки предметов,
+расширенные фильтры заклинаний/бестиария/черт, трёхпозиционные признаки с
+исключением и переключатели `RollOption` / `FlatModifier` в листе персонажа.
+
+## Feature Readiness — Шаг 6.6
+
+- **goal:** Компендиум не открывается сам при входе; язык RU/EN сохраняется
+  между запусками; вкладка «Снаряжение» получает левую панель фильтров; любые
+  фильтры объединяются через AND и каждый изменённый фильтр вызывает
+  `/api/compendiums/:category`.
+- **pf2e_remaster_rule:** редкость предмета — `system.traits.rarity`
+  (`common`, `uncommon`, `rare`, `unique`); тип документа — `type`; категория
+  доспеха/оружия — `system.category`; цена — `system.price.value.gp/sp/cp`
+  (1 gp = 10 sp = 100 cp, 1 pp = 10 gp).
+- **behavior_and_boundaries:** реализованы фильтры Снаряжения и общий
+  price-фильтр каталога. Внутри одной группы значений действует OR, между
+  группами — AND. Пагинация `limit/offset` применяется после фильтрации.
+  Полнотекстовый поиск по описанию, сортировка по цене и сохранение состояния
+  фильтров между сессиями не входят в этот шаг.
+- **data_contracts:** индексы каталога получили компактные `rarity`, `category`,
+  `price`; HTTP-параметры `rarity`, `itemTypes`, `armorCategories`,
+  `weaponCategories`, `priceMin`, `priceMax`; клиентский контракт
+  `buildCompendiumUrl(tab, state)`.
+- **acceptance_tests:** см. разделы 5 и 6 ниже.
+- **delegated_assumptions:** цена без единицы измерения трактуется как золото
+  (`10` = `10 зм`), потому что подписи полей цены в UI используют золото как
+  основную валюту. Пустая или нераспознанная цена не участвует в сравнении.
+- **confidence:** 97%.
+
+## 1. Компендиум закрыт по умолчанию и глобальный язык
+
+### Компендиум
+
+`packages/client/src/ui/App.jsx`:
+
+- начальное состояние окон изменено с `{ compendium: true }` на
+  `{ compendium: false }`;
+- Компендиум открывается кнопкой «📖 Библиотека» в верхней панели или из
+  правой панели «Библиотеки».
+
+### Сохранение языка
+
+`packages/client/src/ui/i18n.js`:
+
+- добавлены `LANGUAGE_STORAGE_KEY = "pf2e.language"`;
+- `readStoredLanguage()` читает сохранённое значение и нормализует его в
+  `ru`/`en`;
+- `persistLanguage(value)` записывает выбор в `localStorage` и безопасно
+  игнорирует запрет записи в приватном режиме;
+- `setLanguage(value)` теперь также выставляет `document.documentElement.lang`,
+  чтобы глобальный язык совпадал с языком компендиума и UI.
+
+`packages/client/src/ui/StoreContext.jsx`:
+
+- убраны локальные дубли чтения/записи `localStorage`;
+- `useState(readStoredLanguage)` и `setLanguage()` используют общие helpers из
+  `i18n.js`;
+- переключатель RU/EN в `SettingsPanel.jsx` меняет UI, Compendium Browser и
+  сохраняет выбор.
+
+`packages/client/src/main.js`:
+
+- `setI18nLanguage(readStoredLanguage())` вызывается до монтирования лобби и
+  React-дерева, поэтому после F5 / повторного запуска первый кадр уже использует
+  нужный язык и нет вспышки русского словаря при сохранённом EN.
+
+## 2. Двухколоночный Compendium Browser
+
+`packages/client/src/ui/CompendiumBrowser.jsx`:
+
+- окно разделено на `.pf2e-compendium-sidebar` шириной 250 px и правую колонку
+  с карточками;
+- строка «Поиск» (`Искать…`) и фильтр «Уровни» (`От`/`До`) перенесены в левую
+  панель;
+- добавлена кнопка «Очистить все фильтры», сбрасывающая поиск, уровни,
+  чекбоксы и поля цены;
+- вкладки «Оружие» и «Щиты» удалены из верхней навигации; остаются
+  «Заклинания», «Бестиарий», «Черты», «Действия», «Снаряжение»;
+- `LibraryPanel.jsx` открывает каталог `equipment` в единой вкладке
+  «Снаряжение» (раньше открывалась вкладка `weapons`);
+- при смене вкладки состояние чекбоксов Снаряжения сбрасывается, чтобы старые
+  фильтры не влияли на другой каталог.
+
+`packages/client/src/ui/compendium-filters.js` — чистые, тестируемые helpers:
+
+- списки опций редкости, типов инвентаря, категорий доспехов и оружия;
+- `createEmptyEquipmentFilters()`;
+- `toggleFilterValue(values, value)`;
+- `hasEquipmentFilters(filters)`;
+- `buildCompendiumUrl(tab, state)` — собирает запрос и добавляет
+  equipment-параметры только для вкладки «Снаряжение».
+
+## 3. Фильтры Снаряжения в левой панели
+
+Для вкладки «Снаряжение» отображаются пять аккордеонов:
+
+- **Редкость:** `common`, `uncommon`, `rare`, `unique`.
+- **Типы инвентаря:** `ammo`, `armor`, `weapon`, `consumable`, `equipment`,
+  `shield`, `backpack`, `kit`, `treasure`, `book`.
+- **Фильтры доспехов:** `unarmored`, `light`, `medium`, `heavy`.
+- **Фильтры оружия:** `simple`, `martial`, `advanced`, `unarmed`.
+- **Цена:** текстовые поля «От» и «До» с подсказками `0 мм` / `10 зм` и
+  пояснением `1 зм = 10 см = 100 мм`.
+
+Поведение:
+
+- чекбоксы применяются сразу и вызывают новый запрос;
+- поиск, уровни и цена дебаунсятся на 250 мс;
+- «Очистить все фильтры» сбрасывает всё состояние и немедленно
+  перезапрашивает каталог;
+- в одной группе значения объединяются через OR, разные группы — через AND.
+
+## 4. Серверная фильтрация и парсинг цены
+
+`packages/server/src/index.js`:
+
+- `parseIndexFilters()` принимает:
+  - `rarity` / `rarities`;
+  - `itemTypes` / `itemType`;
+  - `armorCategories` / `armorCategory`;
+  - `weaponCategories` / `weaponCategory`;
+  - `priceMin`, `priceMax`;
+- списки принимают как повторяющиеся параметры
+  (`?rarity=rare&rarity=unique`), так и значения через запятую
+  (`?itemTypes=armor,shield`).
+
+`packages/server/src/compendium/catalog-service.js`:
+
+- `parsePriceToCp(value)` переводит строку цены в медь:
+  - `5 зм` → `500`;
+  - `10 см` → `100`;
+  - `4 gp` → `400`;
+  - `0 мм` → `0`;
+  - `1 зм 5 см` → `150`;
+  - `2.5 зм` / `1,5 см` → корректные доли;
+  - пустое/неизвестное/отрицательное значение → `null`.
+- `filterIndex()` получил:
+  - `rarity` — сравнение с `entry.rarity` или `system.traits.rarity`;
+  - `itemTypes` — сравнение с `entry.type`;
+  - `armorCategories` — требует `type: "armor"` и совпадения категории;
+  - `weaponCategories` — требует `type: "weapon"` и совпадения категории;
+  - `priceMin` / `priceMax` — сравнение в cp с `entry.price` или
+    `system.price.value`;
+  - фильтрация выполняется до сортировки и до обрезки `limit/offset`.
+- `readEntryRarity`, `readEntryCategory`, `readEntryPriceCp` понимают обе формы:
+  компактную индексную и полную Foundry-документную.
+- `CatalogService#_hydrateFilterFields()` подстраховывает старые
+  индексы без `rarity/category/price`: при первом запросе с такими фильтрами
+  недостающие поля один раз подтягиваются из полного кэшированного файла.
+
+`packages/server/scripts/build-compendiums.js`:
+
+- `makeIndexEntry()` теперь всегда пишет ключи `rarity`, `category` и `price`
+  (значение `null`, если поля нет в документе);
+- индексы остаются компактными, но сервер может фильтровать их без загрузки
+  полного 15–22 MB каталога на каждый запрос; наличие всех ключей позволяет
+  `_hydrateFilterFields()` отличить новый индекс от старого и не читать полный
+  файл зря.
+
+## 5. Контракты API
+
+```http
+GET /api/compendiums/equipment
+  ?lang=ru
+  &search=доспех
+  &minLevel=1&maxLevel=10
+  &rarity=rare,unique
+  &itemTypes=armor
+  &armorCategories=light,medium
+  &weaponCategories=simple
+  &priceMin=0%20мм
+  &priceMax=10%20зм
+  &limit=100
+  &offset=0
+```
+
+Правила:
+
+- все активные группы объединяются через AND;
+- значения внутри одной группы — OR;
+- `armorCategories` и `weaponCategories` одновременно могут вернуть пустой
+  список, потому что предмет не может быть одновременно доспехом и оружием;
+- `limit/offset` обрезают уже отфильтрованный массив;
+- ответ сохраняет заголовки `X-Total-Count`, `X-Filtered-Count`, `X-Lang`.
+
+## 6. Проверка
+
+- `npm run test:core` — **558/558**.
+- `npm run test --workspace=@pf2e/server` — **92/92**, включая новые:
+  - `price strings convert to copper pieces`;
+  - `index and full Foundry shapes expose rarity/category/price`;
+  - `rarity AND item type filters leave only rare armor`;
+  - `armor and weapon category filters target their own document type`;
+  - `price range filters use copper-piece comparisons`;
+  - `filters run before limit/offset pagination`;
+  - `comma-separated query values share OR semantics inside a group`;
+  - `equipment API combines rarity/type/category/price filters with AND`.
+- `npm run test --workspace=@pf2e/client` — **91/91**, включая новые:
+  - `toggleFilterValue adds and removes checkbox values`;
+  - `equipment filters are detected for the clear button/state`;
+  - `equipment URL carries combined rarity/type/category/price filters`;
+  - `non-equipment tabs never send stale equipment filters`;
+  - `the chosen language is persisted for the next launch`.
+- `npm run build --workspace=@pf2e/client` — успешно, **810 модулей**.
+- Пересборка каталога снаряжения:
+  `buildCategory("equipment")` → **5 956** предметов, EN index ≈ 2.39 MB,
+  RU index ≈ 2.52 MB. Фильтр `rarity+itemTypes+priceMax` выполнялся по индексу
+  без чтения полного файла (`_itemCache.size === 0`).
+
+### Ручная проверка в dev
+
+1. `npm run start:server` + `npm run dev:client`.
+2. Войти профилем GM.
+3. **Компендиум закрыт:** после входа и после F5 элемент
+   `.compendium-browser` отсутствует до нажатия «📖 Библиотека».
+4. **Язык сохраняется:** Настройки → EN → `localStorage["pf2e.language"] = "en"`,
+   `<html lang="en">`; после reload и повторного входа Compendium Browser
+   запрашивает `/api/compendiums/equipment?lang=en`.
+5. **Левая панель:** вкладка «Снаряжение» содержит
+   `.pf2e-compendium-sidebar` (~250 px), поиск, уровни, пять аккордеонов и
+   кнопку «Очистить все фильтры».
+6. **AND-фильтры:** отметить «Редкий» + «Доспех» → запрос
+   `?rarity=rare&itemTypes=armor&limit=100`, в результате 34 карточки, все
+   `type: "armor"`.
+7. **Цена:** открыть «Цена», ввести `0 мм` и `10 зм` → запрос
+   `?rarity=rare&itemTypes=armor&priceMin=0+мм&priceMax=10+зм`; ответ содержит
+   один предмет `Разделяющий боль санкейт(*)` с ценой `5 gp`, все карточки
+   соответствуют диапазону.
+8. **Очистка:** «Очистить все фильтры» → чекбоксы/поля пусты, запрос снова
+   `/api/compendiums/equipment?lang=ru&limit=100`, показано 100 из 5 956.
+
+## 7. Изменённые файлы
+
+- `packages/client/src/main.js`
+- `packages/client/src/ui/App.jsx`
+- `packages/client/src/ui/CompendiumBrowser.jsx`
+- `packages/client/src/ui/StoreContext.jsx`
+- `packages/client/src/ui/i18n.js`
+- `packages/client/src/ui/compendium-filters.js` (новый)
+- `packages/client/src/ui/sidebar/LibraryPanel.jsx`
+- `packages/client/src/ui/styles.css`
+- `packages/client/tests/i18n.test.js`
+- `packages/client/tests/compendium-filters.test.js` (новый)
+- `packages/client/package.json`
+- `packages/server/src/index.js`
+- `packages/server/src/compendium/catalog-service.js`
+- `packages/server/scripts/build-compendiums.js`
+- `packages/server/tests/catalog-filters.test.js` (новый)
+- `packages/server/tests/world-transfer.test.js`
+- `packages/server/package.json`
+- `packages/server/data/compendiums/equipment.*.index.json` (пересобраны)
+- `docs/HANDOFF.md`, `docs/ROADMAP.md`
+
+---
+
+# Шаг 6.7 — Глобальный i18n, расширенные фильтры и переключатели эффектов
+
+## Feature Readiness — Шаг 6.7
+
+- **goal:** RU/EN переключается без перезагрузки во всех компонентах с `t()`;
+  Компендиум показывает иконки предметов с fallback; вкладки Заклинаний,
+  Бестиария и Черт получают тематические аккордеоны; общий фильтр «Признаки»
+  умеет включать и исключать теги; `RollOption`-переключатели в листе
+  персонажа мгновенно пересчитывают КБ/атаки/спасброски.
+- **pf2e_remaster_rule:** редкость — `system.traits.rarity`; обычаи —
+  `system.traits.traditions` (`arcane`, `divine`, `occult`, `primal`); ранг
+  заклинания — `system.level.value`; категория заклинания выводится из
+  признаков `cantrip`/`focus`/`ritual`; размер существа —
+  `system.traits.size.value` (`tiny/sm/med/lg/huge/grg`); категория черты —
+  `system.category`; признак `traitsIn` требует присутствия ВСЕХ тегов, а
+  `traitsOut` запрещает ЛЮБОЙ из них. `FlatModifier` применяется только при
+  истинном `predicate`, где имя без namespace — активная `RollOption`.
+- **behavior_and_boundaries:** реализованы клиентские аккордеоны и серверная
+  фильтрация по индексу/полному документу, трёхпозиционные теги, сбор
+  toggleable `RollOption` и применение `FlatModifier` к `ac`, инициативе,
+  восприятию, спасброскам, навыкам и атакам ударов. `FlatModifier` для урона,
+  degrees-of-success и сложные item-relative селекторы (например,
+  `bow-group-attack-roll`) в этот шаг не входят. Полнотекстовый поиск по
+  описанию и сохранение фильтров между сессиями не входят.
+- **data_contracts:** `system.toggles[] = { id, option, label, itemId,
+  itemName, domain, enabled }`; состояние — `system.flags.pf2e.rollOptions`
+  (поддерживаются плоская форма и Foundry-домен `all`); производные
+  `system.ruleModifiers` и `system.derived.armorClass.ruleModifiers`;
+  query-параметры `traitsIn`, `traitsOut`, `spellCategories`, `traditions`,
+  `ranks`, `sizes`, `featCategories`, `skills`, `rarity`; клиентский
+  контракт `buildCompendiumUrl(tab, state)`.
+- **acceptance_tests:** см. разделы ниже; ключевые —
+  `toggleable RollOption enables its predicate-gated FlatModifier`,
+  `enabled attack FlatModifier changes Strike attack numbers`,
+  `traitsIn requires every tag and traitsOut rejects any excluded tag`,
+  `trait filter cycles none -> included -> excluded -> none`.
+- **delegated_assumptions:** фокусные заклинания в текущем каталоге не хранят
+  `system.traits.traditions`, поэтому фильтр обычаев для них может давать
+  пустую выдачу; это свойство данных, а не потеря фильтра. Иконки без
+  доступного файла заменяются на `/assets/ui/item-placeholder.svg`.
+- **confidence:** 97%.
+
+## 1. Глобальный i18n через `useTranslation()`
+
+`packages/client/src/ui/i18n.js`:
+
+- добавлен `useSyncExternalStore`-хук `useTranslation()`, возвращающий
+  `{ t, language, revision }`;
+- `setLanguage()` увеличивает глобальную ревизию и уведомляет подписчиков;
+  завершение загрузки `/api/i18n` также уведомляет их, поэтому поздние
+  переводы заменяют английские fallback без F5;
+- `StoreContext` по-прежнему вызывает `setLanguage` из `i18n.js` при смене
+  языка в Настройках, поэтому хук фактически подписан на язык StoreContext.
+
+`packages/client/src/ui/windows/CharacterSheet.jsx`:
+
+- вместо статического `t` используется `const { t } = useTranslation()`;
+- заголовки вкладок, «Класс брони»/«СИЛ» и прочие локализованные подписи
+  перерисовываются сразу после RU/EN.
+
+`packages/client/src/ui/windows/character/CharacterTabs.jsx`:
+
+- `CombatTab` также использует `useTranslation()` для подписи переключателей,
+  если `rule.label` — ключ вида `PF2E.*`.
+
+`packages/client/src/ui/CompendiumBrowser.jsx`:
+
+- вкладки используют `PF2E.CompendiumBrowser.Tab*` и перерисовываются через
+  `useTranslation()`; язык из хука также уходит в `/api/compendiums`.
+
+## 2. Иконки предметов
+
+- `CompendiumCard` уже брал `entry.img`; fallback через `onError` на
+  `item-placeholder.svg` сохранён.
+- `CompendiumSelectModal` (списки родословных/наследий/классов) показывает
+  иконку слева с тем же fallback.
+- `ItemSheetModal` теперь сбрасывает ошибку при смене предмета, показывает
+  `item.img` и заменяет 404 на дефолтный `item-placeholder.svg`.
+
+## 3. Расширенные фильтры Компендиума
+
+`packages/client/src/ui/compendium-filters.js`:
+
+- `SPELL_CATEGORIES` — Заклинание, Чары, Фокус, Ритуал;
+- `SPELL_TRADITIONS` — Арканный, Оккультный, Природный, Сакральный;
+- `SPELL_RANKS` — 1–10;
+- `CREATURE_SIZES` — Крошечный, Маленький, Средний, Большой, Огромный,
+  Исполинский;
+- `FEAT_CATEGORIES` и `FEAT_SKILLS` — категории черт и 16 навыков;
+- `createEmptyAdvancedFilters()`, `hasAdvancedFilters()`,
+  `cycleTraitFilter()`, `traitFilterState()`.
+
+`packages/client/src/ui/CompendiumBrowser.jsx`:
+
+- вкладка «Заклинания»: аккордеоны «Категории», «Обычаи», «Ранги», «Редкость»;
+- вкладка «Бестиарий»: «Размеры», «Редкость» и общий блок «Уровни (От/До)»;
+- вкладка «Черты»: «Категории», «Навыки», «Редкость» и «Уровни (От/До)»;
+- во всех вкладках добавлен аккордеон «Признаки» с полем поиска тега;
+- палитра тегов загружается из
+  `GET /api/compendiums/:category/facets?type=npc`, поэтому тег `android`
+  доступен даже вне первых 100 карточек;
+- при смене вкладки и нажатии «Очистить все фильтры» расширенное состояние
+  сбрасывается.
+
+`packages/server/src/compendium/catalog-service.js`:
+
+- чтение `traits`, `traditions`, `spellCategory`, `size`, `featCategory`,
+  `skills` из компактного индекса и полного Foundry-документа;
+- `_hydrateFilterFields()` подтягивает недостающие поля из полного кэша;
+- `filterIndex()` применяет новые группы через AND, значения внутри группы —
+  через OR; `ranks` работает как точный список уровней;
+- `readEntrySpellCategory()` выводит `cantrip`/`focus`/`ritual` из признаков.
+
+## 4. Признаки с исключением
+
+- Клик по тегу: нет выбора → `traitsIn` (зелёный, ✓) → `traitsOut`
+  (красный, ✕ и перечёркивание) → сброс.
+- Тег не может одновременно быть в `traitsIn` и `traitsOut`.
+- Запрос: `?traitsIn=tag1,tag2&traitsOut=tag3`.
+- Сервер возвращает только записи, содержащие ВСЕ `traitsIn` и не содержащие
+  ни одного `traitsOut`.
+- Проверено на реальном бестиарии: 1 702 существа, 1 андроид
+  (`Android Infiltrator`), с `traitsOut=android` — 1 701 запись.
+
+## 5. Переключатели `RollOption` / `FlatModifier`
+
+`packages/core/src/actor/prepare-data.js`:
+
+- `collectToggleableRollOptions()` собирает `RollOption` с
+  `toggleable: true`; `alwaysActive` используется как значение по умолчанию,
+  пока пользователь не записал явный флаг;
+- `readRollOptionFlags()`/`activeRollOptions()` читают
+  `system.flags.pf2e.rollOptions` в плоской форме и в форме `all`;
+- `rulePredicatesPass()` теперь считает голое имя (`nimble-dodge`) активной
+  опцией и поддерживает `class:*`, `item:trait:*`, `item:type:*`,
+  `item:category:*`, `item:equipped/held/worn`, `or`/`and`/`not`;
+- `collectRuleModifiers()` применяет `FlatModifier` только при выполненном
+  предикате и раскладывает значения по селекторам:
+  `ac`, `perception`, `initiative`, спасброски, навыки, `attack`/`attack-roll`,
+  `skill-check`, `saving-throw`;
+- AC использует каноническое типовое стекование (лучший бонус/худший штраф
+  одного типа, untyped складывается), поэтому «Ловкое уклонение» даёт +2
+  обстоятельства к КБ, а «Ageless Patience» — +2 к Восприятию и проверкам
+  навыков;
+- `applyRuleModifiersToStrikes()` меняет атаку/вторую/третью атаку, сохраняя
+  `baseAttack`, поэтому повторная подготовка идемпотентна.
+
+`packages/client/src/ui/windows/character/CharacterTabs.jsx`:
+
+- вкладка «Бой» получила секцию «Переключатели» с чекбоксами;
+- переключение записывает
+  `system.flags.pf2e.rollOptions.all[option]` и вызывает `updateSystem`,
+  который пересчитывает актёра и отправляет `room:update-actor`.
+
+## 6. Контракты API
+
+```http
+GET /api/compendiums/spells
+  ?lang=ru
+  &spellCategories=focus,cantrip
+  &traditions=occult,divine
+  &ranks=1,2
+  &rarity=uncommon
+  &traitsIn=mental
+  &traitsOut=android
+  &limit=100
+
+GET /api/compendiums/monsters
+  ?lang=ru&type=npc&sizes=med,huge&rarity=rare&traitsOut=android
+
+GET /api/compendiums/feats
+  ?lang=ru&featCategories=skill&skills=acrobatics&traitsOut=general
+
+GET /api/compendiums/monsters/facets?lang=ru&type=npc
+  -> { category, lang, traits: ["aberration", "android", ...] }
+```
+
+Правила: списки принимают повторы и значения через запятую; группы
+объединяются через AND; `traitsIn` — AND по тегам, `traitsOut` — запрет любого
+тега.
+
+## 7. Проверка
+
+- `npm run test:core` — **558/558**.
+- `npm run test --workspace=@pf2e/server` — **99/99**, включая новые:
+  - `traitsIn requires every tag and traitsOut rejects any excluded tag`;
+  - `spell category/tradition/rank filters use AND across groups`;
+  - `bestiary size and feat category/skill filters are independent groups`;
+  - `catalogue facets expose every tag, optionally narrowed by type`;
+  - `spell category is derived from focus/cantrip/ritual traits`;
+  - `toggleable RollOption enables its predicate-gated FlatModifier`;
+  - `enabled attack FlatModifier changes Strike attack numbers`.
+- `npm run test --workspace=@pf2e/client` — **94/94**, включая
+  `trait filter cycles none -> included -> excluded -> none`,
+  `advanced filters are detected and included only on relevant tabs` и
+  `language changes notify useTranslation subscribers immediately`.
+- `npm run build --workspace=@pf2e/client` — успешно, **810 модулей**.
+- Реальные данные: заклинания-чары — 120, ранг 1 — 507; черты категории
+  `skill` с Acrobatics — 17; бестиарий без андроидов — 1 701 из 1 702;
+  средние существа — 724; редкие — 115.
+
+### Ручная проверка в dev
+
+1. `npm run start:server` + `npm run dev:client`, войти профилем GM.
+2. Открыть лист персонажа, сменить Настройки → EN/RU: подписи вкладок и
+   локальные заголовки меняются без F5.
+3. Открыть «📖 Библиотека»: слева от каждого названия видна иконка; при
+   битом пути показывается `item-placeholder.svg`.
+4. Бестиарий → «Признаки» → ввести `android` → клик (✓) оставляет только
+   `Android Infiltrator`; второй клик (✕) исключает его и возвращает 1 701
+   запись; третий клик сбрасывает фильтр.
+5. Заклинания → «Чары» + «Оккультный»; Бестиарий → «Размеры: Средний»;
+   Черты → «Навыки: Акробатика» — выдача и URL соответствуют выбранным
+   группам.
+6. Добавить персонажу «Nimble Dodge»: во вкладке «Бой» появляется чекбокс
+   `Nimble Dodge`; включение сразу повышает КБ на +2 (обстоятельство),
+   выключение возвращает прежнее значение; изменение уходит в
+   `room:update-actor`.
+
+## 8. Изменённые файлы (Шаг 6.7)
+
+- `packages/client/src/ui/i18n.js`
+- `packages/client/src/ui/windows/CharacterSheet.jsx`
+- `packages/client/src/ui/windows/character/CharacterTabs.jsx`
+- `packages/client/src/ui/windows/character/ItemSheetModal.jsx`
+- `packages/client/src/ui/CompendiumBrowser.jsx`
+- `packages/client/src/ui/compendium-filters.js`
+- `packages/client/src/ui/styles.css`
+- `packages/client/tests/compendium-filters.test.js`
+- `packages/core/src/actor/prepare-data.js`
+- `packages/server/src/index.js`
+- `packages/server/src/compendium/catalog-service.js`
+- `packages/server/tests/catalog-filters.test.js`
+- `packages/server/tests/actor-pipeline.test.js`
+- `docs/HANDOFF.md`, `docs/ROADMAP.md`
+
+---
+
+# Шаг 6.8 — Полная локализация UI, двухколоночные навыки, Биография и контекстное меню сцен
+
+## Feature Readiness — Шаг 6.8
+
+- **goal:** при выборе EN весь интерфейс платформы (Toolbar, правая панель,
+  Combat Tracker, Компендиум, директории, меню сцен) отображается на
+  английском; 16 базовых навыков идут двумя колонками в алфавитном порядке
+  локализованных названий; лист персонажа получает вкладку «Биография» с
+  редактируемыми по карандашу WYSIWYG-полями; у карточки сцены появляется
+  ПКМ-меню с просмотром, активацией, предзагрузкой, экспортом/импортом,
+  копией и удалением.
+- **pf2e_remaster_rule:** названия навыков и биографических разделов берутся
+  из Foundry-словаря `PF2E.Skill.*` и `PF2E.Biography*`; навыки персонажа —
+  это 16 фиксированных навыков PF2e Remastered; биография хранится в
+  `system.details.biography` и не участвует в расчёте КБ/ХП/спасбросков.
+- **behavior_and_boundaries:** локализованы все строки перечисленных
+  компонентов, включая подписи фильтров, тултипы, aria-label, пустые
+  состояния и ошибки. Реализованы двухколоночная сетка навыков, новая
+  вкладка «Биография», переиспользуемый `RichTextEditor`, GM-only просмотр
+  сцены, предзагрузка изображения и операции контекстного меню. В этот шаг не
+  входят: перевод всех исторических текстов Журнала/листа персонажа, серверная
+  авторизация просмотра сцены (просмотр — чисто клиентское состояние GM),
+  синхронизация viewedSceneId игрокам и хранение фильтров Компендиума между
+  сессиями.
+- **data_contracts:**
+  `system.details.biography = { height, weight, backstory, personality,
+  beliefs, edicts[], anathema[], likes, dislikes, catchphrases, campaignNotes,
+  allies, enemies, organizations }`;
+  `StoreContext.viewedSceneId: string|null`;
+  WS `room:preload-scene { sceneId }` → broadcast
+  `room:preload-scene { sceneId, name, img, by }`;
+  DOM `pf2e:view-scene { sceneId, scene }`;
+  сцена в директории хранит `img/gridSize/backgroundColor/walls/drawings/lights/tokens`.
+- **acceptance_tests:** `t("PF2E.Platform.Sidebar.TabScenes")` → «Сцены»/«Scenes»;
+  `formatMessage` подставляет имя сцены; двухколоночный CSS Grid; сортировка
+  навыков по локализованному названию; сохранение биографии уходит в
+  `room:update-actor`; копия сцены сохраняет массивы канваса; удаление
+  активной сцены возвращает базовую сцену; `room:preload-scene` доставляет
+  `img` всем клиентам.
+- **delegated_assumptions:** «Просмотр» не меняет `activeSceneId` и не
+  отправляет серверу новую активную сцену; изображение предзагружается через
+  `new Image().src` без гарантии завершения декодирования; импорт сцены
+  заменяет конфигурацию и канвас выбранной сцены, а не создаёт новую.
+- **confidence:** 97%.
+
+## 1. Локальный словарь платформы и полная локализация
+
+`packages/client/src/ui/i18n.js`:
+
+- добавлен `PLATFORM_TRANSLATIONS` — локальная таблица `[ru, en]` для
+  строк, которых нет в официальном `pf2e.json`: вкладки правой панели,
+  категории/инструменты Toolbar, Combat Tracker, аккордеоны и фильтры
+  Компендиума, директории, меню сцен, биография и панель WYSIWYG;
+- `translate()` сначала ищет ключ в `PLATFORM_TRANSLATIONS`, затем в
+  загруженном Foundry-словаре; EN возвращает английское значение локальной
+  таблицы или переданный fallback;
+- добавлен `formatMessage(template, values)` для подстановки `{name}`,
+  `{sceneId}`, `{count}` и других плейсхолдеров.
+
+`Toolbar.jsx`, `RightSidebar.jsx`, `CombatTracker.jsx`,
+`CompendiumBrowser.jsx`, `DirectoryPanel.jsx`:
+
+- все видимые подписи, тултипы, aria-label, статусы, пустые состояния и
+  сообщения об ошибках переведены на `t()`; `SettingsPanel.jsx` также
+  локализует язык UI и блок управления миром;
+- опции фильтров Компендиума получили `labelKey` + английский `labelEn`;
+- при переключении RU/EN компоненты перерисовываются через
+  `useTranslation()`, не требуя F5.
+
+## 2. Двухколоночные навыки
+
+`packages/client/src/ui/windows/character/CharacterTabs.jsx`:
+
+- `SkillsTab` строит `localizedSkills` из `SKILLS`:
+  `displayLabel = t(skill.labelKey, skill.name)`;
+- массив сортируется через `localeCompare` с локалью активного языка, поэтому
+  порядок меняется при смене RU/EN;
+- базовый список получил класс `pf2e-skill-grid`.
+
+`packages/client/src/ui/styles.css`:
+
+```css
+.pf2e-skill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+```
+
+Список «Знания» остаётся одноколоночным.
+
+## 3. Вкладка «Биография» и RichTextEditor
+
+`packages/client/src/ui/RichTextEditor.jsx` (новый):
+
+- вынесен из `JournalSheet.jsx` WYSIWYG-редактор на
+  `document.execCommand` (форматы, стиль, жирный/курсив, цвет, списки,
+  выравнивание, изображение, очистка форматирования, сохранение);
+- поддерживает внешний `editorRef`, `initialValue`, `onChange`, `onSave`,
+  `disabled`, placeholder и локализованные подписи;
+- `JournalSheet.jsx` теперь использует `RichTextEditor` вместо собственной
+  панели и `contenteditable`.
+
+`CharacterSheet.jsx`:
+
+- вкладка `biography` добавлена в `SHEET_TABS` сразу после `effects`;
+- рендер вкладки — `<BiographyTab {...commonTabProps} />`.
+
+`CharacterTabs.jsx`:
+
+- удалён старый блок «Сведения» (пол/возраст/этничность/национальность) со
+  вкладки «Основа»;
+- `BiographyTab` содержит:
+  * «Внешность»: Рост, Вес;
+  * «Предыстория»: форматированный текст;
+  * «Личность»: Характер, Убеждения, списки Эдикты/Анафемы, Любит, Не любит,
+    Коронные фразы;
+  * «Кампании»: Заметки, Союзники, Противники, Организации;
+- по умолчанию поля только для чтения; карандаш появляется на hover/focus и
+  включает режим редактирования;
+- сохранение идёт через `updateSystem` → `prepareActorSystem` →
+  `networkClient.updateActor` → `room:update-actor`, данные пишутся в
+  `system.details.biography`.
+
+## 4. Контекстное меню и режимы сцен
+
+`StoreContext.jsx`:
+
+- добавлено клиентское состояние `viewedSceneId` и сеттер
+  `setViewedSceneId`; активация сцены сервером сбрасывает просмотр.
+
+`DirectoryPanel.jsx`:
+
+- ПКМ по карточке сцены открывает меню: «Просмотр», «Активация»,
+  «Предзагрузить», «Экспорт данных», «Импорт данных», «Создать копию»,
+  «Удалить»;
+- «Просмотр» доступен только GM: выставляет `viewedSceneId`, отправляет
+  DOM-событие `pf2e:view-scene` и не трогает `activeSceneId`;
+- «Активация» вызывает `networkClient.activateScene` и сбрасывает просмотр;
+- «Предзагрузить» вызывает `networkClient.preloadScene`;
+- «Экспорт данных» скачивает `*.scene.json` с конфигурацией и массивами
+  стен/рисунков/света/токенов;
+- «Импорт данных» читает JSON и заменяет канвас и настройки сцены;
+- «Создать копию» создаёт новую сцену с теми же массивами;
+- «Удаление» подтверждается `ConfirmModal`.
+
+`main.js`:
+
+- `viewedSceneId`/последнее активное состояние хранятся локально; холст
+  применяет просматриваемую сцену через `applyViewedScene` и возвращается к
+  активной через `restoreActiveScene`;
+- сохранение канваса, обновления канваса и тумана используют
+  `canvasSceneId() = viewedSceneId || activeSceneId`;
+- подписка `network.onPreloadScene` создаёт `new Image()` с
+  `payload.img`, прогревая кэш браузера.
+
+`network-client.js`:
+
+- `preloadScene(sceneId)` → WS `room:preload-scene`;
+- `onPreloadScene(callback)` → подписка на `room:preload-scene`.
+
+`packages/server/src/index.js`:
+
+- обработчик `room:preload-scene` разрешает `img/name` через
+  `session.getSceneSettings()` и рассылает событие всей комнате.
+
+`packages/server/src/room/encounter-session.js`:
+
+- `createDirectoryEntry("scenes", ...)` сохраняет переданные
+  `walls/drawings/lights/tokens` (копия/импорт не теряют канвас);
+- удаление активной сцены активирует базовую сцену и рассылает
+  `room:scene-activated`.
+
+## 5. Проверка
+
+- Core: `npm run test:core` — **558/558**.
+- Server: `npm run test --workspace=@pf2e/server` — **101/101**
+  (добавлены копия канваса сцены, удаление активной сцены и
+  `room:preload-scene`).
+- Client: `npm run test --workspace=@pf2e/client` — **95/95**
+  (добавлен тест локального словаря платформы и `formatMessage`).
+- Build: `npm run build --workspace=@pf2e/client` — успешно, **811 модулей**.
+
+## 6. Изменённые файлы
+
+- `packages/client/src/ui/i18n.js`
+- `packages/client/src/ui/Toolbar.jsx`
+- `packages/client/src/ui/sidebar/RightSidebar.jsx`
+- `packages/client/src/ui/sidebar/CombatTracker.jsx`
+- `packages/client/src/ui/sidebar/SettingsPanel.jsx`
+- `packages/client/src/ui/sidebar/DirectoryPanel.jsx`
+- `packages/client/src/ui/CompendiumBrowser.jsx`
+- `packages/client/src/ui/compendium-filters.js`
+- `packages/client/src/ui/RichTextEditor.jsx` (новый)
+- `packages/client/src/ui/StoreContext.jsx`
+- `packages/client/src/ui/windows/JournalSheet.jsx`
+- `packages/client/src/ui/windows/CharacterSheet.jsx`
+- `packages/client/src/ui/windows/character/CharacterTabs.jsx`
+- `packages/client/src/ui/windows/character/character-data.js`
+- `packages/client/src/ui/styles.css`
+- `packages/client/src/net/network-client.js`
+- `packages/client/src/main.js`
+- `packages/client/tests/i18n.test.js`
+- `packages/server/src/index.js`
+- `packages/server/src/room/encounter-session.js`
+- `packages/server/tests/scenes.test.js`
+- `docs/HANDOFF.md`, `docs/ROADMAP.md`
+
+# Шаг 6.9 — Краш правой панели, удаление верхней панели и доперевод UI
+
+## Feature Readiness — Шаг 6.9
+
+- **goal:** клик по вкладкам «Актёры»/«Журналы» больше не размонтирует весь
+  React-интерфейс; верхняя навигационная панель удалена; остаточные строки
+  чата и HUD переводятся RU/EN без перезагрузки.
+- **pf2e_remaster_rule:** N/A — чисто интерфейсный слой, правила PF2e
+  Remastered не затрагиваются.
+- **behavior_and_boundaries:** исправлен рендер директорий и добавлена
+  изоляция ошибок вкладок. Компендиум открывается только из вкладки
+  «Библиотеки». Кастомные темы/скины и новые окна не добавлялись.
+- **data_contracts:** форма `directories[kind].entries/folders` не менялась;
+  уровень актёра читается как `entry.level` либо
+  `entry.system.details.level.value`.
+- **acceptance_tests:** вкладки актёров/журналов открываются при пустых и
+  заполненных списках; ошибка рендера вкладки показывает «Ошибка рендера»,
+  не трогая левый HUD; RU/EN переключает видимость чата, placeholder,
+  drag-and-drop подсказку и тултипы; сборка клиента проходит.
+- **delegated_assumptions:** нет.
+- **confidence:** 98%.
+
+## 1. Корневая причина исчезновения HUD
+
+`DirectoryPanel.jsx` → `EntryRow` вызывал `entrySubtitle(kind, entry)` **без
+третьего аргумента `t`**. Для актёров и журналов helper обращался к
+`t()`/`formatMessage(t(...))`, где `t` был `undefined`, что бросало
+`TypeError` прямо во время render. React при необработанной ошибке render
+размонтировал всё дерево — вместе с левым HUD, списком игроков и чатом.
+
+Исправления:
+
+- `EntryRow` передаёт локализатор: `entrySubtitle(kind, entry, t)`.
+- Уровень актёра читается защищённо (`actorLevel`): поддерживаются
+  `entry.level` и вложенный `entry.system.details.level.value`; отсутствие
+  уровня даёт `1`, а не исключение.
+- Списки/папки директории нормализуются до массивов, а чтение `pages`,
+  `itemType`, `actorType`, `name`, `id`, `img`, `folderId` использует
+  optional chaining.
+- Добавлен классовый `ErrorBoundary` (`packages/client/src/ui/ErrorBoundary.jsx`).
+  Содержимое вкладки в `RightSidebar.jsx` обёрнуто в него с `key={activeTab}`:
+  падение одной вкладки показывает локализованный текст «Ошибка рендера» и
+  кнопку «Повторить», а остальной интерфейс остаётся смонтированным. Смена
+  вкладки автоматически сбрасывает boundary.
+- Дополнительно в `App.jsx` изолированы `Toolbar`, `PlayerList`, `Hotbar`,
+  `RightSidebar` и `CompendiumBrowser`: ошибка одного HUD-виджета не
+  размонтирует соседние.
+
+## 2. Удаление верхней навигационной панели
+
+- Из `App.jsx` полностью удалён `.ui-topbar` (бренд, кнопка «Библиотека»,
+  статус WebSocket, роль и строка боя), а также неиспользуемые
+  `useStore`/`toggleWindow`.
+- Компендиум открывается только через вкладку «Библиотеки» правой панели
+  (`LibraryPanel` → `onOpenCompendium`).
+- Удалены CSS-правила `.ui-topbar*`, `.ui-status-dot*`, `.ui-role-badge`.
+- `right-sidebar` теперь начинается с `top: 0` (desktop и mobile), а
+  `.compendium-browser` поднят с `top: 64px` до `top: 20px`
+  (`height: calc(100vh - 40px)`); на узких экранах — `top: 12px`.
+- Добавлены стили `.ui-error-boundary*` для изолированной ошибки.
+
+## 3. Доперевод интерфейса
+
+В `PLATFORM_TRANSLATIONS` добавлены ключи:
+
+- видимость чата: `PF2E.Platform.Chat.Visibility.Public/Gm/Blind/Self` и
+  соответствующие `*Title` (тултипы);
+- композер: `Chat.Placeholder`, `Chat.DropHint`, `Chat.Uploading`,
+  `Chat.Empty`, `Chat.Send/SendTitle`, `Chat.Clear*`;
+- сообщения и карточки: `Chat.HiddenMessage`, `Chat.HiddenContent`,
+  `Chat.HiddenResult`, `Chat.ImageAlt`, `Chat.Save.*`, `Chat.Damage*`,
+  `Chat.DCShort`, `Chat.SelectToken`, `Chat.CharacterPrefix`;
+- быстрый ввод (`FloatingChatInput`): `Chat.QuickPlaceholder`,
+  `Chat.QuickExpand`, `Chat.RollDice`, `Chat.QuickInput`;
+- HUD игроков: `Players.Title/Aria/Waiting/RoleGm/RolePlayer/Configure*`;
+- системные: `Common.RenderError`, `Common.Retry`, `Common.Yes/No`.
+
+`ChatPanel.jsx` использует `useTranslation()` и `formatMessage()`; массив
+`VISIBILITIES` теперь хранит `labelKey`/`titleKey`, поэтому подписи и тултипы
+переключаются мгновенно. `FloatingChatInput.jsx`, `PlayerList.jsx` и
+`Toolbar.jsx` также читают строки через `useTranslation()`. Время сообщений
+форматируется по текущему языку (`ru-RU`/`en-US`).
+
+## 4. Проверка
+
+- Core: `npm run test:core` — **558/558**.
+- Server: `npm run test --workspace=@pf2e/server` — **101/101**.
+- Client: `npm run test --workspace=@pf2e/client` — **96/96**
+  (добавлен регрессионный тест RU/EN для видимости чата, placeholder,
+  drag-and-drop подсказки и тултипов HUD).
+- Build: `npm run build --workspace=@pf2e/client` — успешно, **812 модулей**.
+
+## 5. Изменённые файлы
+
+- `packages/client/src/ui/ErrorBoundary.jsx` (новый)
+- `packages/client/src/ui/App.jsx`
+- `packages/client/src/ui/ChatPanel.jsx`
+- `packages/client/src/ui/Toolbar.jsx` (проверен: все тултипы уже через `t()`)
+- `packages/client/src/ui/PlayerList.jsx`
+- `packages/client/src/ui/i18n.js`
+- `packages/client/src/ui/sidebar/DirectoryPanel.jsx`
+- `packages/client/src/ui/sidebar/RightSidebar.jsx`
+- `packages/client/src/ui/sidebar/FloatingChatInput.jsx`
+- `packages/client/src/ui/styles.css`
+- `packages/client/tests/i18n.test.js`
+- `docs/HANDOFF.md`

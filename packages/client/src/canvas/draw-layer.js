@@ -1,5 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 
+import { requestCanvasText } from "../ui/overlays/dialog-service.js";
+
 const DEFAULT_COLOR = "#ff6400";
 const TEXT_PADDING = 6;
 const HIT_PADDING = 6;
@@ -922,14 +924,28 @@ export class DrawLayer extends Container {
     }
   }
 
-  /** Text tool click: edit an existing label or create a new one. */
-  handleTextClick(worldPoint) {
+  /**
+   * Text tool click: edit an existing label or create a new one.
+   *
+   * Step 5.8: the label is typed into an HTML input rendered at the click
+   * position (React overlay) instead of a browser `window.prompt`.
+   */
+  async handleTextClick(worldPoint) {
     const existing = this._textAt(worldPoint);
     if (existing) {
-      this.editText(existing);
+      await this.editText(existing);
       return existing;
     }
-    const value = window.prompt("Текст:", "Текст");
+    const screen =
+      this.viewport && typeof this.viewport.worldToScreen === "function"
+        ? this.viewport.worldToScreen(worldPoint)
+        : { x: 0, y: 0 };
+    const value = await requestCanvasText({
+      world: worldPoint,
+      screen: screen,
+      value: "",
+      color: this.color,
+    });
     if (value === null) {
       return null;
     }
@@ -940,11 +956,22 @@ export class DrawLayer extends Container {
     return this._createText(worldPoint, trimmed);
   }
 
-  editText(text) {
+  async editText(text) {
     if (!text) {
       return;
     }
-    const value = window.prompt("Редактировать текст:", text.text);
+    const world = { x: text.x, y: text.y };
+    const screen =
+      this.viewport && typeof this.viewport.worldToScreen === "function"
+        ? this.viewport.worldToScreen(world)
+        : { x: 0, y: 0 };
+    const item = text._drawItem || null;
+    const value = await requestCanvasText({
+      world: world,
+      screen: screen,
+      value: text.text,
+      color: (item && item.color) || this.color,
+    });
     if (value === null) {
       return;
     }

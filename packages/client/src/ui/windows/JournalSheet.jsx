@@ -1,29 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { promptText } from "../overlays/dialog-service.js";
 import { useStore } from "../StoreContext.jsx";
-
-const FORMAT_OPTIONS = [
-  { value: "p", label: "Обычный текст" },
-  { value: "h1", label: "Заголовок 1" },
-  { value: "h2", label: "Заголовок 2" },
-  { value: "h3", label: "Заголовок 3" },
-  { value: "blockquote", label: "Цитата" },
-  { value: "pre", label: "Блок кода" },
-];
-
-const INLINE_OPTIONS = [
-  { value: "default", label: "Обычный" },
-  { value: "code", label: "Код" },
-];
+import RichTextEditor from "../RichTextEditor.jsx";
 
 /**
  * Standalone Journal window (Step 4.5).
  *
  * Pages live on the server (in-memory for now) and are sorted through HTML5
- * drag-and-drop in the left column. The right column is a `contenteditable`
- * WYSIWYG surface driven by `document.execCommand`, which keeps the basic
- * Foundry-style formatting controls functional without a rich-text dependency.
+ * drag-and-drop in the left column. The right column delegates to the shared
+ * `RichTextEditor` (Step 6.8), which owns the `contenteditable` surface and
+ * the `document.execCommand` toolbar.
  */
 export default function JournalSheet({ journalId, onClose }) {
   const { directories, networkClient } = useStore();
@@ -47,9 +35,6 @@ export default function JournalSheet({ journalId, onClose }) {
 
   const [activePageId, setActivePageId] = useState(pages[0] ? pages[0].id : null);
   const [search, setSearch] = useState("");
-  const [format, setFormat] = useState("p");
-  const [inlineStyle, setInlineStyle] = useState("default");
-  const [color, setColor] = useState("#e8ecf3");
   const [dragIndex, setDragIndex] = useState(null);
   const [saveState, setSaveState] = useState("");
   const [pendingNewPageCount, setPendingNewPageCount] = useState(null);
@@ -78,15 +63,8 @@ export default function JournalSheet({ journalId, onClose }) {
     }
   }, [pendingNewPageCount, pages]);
 
-  // Load page HTML into the editable surface only when the page changes.
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = activePage ? activePage.content || "" : "";
-      setFormat("p");
-      setInlineStyle("default");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePage ? activePage.id : null]);
+  // RichTextEditor writes `activePage.content` into the editable surface when
+  // the selected page changes; no manual innerHTML writes are needed here.
 
   const filteredPages = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -98,40 +76,17 @@ export default function JournalSheet({ journalId, onClose }) {
     );
   }, [pages, search]);
 
-  const exec = (command, value = null) => {
-    if (!editorRef.current) {
-      return;
-    }
-    editorRef.current.focus();
-    try {
-      document.execCommand(command, false, value);
-    } catch (error) {
-      setSaveState("Команда форматирования недоступна.");
-    }
-  };
-
-  const applyFormat = (event) => {
-    const value = event.target.value;
-    setFormat(value);
-    exec("formatBlock", "<" + value + ">");
-  };
-
-  const applyInlineStyle = (event) => {
-    const value = event.target.value;
-    setInlineStyle(value);
-    if (value === "code") {
-      exec("fontName", "monospace");
-    } else {
-      exec("fontName", "Signika");
-    }
-  };
-
-  const addPage = () => {
+  const addPage = async () => {
     if (!networkClient) {
       setSaveState("Нет соединения с сервером.");
       return;
     }
-    const name = window.prompt("Название страницы", "Новая страница");
+    const name = await promptText({
+      title: "Новая страница",
+      message: "Название страницы:",
+      defaultValue: "Новая страница",
+      placeholder: "Название страницы",
+    });
     if (name === null) {
       return;
     }
@@ -179,20 +134,6 @@ export default function JournalSheet({ journalId, onClose }) {
       .catch((error) =>
         setSaveState(error.message || "Не удалось изменить порядок страниц."),
       );
-  };
-
-  const insertImage = () => {
-    const url = window.prompt("URL изображения", "https://");
-    if (url && url.trim() !== "" && url.trim() !== "https://") {
-      exec("insertImage", url.trim());
-    }
-  };
-
-  const clearFormatting = () => {
-    exec("removeFormat");
-    exec("formatBlock", "<p>");
-    setFormat("p");
-    setInlineStyle("default");
   };
 
   if (!journal) {
@@ -300,168 +241,13 @@ export default function JournalSheet({ journalId, onClose }) {
           </aside>
 
           <div className="journal-editor">
-            <div className="journal-toolbar" role="toolbar" aria-label="Форматирование">
-              <label className="journal-toolbar__group">
-                <span className="journal-toolbar__label">Формат</span>
-                <select
-                  className="ui-input journal-toolbar__select"
-                  value={format}
-                  onChange={applyFormat}
-                >
-                  {FORMAT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="journal-toolbar__group">
-                <span className="journal-toolbar__label">Стиль</span>
-                <select
-                  className="ui-input journal-toolbar__select"
-                  value={inlineStyle}
-                  onChange={applyInlineStyle}
-                >
-                  {INLINE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="journal-toolbar__divider" aria-hidden="true" />
-
-              <button
-                type="button"
-                className="journal-toolbar__button journal-toolbar__button--bold"
-                title="Жирный"
-                onClick={() => exec("bold")}
-                disabled={!activePage}
-              >
-                B
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button journal-toolbar__button--italic"
-                title="Курсив"
-                onClick={() => exec("italic")}
-                disabled={!activePage}
-              >
-                I
-              </button>
-
-              <label className="journal-toolbar__group journal-toolbar__color">
-                <span className="journal-toolbar__label">Цвет</span>
-                <input
-                  type="color"
-                  value={color}
-                  aria-label="Цвет текста"
-                  onChange={(event) => {
-                    setColor(event.target.value);
-                    exec("foreColor", event.target.value);
-                  }}
-                />
-              </label>
-
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Маркированный список"
-                onClick={() => exec("insertUnorderedList")}
-                disabled={!activePage}
-              >
-                •≡
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Нумерованный список"
-                onClick={() => exec("insertOrderedList")}
-                disabled={!activePage}
-              >
-                1≡
-              </button>
-
-              <div className="journal-toolbar__divider" aria-hidden="true" />
-
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Выровнять по левому краю"
-                onClick={() => exec("justifyLeft")}
-                disabled={!activePage}
-              >
-                ⬅
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Выровнять по центру"
-                onClick={() => exec("justifyCenter")}
-                disabled={!activePage}
-              >
-                ↔
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Выровнять по правому краю"
-                onClick={() => exec("justifyRight")}
-                disabled={!activePage}
-              >
-                ➡
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="По ширине"
-                onClick={() => exec("justifyFull")}
-                disabled={!activePage}
-              >
-                ⇔
-              </button>
-
-              <div className="journal-toolbar__divider" aria-hidden="true" />
-
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Вставить изображение"
-                onClick={insertImage}
-                disabled={!activePage}
-              >
-                🖼
-              </button>
-              <button
-                type="button"
-                className="journal-toolbar__button"
-                title="Очистить форматирование"
-                onClick={clearFormatting}
-                disabled={!activePage}
-              >
-                🧹
-              </button>
-              <button
-                type="button"
-                className="ui-button ui-button--primary journal-toolbar__save"
-                onClick={savePage}
-                disabled={!activePage}
-              >
-                💾 Сохранить
-              </button>
-            </div>
-
             {activePage ? (
-              <div
-                ref={editorRef}
-                className="journal-editor__surface"
-                contentEditable
-                suppressContentEditableWarning
-                role="textbox"
-                aria-multiline="true"
-                aria-label="Содержимое страницы"
+              <RichTextEditor
+                editorRef={editorRef}
+                initialValue={activePage.content || ""}
+                showSaveButton
+                onSave={savePage}
+                ariaLabel="Содержимое страницы"
               />
             ) : (
               <div className="journal-editor__empty">

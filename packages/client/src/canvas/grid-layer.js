@@ -16,6 +16,9 @@ export class GridLayer extends Container {
     this.color = options.color === undefined ? 0x39404f : options.color;
     this.alpha = options.alpha === undefined ? 0.8 : options.alpha;
     this.thickness = options.thickness || 1;
+    // Step 6.3: a scene background image must stay visible under the grid, so
+    // the layer exposes its dark fill opacity.
+    this.fillAlpha = options.fillAlpha === undefined ? 0.55 : options.fillAlpha;
 
     this.graphics = new Graphics();
     this.addChild(this.graphics);
@@ -29,13 +32,24 @@ export class GridLayer extends Container {
     this.draw();
   }
 
+  setFillAlpha(alpha) {
+    const next = Number(alpha);
+    this.fillAlpha = Number.isFinite(next) ? Math.max(0, Math.min(1, next)) : 0.55;
+    this.draw();
+  }
+
   draw() {
     const g = this.graphics;
     const width = this.cols * this.cellSize;
     const height = this.rows * this.cellSize;
 
     g.clear();
-    g.rect(0, 0, width, height).fill({ color: 0x1a1e27, alpha: 0.55 });
+    if (this.fillAlpha > 0) {
+      g.rect(0, 0, width, height).fill({
+        color: 0x1a1e27,
+        alpha: this.fillAlpha,
+      });
+    }
 
     for (let col = 1; col < this.cols; col += 1) {
       const x = col * this.cellSize;

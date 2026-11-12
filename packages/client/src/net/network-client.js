@@ -29,6 +29,14 @@ export class NetworkClient {
     this._pending = new Map();
     this._requestCounter = 0;
     this._shouldReconnect = true;
+
+    // Step 6.4: a world import is authoritative for every client. Reloading
+    // the page re-runs the lobby/session bootstrap and pulls the new world.
+    this.on("room:reload", () => {
+      if (typeof window !== "undefined" && window.location) {
+        window.location.reload();
+      }
+    });
   }
 
   static defaultSessionId() {
@@ -193,6 +201,8 @@ export class NetworkClient {
         text: typeof data.text === "string" ? data.text : "",
         image: data.image || null,
         visibility: data.visibility || "public",
+        card:
+          data.card !== null && typeof data.card === "object" ? data.card : null,
       },
       { expectReply: false },
     );
@@ -298,8 +308,22 @@ export class NetworkClient {
   }
 
   /**
+   * Remove a directory entry (Step 5.5). The server falls back to the actor
+   * ownership check for actors; other kinds are shared directory management.
+   */
+  deleteDirectoryEntry(kind, entryId) {
+    return this.send(
+      "room:delete-entry",
+      { kind, entryId },
+      { expectReply: false },
+    );
+  }
+
+  /**
    * Persist a player-character sheet (Step 4.8). The server replaces the
    * actor's `system` payload atomically and broadcasts the updated directory.
+   * Phase 6.1: `ownership` (or any other omitted field) may be sent on its own;
+   * the server only accepts ownership changes from the GM.
    */
   updateActor(actorId, data = {}) {
     return this.send(
@@ -309,6 +333,7 @@ export class NetworkClient {
         name: data.name,
         system: data.system,
         items: data.items,
+        ownership: data.ownership,
       },
       { expectReply: false },
     );
@@ -414,18 +439,66 @@ export class NetworkClient {
     return this.on("room:scene-activated", callback);
   }
 
+  /**
+   * Step 6.8: ask the server to tell every client to warm the browser cache for
+   * one scene image. The server resolves `scene.img` from the directory entry
+   * and broadcasts `room:preload-scene` with `{ sceneId, img }`.
+   */
+  preloadScene(sceneId) {
+    return this.send(
+      "room:preload-scene",
+      { sceneId: sceneId || null },
+      { expectReply: false },
+    );
+  }
+
+  onPreloadScene(callback) {
+    return this.on("room:preload-scene", callback);
+  }
+
+  /**
+   * Step 6.3: save scene configuration (background image URL, grid size in
+   * pixels, outside-map colour). GM-only on the server; the response is the
+   * standard `room:directories-update` broadcast.
+   */
+  updateScene(sceneId, settings = {}) {
+    return this.send(
+      "room:update-scene",
+      {
+        sceneId: sceneId || null,
+        img: settings.img === undefined ? undefined : settings.img,
+        gridSize:
+          settings.gridSize === undefined ? undefined : settings.gridSize,
+        backgroundColor:
+          settings.backgroundColor === undefined
+            ? undefined
+            : settings.backgroundColor,
+      },
+      { expectReply: false },
+    );
+  }
+
   onSceneCanvasUpdate(callback) {
     return this.on("room:scene-canvas-update", callback);
   }
 
   /**
-   * Step 5.3: persist the accumulated fog-of-war texture. The payload is a
-   * `data:image/png;base64,…` string produced by `renderer.extract.base64()`.
+   * Step 5.3/5.4: persist the accumulated fog-of-war texture for one actor.
+   * The payload is a `data:image/png;base64,…` string produced by
+   * `renderer.extract.base64()`.
+   *
+   * @param {string|null} sceneId
+   * @param {string|null} fogExploration
+   * @param {string|null} [actorId] per-token exploration owner
    */
-  updateFog(sceneId, fogExploration) {
+  updateFog(sceneId, fogExploration, actorId = null) {
     return this.send(
       "room:update-fog",
-      { sceneId: sceneId || null, fogExploration: fogExploration || null },
+      {
+        sceneId: sceneId || null,
+        fogExploration: fogExploration || null,
+        actorId: actorId || null,
+      },
       { expectReply: false },
     );
   }

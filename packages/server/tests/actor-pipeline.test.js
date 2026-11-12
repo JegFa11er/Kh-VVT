@@ -184,8 +184,52 @@ test("spellcasting entry computes spell attack and DC", function () {
   assert.equal(expert.spellDC, 23);
 });
 
-test("stowed armor contributes no AC bonus or Dex cap", function () {
-  const actor = actorWith({
+test("a raised held shield adds its circumstance bonus to AC", function () {
+  function shieldActor(raised, carried) {
+    return actorWith({
+      system: {
+        details: { level: { value: 1 } },
+        abilities: abilities({ dex: { mod: 2 } }),
+        proficiencies: {
+          attacks: { simple: 0, martial: 0, advanced: 0, unarmed: 0 },
+          defenses: { unarmored: 1, light: 0, medium: 0, heavy: 0 },
+          spellcasting: { rank: 0 },
+        },
+        inventory: { items: [] },
+        strikes: [],
+      },
+      items: [
+        {
+          id: "shield-steel",
+          name: "Steel Shield",
+          type: "shield",
+          carried: carried,
+          raised: raised,
+          acBonus: 2,
+          system: { acBonus: 2, hardness: 5, hp: { value: 20, max: 20 } },
+        },
+      ],
+    });
+  }
+
+  const lowered = prepareActorData(shieldActor(false, "held")).system;
+  assert.equal(lowered.attributes.ac.value, 15);
+  assert.equal(lowered.attributes.shield.raised, false);
+  assert.equal(lowered.attributes.shield.hp.max, 20);
+  assert.equal(lowered.attributes.shield.hardness, 5);
+
+  const raised = prepareActorData(shieldActor(true, "held")).system;
+  assert.equal(raised.attributes.ac.value, 17);
+  assert.equal(raised.derived.armorClass.shieldBonus, 2);
+  assert.equal(raised.attributes.shield.raised, true);
+
+  // A stowed shield cannot be raised and never contributes to AC.
+  const stowed = prepareActorData(shieldActor(true, "stowed")).system;
+  assert.equal(stowed.attributes.ac.value, 15);
+  assert.equal(stowed.derived.armorClass.shieldBonus, 0);
+});
+
+test("stowed armor contributes no AC bonus or Dex cap", function () {  const actor = actorWith({
     system: {
       details: { level: { value: 1 } },
       abilities: abilities({ dex: { mod: 4 } }),
@@ -514,28 +558,164 @@ test("class selection adds level-1 features and base proficiencies", function ()
   assert.equal(next.system.saves.reflex.rank, 2);
   assert.equal(next.system.details.keyability.value, "dex");
   assert.equal(next.system.details.class.id, "class-rogue");
-  assert.equal(next.system.feats.class.length, 2);
+  // Step 5.7: automatically granted features live in their own section.
+  assert.equal(next.system.feats.classfeature.length, 2);
 
-  // Class feat slots at 1/2 exist; no general slot before level 3.
+  // Ancestry/class/skill slots up to level 2 exist; no general slot before 3.
   assert.deepEqual(
     next.system.featSlots.map((slot) => slot.type + ":" + slot.level),
-    ["class:1", "class:2"],
+    ["ancestry:1", "class:1", "class:2", "skill:2"],
   );
 });
 
-test("level-up adds new features/slots and never duplicates items", function () {
+test("class base proficiencies are non-droppable attack and defense floors", function () {
   const classDoc = makeClassDocument();
+  const level8 = applyClassToActor(actorWith(), classDoc, { level: 8 });
+
+  // A rogue's class document grants simple/martial/unarmed and light armor.
+  assert.equal(level8.system.proficiencies.attacks.martial.rank, 1);
+  assert.equal(level8.system.proficiencies.attacks.martial.minRank, 1);
+  assert.equal(level8.system.proficiencies.attacks.simple.minRank, 1);
+  assert.equal(level8.system.proficiencies.defenses.light.minRank, 1);
+  assert.equal(level8.system.proficiencies.defenses.unarmored.minRank, 1);
+  // A rank the class does not grant is still freely editable.
+  assert.equal(level8.system.proficiencies.attacks.advanced.minRank, 0);
+
+  // Simulate a client trying to un-train the guaranteed proficiencies. The
+  // next preparation must clamp them back to the class floor.
+  level8.system.proficiencies.attacks.martial = { rank: 0 };
+  level8.system.proficiencies.attacks.simple = { rank: 0 };
+  level8.system.proficiencies.defenses.light = { rank: 0 };
+  const prepared = prepareActorData(level8).system;
+  assert.equal(prepared.proficiencies.attacks.martial.rank, 1);
+  assert.equal(prepared.proficiencies.attacks.martial.minRank, 1);
+  assert.equal(prepared.proficiencies.attacks.simple.rank, 1);
+  assert.equal(prepared.proficiencies.attacks.simple.minRank, 1);
+  assert.equal(prepared.proficiencies.defenses.light.rank, 1);
+  assert.equal(prepared.proficiencies.defenses.light.minRank, 1);
+});
+
+test("level-up adds new features/slots and never duplicates items", function () {  const classDoc = makeClassDocument();
   const level2 = applyClassToActor(actorWith(), classDoc, { level: 2 });
   const level7 = applyClassToActor(level2, classDoc, { level: 7 });
   const twice = applyClassToActor(level7, classDoc, { level: 7 });
 
   const names = twice.items.map((item) => item.name).sort();
   assert.deepEqual(names, ["Deny Advantage", "Sneak Attack", "Surprise Attack"]);
-  assert.equal(twice.system.feats.class.length, 3);
+  assert.equal(twice.system.feats.classfeature.length, 3);
   assert.deepEqual(
     twice.system.featSlots.map((slot) => slot.type + ":" + slot.level),
-    ["class:1", "class:2", "general:3", "class:4", "class:6", "general:7"],
+    [
+      "ancestry:1",
+      "class:1",
+      "class:2",
+      "skill:2",
+      "general:3",
+      "class:4",
+      "skill:4",
+      "ancestry:5",
+      "class:6",
+      "skill:6",
+      "general:7",
+    ],
   );
+});
+
+test("level-down removes closed feat slots and detaches their feats", function () {
+  const classDoc = makeClassDocument();
+  const level3 = applyClassToActor(actorWith(), classDoc, { level: 3 });
+  assert.deepEqual(
+    level3.system.featSlots.map((slot) => slot.type + ":" + slot.level),
+    ["ancestry:1", "class:1", "class:2", "skill:2", "general:3"],
+  );
+  assert.ok(level3.items.some((item) => item.name === "Deny Advantage"));
+
+  // Bind a general feat to the level-3 general slot.
+  const generalSlot = level3.system.featSlots.find(
+    (slot) => slot.id === "feat-slot-general-3",
+  );
+  assert.ok(generalSlot);
+  const bound = {
+    ...level3,
+    items: [
+      ...level3.items,
+      {
+        id: "feat-toughness",
+        name: "Toughness",
+        type: "feat",
+        level: 3,
+        slotId: "feat-slot-general-3",
+        system: {
+          category: "general",
+          level: { value: 3 },
+          location: "feat-slot-general-3",
+        },
+      },
+    ],
+    system: {
+      ...level3.system,
+      featSlots: level3.system.featSlots.map((slot) =>
+        slot.id === "feat-slot-general-3"
+          ? { ...slot, featId: "feat-toughness" }
+          : slot,
+      ),
+    },
+  };
+
+  const level2 = applyClassToActor(bound, classDoc, { level: 2 });
+  assert.equal(
+    level2.system.featSlots.some((slot) => slot.type === "general"),
+    false,
+    "the level-3 general slot must disappear",
+  );
+  assert.equal(
+    level2.items.some((item) => item.id === "feat-toughness"),
+    false,
+    "a feat bound to a closed slot must be detached",
+  );
+  assert.equal(
+    level2.items.some((item) => item.name === "Deny Advantage"),
+    false,
+    "class features above the new level must be removed",
+  );
+
+  // Levelling back up restores the slot as empty, never the old feat.
+  const again = applyClassToActor(level2, classDoc, { level: 3 });
+  const reopened = again.system.featSlots.find(
+    (slot) => slot.id === "feat-slot-general-3",
+  );
+  assert.ok(reopened);
+  assert.equal(reopened.featId, null);
+  assert.equal(again.items.some((item) => item.name === "Deny Advantage"), true);
+});
+
+test("ancestry selection drives size and traits", function () {
+  const actor = actorWith();
+  actor.system.details = {
+    level: { value: 1 },
+    ancestry: {
+      name: "Gnome",
+      size: "sm",
+      traits: ["gnome", "humanoid"],
+    },
+    heritage: { name: "Wellspring Gnome", traits: ["gnome"] },
+  };
+  const gnome = prepareActorData(actor).system;
+  assert.equal(gnome.traits.size.value, "sm");
+  assert.ok(gnome.traits.value.includes("gnome"));
+  assert.ok(gnome.traits.value.includes("humanoid"));
+
+  // Switching ancestry replaces inherited tags and restores Medium.
+  actor.system.details.ancestry = {
+    name: "Human",
+    size: "med",
+    traits: ["human", "humanoid"],
+  };
+  actor.system.details.heritage = { name: "Versatile Heritage", traits: [] };
+  const human = prepareActorData(actor).system;
+  assert.equal(human.traits.size.value, "med");
+  assert.ok(human.traits.value.includes("human"));
+  assert.equal(human.traits.value.includes("gnome"), false);
 });
 
 test("server persists actor.items alongside actor.system", function () {
@@ -782,9 +962,9 @@ test("feat items are grouped into the sheet's feat sections", function () {
   assert.deepEqual(feats.ancestry.map((feat) => feat.id), ["feat-ancestry"]);
   assert.deepEqual(feats.class.map((feat) => feat.id).sort(), [
     "feat-class",
-    "feat-feature",
     "feat-legacy",
   ]);
+  assert.deepEqual(feats.classfeature.map((feat) => feat.id), ["feat-feature"]);
   assert.deepEqual(feats.general.map((feat) => feat.id), ["feat-general"]);
   assert.deepEqual(feats.skill.map((feat) => feat.id), ["feat-skill"]);
   assert.deepEqual(feats.bonus.map((feat) => feat.id), ["feat-bonus"]);
@@ -817,6 +997,95 @@ test("feat items are grouped into the sheet's feat sections", function () {
   assert.equal(withDropped.general[0].slotId, "feat-slot-general-3");
 });
 
+test("a feat forced into the bonus section stays there after preparation", function () {
+  const keepUp = {
+    id: "feat-keep-up",
+    name: "Keep Up",
+    type: "feat",
+    system: {
+      category: "class",
+      level: { value: 7 },
+      description: { value: "Keep Up description" },
+      traits: { value: ["archetype"] },
+    },
+  };
+  // The sheet's bonus-section drop handler passes category: "bonus"; this is
+  // the same contract `createActorFeatFromDocument` receives.
+  const forced = createActorFeatFromDocument(keepUp, { category: "bonus" });
+  assert.equal(forced.system.category, "bonus");
+
+  const actor = actorWith({ items: [forced] });
+  const feats = prepareActorData(actor).system.feats;
+  assert.deepEqual(feats.bonus.map((feat) => feat.id), ["feat-keep-up"]);
+  assert.equal(feats.class.length, 0);
+});
+
+test("class selection only adds class-feature documents, never ordinary class feats", function () {
+  const classDoc = makeClassDocument();
+  classDoc.items = [
+    {
+      id: "cf-sneak",
+      name: "Sneak Attack",
+      type: "feat",
+      system: { category: "classfeature", level: { value: 1 } },
+    },
+    {
+      id: "cf-trick",
+      name: "Basic Trick",
+      type: "feat",
+      system: { category: "classfeature", level: { value: 2 } },
+    },
+    {
+      id: "feat-twin-feint",
+      name: "Twin Feint",
+      type: "feat",
+      system: { category: "class", level: { value: 1 } },
+    },
+  ];
+
+  const next = applyClassToActor(actorWith(), classDoc, { level: 2 });
+  const names = next.items.map((item) => item.name).sort();
+  assert.deepEqual(names, ["Basic Trick", "Sneak Attack", "Surprise Attack"]);
+  assert.equal(next.items.some((item) => item.name === "Twin Feint"), false);
+  assert.equal(
+    next.items.find((item) => item.name === "Sneak Attack").system.category,
+    "classfeature",
+  );
+});
+
+test("background and class fixed training become a non-droppable skill floor", function () {
+  const actor = actorWith();
+  actor.system.details = {
+    level: { value: 1 },
+    background: {
+      name: "Acolyte",
+      trainedSkills: { value: ["religion"], lore: ["Scribing Lore"] },
+    },
+    class: {
+      name: "Rogue",
+      trainedSkills: { value: ["stealth"], additional: 7 },
+    },
+  };
+  actor.system.skills = {
+    religion: { rank: 0 },
+    stealth: { rank: 0 },
+    athletics: { rank: 1 },
+  };
+
+  const prepared = prepareActorData(actor).system;
+  assert.equal(prepared.skills.religion.rank, 1);
+  assert.equal(prepared.skills.religion.minRank, 1);
+  assert.equal(prepared.skills.stealth.rank, 1);
+  assert.equal(prepared.skills.stealth.minRank, 1);
+  // A manually trained skill stays trained but has no artificial floor.
+  assert.equal(prepared.skills.athletics.rank, 1);
+  assert.equal(prepared.skills.athletics.minRank, 0);
+
+  // Preparation itself clamps an attempted downgrade back to the floor.
+  actor.system.skills.religion.rank = 0;
+  assert.equal(prepareActorData(actor).system.skills.religion.rank, 1);
+});
+
 test("heritage compendium filters by ancestry and always includes versatile heritages", function () {
   const catalog = new CatalogService({
     directory: path.join(__dirname, "..", "data", "compendiums"),
@@ -838,9 +1107,143 @@ test("heritage compendium filters by ancestry and always includes versatile heri
     ),
   );
 
+  // Step 5.6 ordering: ancestry-bound heritages first (A→Z), then versatile.
+  const firstVersatile = merfolk.findIndex((entry) => entry.versatile === true);
+  const lastBound = merfolk.reduce(
+    (last, entry, index) => (entry.versatile === true ? last : index),
+    -1,
+  );
+  assert.ok(firstVersatile > -1 && lastBound < firstVersatile);
+  const boundNames = merfolk
+    .filter((entry) => entry.versatile !== true)
+    .map((entry) => entry.name);
+  assert.deepEqual(
+    boundNames,
+    boundNames.slice().sort((a, b) =>
+      String(a).localeCompare(String(b), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    ),
+  );
+  const versatileNames = merfolk
+    .filter((entry) => entry.versatile === true)
+    .map((entry) => entry.name);
+  assert.deepEqual(
+    versatileNames,
+    versatileNames.slice().sort((a, b) =>
+      String(a).localeCompare(String(b), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    ),
+  );
+
   const versatile = catalog.getIndex("heritages", { versatile: true });
   assert.ok(versatile.some((entry) => entry.name === "Nephilim"));
   assert.ok(versatile.every((entry) => entry.versatile === true));
+});
+
+test("toggleable RollOption enables its predicate-gated FlatModifier", function () {
+  const actor = actorWith({
+    system: {
+      details: { level: { value: 1 } },
+      abilities: abilities({ dex: { mod: 2 } }),
+      proficiencies: {
+        attacks: { simple: 0, martial: 0, advanced: 0, unarmed: 0 },
+        defenses: { unarmored: 0, light: 0, medium: 0, heavy: 0 },
+        spellcasting: { rank: 0 },
+      },
+      inventory: { items: [] },
+      strikes: [],
+    },
+    items: [
+      {
+        id: "feat-nimble-dodge",
+        name: "Nimble Dodge",
+        type: "feat",
+        level: 1,
+        system: {
+          category: "class",
+          level: { value: 1 },
+          rules: [
+            {
+              key: "RollOption",
+              option: "nimble-dodge",
+              toggleable: true,
+              label: "Nimble Dodge",
+            },
+            {
+              key: "FlatModifier",
+              predicate: ["nimble-dodge"],
+              selector: "ac",
+              type: "circumstance",
+              value: 2,
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const disabled = prepareActorData(actor).system;
+  // 10 + Dex 2; the predicate is false until the toggle is enabled.
+  assert.equal(disabled.attributes.ac.value, 12);
+  assert.equal(disabled.toggles.length, 1);
+  assert.equal(disabled.toggles[0].option, "nimble-dodge");
+  assert.equal(disabled.toggles[0].enabled, false);
+
+  actor.system.flags = {
+    pf2e: { rollOptions: { all: { "nimble-dodge": true } } },
+  };
+  const enabled = prepareActorData(actor).system;
+  assert.equal(enabled.toggles[0].enabled, true);
+  // The FlatModifier is now active: +2 circumstance AC.
+  assert.equal(enabled.attributes.ac.value, 14);
+  assert.equal(enabled.derived.armorClass.ruleModifiers.length, 1);
+});
+
+test("enabled attack FlatModifier changes Strike attack numbers", function () {
+  const actor = actorWith({
+    system: {
+      details: { level: { value: 1 } },
+      abilities: abilities({ str: { mod: 4 } }),
+      proficiencies: {
+        attacks: { simple: 0, martial: 0, advanced: 0, unarmed: 0 },
+        defenses: { unarmored: 0, light: 0, medium: 0, heavy: 0 },
+        spellcasting: { rank: 0 },
+      },
+      inventory: { items: [] },
+      strikes: [],
+      flags: { pf2e: { rollOptions: { "sure-strike": true } } },
+    },
+    items: [
+      {
+        id: "feat-sure-strike",
+        name: "Sure Strike",
+        type: "feat",
+        system: {
+          rules: [
+            { key: "RollOption", option: "sure-strike", toggleable: true },
+            {
+              key: "FlatModifier",
+              predicate: ["sure-strike"],
+              selector: "attack",
+              type: "status",
+              value: 1,
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const prepared = prepareActorData(actor).system;
+  const fist = prepared.strikes.find((strike) => strike.unarmed);
+  // Str +4, unarmed untrained => +4 base; +1 status from the active toggle.
+  assert.equal(fist.baseAttack, 4);
+  assert.equal(fist.attack, 5);
+  assert.equal(fist.attackMap, 1);
 });
 
 async function main() {

@@ -155,6 +155,47 @@ test("the base scene keeps its own fog texture", function () {
   assert.equal(session.getSceneFog(null), null);
 });
 
+test("per-actor fog is stored under scenes[sceneId].fogExploration[actorId]", function () {
+  const session = new EncounterSession({ id: "fog-per-actor" });
+  const scene = session.createDirectoryEntry("scenes", { name: "Подземелье" });
+  const secondFog =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYIJ=";
+
+  const events = [];
+  session.subscribe(function (eventType, payload) {
+    events.push({ type: eventType, payload: payload });
+  });
+
+  session.updateFog(scene.id, SAMPLE_FOG, "gm-1", "actor-a");
+  session.updateFog(scene.id, secondFog, "gm-1", "actor-b");
+  assert.equal(session.getSceneFog(scene.id, "actor-a"), SAMPLE_FOG);
+  assert.equal(session.getSceneFog(scene.id, "actor-b"), secondFog);
+  assert.equal(session.getSceneFog(scene.id, "actor-c"), null);
+
+  const entry = session
+    .getDirectories()
+    .scenes.entries.find(function (candidate) {
+      return candidate.id === scene.id;
+    });
+  assert.equal(entry.fogExploration["actor-a"], SAMPLE_FOG);
+  assert.equal(entry.fogExploration["actor-b"], secondFog);
+
+  const update = events.find(function (event) {
+    return event.type === "room:fog-update";
+  });
+  assert.ok(update);
+  assert.equal(update.payload.actorId, "actor-a");
+
+  // Clearing one actor removes only that key.
+  session.updateFog(scene.id, null, "gm-1", "actor-a");
+  assert.equal(session.getSceneFog(scene.id, "actor-a"), null);
+  assert.equal(session.getSceneFog(scene.id, "actor-b"), secondFog);
+
+  // A reset still wipes the complete per-scene collection.
+  session.resetFog(scene.id, "gm-1");
+  assert.equal(session.getSceneFogCollection(scene.id), null);
+});
+
 test("invalid fog payloads are rejected", function () {
   const session = new EncounterSession({ id: "fog-validate" });
   const scene = session.createDirectoryEntry("scenes", { name: "Сцена" });
@@ -179,6 +220,7 @@ test("fog textures survive saveToDisk/loadFromDisk for scenes and the base scene
     const scene = session.createDirectoryEntry("scenes", { name: "Лес" });
     session.updateFog(scene.id, SAMPLE_FOG, "gm-1");
     session.updateFog(null, SAMPLE_FOG, "gm-1");
+    session.updateFog(scene.id, SAMPLE_FOG, "gm-1", "actor-persist");
     await session.flushPersistence();
 
     const restored = new EncounterSession({ id: "fog-persist", dataFile: file });
@@ -186,6 +228,10 @@ test("fog textures survive saveToDisk/loadFromDisk for scenes and the base scene
     assert.equal(result.ok, true);
     assert.equal(restored.getSceneFog(scene.id), SAMPLE_FOG);
     assert.equal(restored.getSceneFog(null), SAMPLE_FOG);
+    assert.equal(
+      restored.getSceneFog(scene.id, "actor-persist"),
+      SAMPLE_FOG,
+    );
 
     // The huge texture is excluded from directory broadcasts/snapshots.
     const directories = restored.getDirectories({ includeFog: false });

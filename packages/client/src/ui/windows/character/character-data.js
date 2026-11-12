@@ -160,14 +160,31 @@ function normalizeAbilitySlots(node) {
 }
 
 /**
+ * PF2e Remastered player backgrounds grant exactly two ability boosts (one
+ * restricted slot plus one free boost). Some adventure-path backgrounds in the
+ * compendium carry a third legacy slot; the sheet deliberately extracts only
+ * the first two so the builder never offers three background boosts.
+ */
+export function trimBackgroundBoosts(boosts) {
+  return normalizeAbilitySlots(boosts).slice(0, 2);
+}
+
+/**
  * Read the boost/flaw/key-ability slots from either a compendium document
  * (`{ system: ... }`) or the compact summary stored on `system.details`.
  */
 export function readAbilitySource(source) {
   const root = source && typeof source.system === "object" ? source.system : source || {};
   const keyAbilityNode = root.keyAbility !== undefined ? root.keyAbility : source?.keyAbility;
+  const explicitType = String(source?.type || root.type || "").toLowerCase();
+  const isBackground =
+    explicitType === "background" ||
+    (root.trainedSkills !== undefined &&
+      root.keyAbility === undefined &&
+      source?.keyAbility === undefined);
+  const boosts = normalizeAbilitySlots(root.boosts);
   return {
-    boosts: normalizeAbilitySlots(root.boosts),
+    boosts: isBackground ? boosts.slice(0, 2) : boosts,
     flaws: normalizeAbilitySlots(root.flaws),
     keyAbility: uniqueAbilityKeys(
       Array.isArray(keyAbilityNode) ? keyAbilityNode : keyAbilityNode?.value,
@@ -187,6 +204,7 @@ export function normalizeAbilityBuild(rawBuild) {
     ).slice(0, 4);
   }
   return {
+    version: Math.max(1, Math.trunc(Number(raw.version) || 1)),
     manual: Boolean(raw.manual),
     boosts: {
       ancestry: uniqueAbilityKeys(boosts.ancestry),
@@ -345,83 +363,33 @@ export function abilityBuildBreakdown(sources, rawBuild, level = 1) {
   };
 }
 
-function chooseDefaultBoost(options, desired, added) {
-  return [...options].sort((a, b) => {
-    const gapA = (desired[a] || 0) - (added[a] || 0);
-    const gapB = (desired[b] || 0) - (added[b] || 0);
-    if (gapA !== gapB) {
-      return gapB - gapA;
-    }
-    const desiredA = desired[a] || 0;
-    const desiredB = desired[b] || 0;
-    if (desiredA !== desiredB) {
-      return desiredB - desiredA;
-    }
-    return ABILITY_KEYS.indexOf(a) - ABILITY_KEYS.indexOf(b);
-  })[0];
-}
-
 /**
- * Reconstruct a plausible grid distribution from the actor's current ability
- * modifiers, used the first time the builder is opened on a legacy actor.
+ * Step 5.6: opening the builder must never pre-spend free boosts.
+ *
+ * Only the *fixed* ancestry/background boosts (single-option slots, e.g. a
+ * dwarf's Constitution boost) are applied automatically. Every free boost —
+ * the 1st-level four, the class key-ability pick and the 5th/10th/15th/20th
+ * level boosts — starts empty so the player clicks them explicitly. Foundry's
+ * ability builder behaves the same way; auto-distributing them corrupted the
+ * character's starting attributes.
  */
-export function defaultAbilityBuild(sources, level = 1, abilities = {}) {
+export function defaultAbilityBuild(sources, level = 1) {
   const sourceDocs = sources || {};
-  const desired = Object.fromEntries(
-    ABILITY_KEYS.map((ability) => [
-      ability,
-      Number.isFinite(Number(abilities?.[ability]?.mod))
-        ? Math.trunc(Number(abilities[ability].mod))
-        : 0,
-    ]),
-  );
-  const added = {};
-  const add = (ability) => {
-    added[ability] = (added[ability] || 0) + 1;
-  };
   const build = normalizeAbilityBuild({ manual: false });
 
   for (const key of ["ancestry", "background"]) {
     const slots = readAbilitySource(sourceDocs[key]).boosts;
-    const used = new Set();
     for (const slot of slots) {
-      if (slot.length === 1) {
+      if (slot.length === 1 && !build.boosts[key].includes(slot[0])) {
         build.boosts[key].push(slot[0]);
-        used.add(slot[0]);
-        add(slot[0]);
-        continue;
-      }
-      const available = slot.filter((ability) => !used.has(ability));
-      const ability = chooseDefaultBoost(available.length > 0 ? available : slot, desired, added);
-      if (ability) {
-        build.boosts[key].push(ability);
-        used.add(ability);
-        add(ability);
       }
     }
   }
 
-  const keyOptions = readAbilitySource(sourceDocs.class).keyAbility;
-  if (keyOptions.length > 0) {
-    const ability = chooseDefaultBoost(keyOptions, desired, added);
-    build.boosts.class = ability;
-    add(ability);
-  }
-
+  // Class key ability and every free/level boost stay `null`/empty.
+  build.boosts.class = null;
   for (const rowLevel of ABILITY_BUILDER_LEVELS) {
-    if (rowLevel > Number(level)) {
-      continue;
-    }
-    const sourceRow = rowLevel === 1 ? ABILITY_KEYS.filter((ability) => (added[ability] || 0) < 4) : ABILITY_KEYS;
-    const picks = [...sourceRow]
-      .sort((a, b) => {
-        const gapA = (desired[a] || 0) - (added[a] || 0);
-        const gapB = (desired[b] || 0) - (added[b] || 0);
-        return gapB - gapA;
-      })
-      .slice(0, 4);
-    build.boosts.levels[rowLevel] = picks;
-    picks.forEach(add);
+    build.boosts.levels[rowLevel] = [];
   }
 
   return sanitizeAbilityBuild(build, sourceDocs, level);
@@ -442,22 +410,22 @@ export const SAVE_BY_KEY = Object.fromEntries(
 );
 
 export const SKILLS = [
-  { key: "acrobatics", label: "Акробатика", ability: "dex" },
-  { key: "arcana", label: "Аркана", ability: "int" },
-  { key: "athletics", label: "Атлетика", ability: "str" },
-  { key: "crafting", label: "Ремесло", ability: "int" },
-  { key: "deception", label: "Обман", ability: "cha" },
-  { key: "diplomacy", label: "Дипломатия", ability: "cha" },
-  { key: "intimidation", label: "Запугивание", ability: "cha" },
-  { key: "medicine", label: "Медицина", ability: "wis" },
-  { key: "nature", label: "Природа", ability: "wis" },
-  { key: "occultism", label: "Оккультизм", ability: "int" },
-  { key: "performance", label: "Выступление", ability: "cha" },
-  { key: "religion", label: "Религия", ability: "wis" },
-  { key: "society", label: "Общество", ability: "int" },
-  { key: "stealth", label: "Скрытность", ability: "dex" },
-  { key: "survival", label: "Выживание", ability: "wis" },
-  { key: "thievery", label: "Воровство", ability: "dex" },
+  { key: "acrobatics", label: "Акробатика", name: "Acrobatics", labelKey: "PF2E.Skill.Acrobatics", ability: "dex" },
+  { key: "arcana", label: "Аркана", name: "Arcana", labelKey: "PF2E.Skill.Arcana", ability: "int" },
+  { key: "athletics", label: "Атлетика", name: "Athletics", labelKey: "PF2E.Skill.Athletics", ability: "str" },
+  { key: "crafting", label: "Ремесло", name: "Crafting", labelKey: "PF2E.Skill.Crafting", ability: "int" },
+  { key: "deception", label: "Обман", name: "Deception", labelKey: "PF2E.Skill.Deception", ability: "cha" },
+  { key: "diplomacy", label: "Дипломатия", name: "Diplomacy", labelKey: "PF2E.Skill.Diplomacy", ability: "cha" },
+  { key: "intimidation", label: "Запугивание", name: "Intimidation", labelKey: "PF2E.Skill.Intimidation", ability: "cha" },
+  { key: "medicine", label: "Медицина", name: "Medicine", labelKey: "PF2E.Skill.Medicine", ability: "wis" },
+  { key: "nature", label: "Природа", name: "Nature", labelKey: "PF2E.Skill.Nature", ability: "wis" },
+  { key: "occultism", label: "Оккультизм", name: "Occultism", labelKey: "PF2E.Skill.Occultism", ability: "int" },
+  { key: "performance", label: "Выступление", name: "Performance", labelKey: "PF2E.Skill.Performance", ability: "cha" },
+  { key: "religion", label: "Религия", name: "Religion", labelKey: "PF2E.Skill.Religion", ability: "wis" },
+  { key: "society", label: "Общество", name: "Society", labelKey: "PF2E.Skill.Society", ability: "int" },
+  { key: "stealth", label: "Скрытность", name: "Stealth", labelKey: "PF2E.Skill.Stealth", ability: "dex" },
+  { key: "survival", label: "Выживание", name: "Survival", labelKey: "PF2E.Skill.Survival", ability: "wis" },
+  { key: "thievery", label: "Воровство", name: "Thievery", labelKey: "PF2E.Skill.Thievery", ability: "dex" },
 ];
 
 export const SKILL_BY_KEY = Object.fromEntries(
@@ -577,6 +545,30 @@ export const SPELLCASTING_MODES = [
   { value: "attack", label: "Модификатор атаки заклинаний" },
   { value: "classDC", label: "DC Класса" },
 ];
+
+/**
+ * Step 6.3.1: a spellcasting entry is a Focus set when it is authored with
+ * `prepared`/`type`/`mode` = "focus". Foundry importers use `prepared`, the
+ * setup modal keeps both `prepared` and `mode` in sync, and older sheets may
+ * only carry `type`, so all three spellings are accepted.
+ *
+ * Focus sets have no spell ranks and no slot counts: every spell lives in one
+ * flat list and ranked casts spend the shared Focus pool instead.
+ */
+export function isFocusSpellcastingEntry(entry) {
+  const system = entry && typeof entry === "object" ? entry.system || {} : {};
+  return ["prepared", "type", "mode"].some(
+    (key) => String(system[key] ?? "").trim().toLowerCase() === "focus",
+  );
+}
+
+/**
+ * Step 6.3.1: inside a Focus set a rank-0 cantrip is cast at will and never
+ * spends a point; every ranked (1+) spell costs exactly one Focus Point.
+ */
+export function focusSpellPointCost(rank) {
+  return Math.max(0, Math.trunc(Number(rank) || 0)) === 0 ? 0 : 1;
+}
 
 export const SPELLCASTING_TRADITIONS = [
   { value: "arcane", label: "Арканный" },
@@ -1248,4 +1240,60 @@ export function nextEntryId(prefix) {
 
 export function rollFormula(result, attributeLabel) {
   return "/r 1d20" + (result >= 0 ? "+" : "") + result + " " + attributeLabel;
+}
+
+// ---------------------------------------------------------------------------
+// Step 5.9: shared input/format helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * PF2e Remastered spell ranks are gated by character level: a caster unlocks
+ * one new rank every two levels (`Math.ceil(level / 2)`), capped at 10th.
+ */
+export function maxSpellRankForLevel(level) {
+  const numeric = Math.trunc(Number(level));
+  const bounded = Number.isFinite(numeric)
+    ? Math.max(1, Math.min(20, numeric))
+    : 1;
+  return Math.min(10, Math.max(1, Math.ceil(bounded / 2)));
+}
+
+/**
+ * Foundry's current-HP field accepts an absolute number or a signed delta
+ * (`+10`, `-5`). Returns `null` when the text cannot be parsed.
+ */
+export function parseHpInput(raw, current) {
+  const text = String(raw === undefined || raw === null ? "" : raw).trim();
+  if (text === "") {
+    return null;
+  }
+  const delta = /^([+-])\s*(\d+)$/.exec(text);
+  if (delta) {
+    const amount = Number(delta[2]);
+    const origin = Number.isFinite(Number(current)) ? Number(current) : 0;
+    return delta[1] === "-" ? origin - amount : origin + amount;
+  }
+  if (/^\d+$/.test(text)) {
+    return Number(text);
+  }
+  return null;
+}
+
+/**
+ * Current HP can never exceed maximum HP. The clamp is applied for both the
+ * character sheet and the token HUD so healing cannot overflow the bar.
+ */
+export function clampHpToMax(value, maxHp) {
+  const raw = Number(value);
+  const max = Number(maxHp);
+  const normalizedValue = Number.isFinite(raw) ? Math.trunc(raw) : 0;
+  const normalizedMax = Number.isFinite(max) ? Math.max(0, Math.trunc(max)) : 0;
+  return Math.max(0, Math.min(normalizedValue, normalizedMax));
+}
+
+/** Foundry strike button label: `+3 (MAP -5)` for the second/third attack. */
+export function strikeMapLabel(modifier, penalty) {
+  const value = Number(penalty);
+  const map = Number.isFinite(value) ? value : 0;
+  return signed(modifier) + " (MAP " + (map > 0 ? "+" + map : map) + ")";
 }

@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 /**
  * Integration tests for Step 4.8: the active-scene manager.
@@ -245,7 +245,7 @@ test("WebSocket scene activation and canvas updates broadcast to the room", asyn
     });
     gm.send({
       type: "room:create-scene",
-      payload: { name: "Город" },
+      payload: { name: "Город", img: "/uploads/scene.png" },
     });
     const directories = await directoryUpdate;
     const sceneId = directories.payload.directories.scenes.entries[0].id;
@@ -265,6 +265,38 @@ test("WebSocket scene activation and canvas updates broadcast to the room", asyn
       lights: [],
       tokens: [],
     });
+
+    // Step 6.3: the GM saves scene settings; every client receives the updated
+    // directory tree and the activation payload keeps the settings.
+    const settingsUpdate = player.waitFor(function (message) {
+      return (
+        message.type === "room:directories-update" &&
+        message.payload.directories.scenes.entries[0].img === "/uploads/city.png"
+      );
+    });
+    gm.send({
+      type: "room:update-scene",
+      payload: {
+        sceneId: sceneId,
+        img: "/uploads/city.png",
+        gridSize: 75,
+        backgroundColor: "#101820",
+      },
+    });
+    const settingsMessage = await settingsUpdate;
+    const settingsEntry = settingsMessage.payload.directories.scenes.entries[0];
+    assert.equal(settingsEntry.gridSize, 75);
+    assert.equal(settingsEntry.backgroundColor, "#101820");
+
+    const rejected = player.waitFor(function (message) {
+      return message.type === "error";
+    });
+    player.send({
+      type: "room:update-scene",
+      payload: { sceneId: sceneId, gridSize: 120 },
+    });
+    const error = await rejected;
+    assert.match(String(error.payload.message), /Only the GM/i);
 
     const canvasUpdate = gm.waitFor(function (message) {
       return (
@@ -289,6 +321,18 @@ test("WebSocket scene activation and canvas updates broadcast to the room", asyn
     const update = await canvasUpdate;
     assert.equal(update.payload.canvas.walls[0].x2, 200);
     assert.equal(update.payload.sourceMemberId, "scene-player");
+
+    // Step 6.8: scene preloading reaches every client with the image URL.
+    const preloaded = player.waitFor(function (message) {
+      return (
+        message.type === "room:preload-scene" &&
+        message.payload.sceneId === sceneId
+      );
+    });
+    gm.send({ type: "room:preload-scene", payload: { sceneId: sceneId } });
+    const preloadPayload = await preloaded;
+    assert.equal(preloadPayload.payload.img, "/uploads/city.png");
+    assert.equal(preloadPayload.payload.name, "Город");
   } finally {
     for (const client of clients) {
       client.close();
@@ -297,6 +341,161 @@ test("WebSocket scene activation and canvas updates broadcast to the room", asyn
     await serverModule.closeServer();
   }
 });
+
+// ------------------------------------------------------- Step 6.3 scene config
+
+test("scene settings store background image, grid size and outside colour", function () {
+  const session = new EncounterSession({ id: "scenes-settings" });
+  const scene = session.createDirectoryEntry("scenes", { name: "Пещера" });
+
+  const defaults = session.getSceneSettings(scene.id);
+  assert.equal(defaults.gridSize, 100);
+  assert.equal(defaults.backgroundColor, "#12151c");
+  assert.equal(defaults.img, null);
+
+  const events = [];
+  session.subscribe(function (eventType, payload) {
+    events.push({ type: eventType, payload: payload });
+  });
+
+  const saved = session.updateSceneSettings(scene.id, {
+    img: "  /uploads/map.png  ",
+    gridSize: 64,
+    backgroundColor: "#AABBCC",
+  });
+  assert.equal(saved.img, "/uploads/map.png");
+  assert.equal(saved.gridSize, 64);
+  assert.equal(saved.backgroundColor, "#aabbcc");
+  assert.equal(saved.sourceMemberId, null);
+
+  const entry = session.getDirectories().scenes.entries.find(function (candidate) {
+    return candidate.id === scene.id;
+  });
+  assert.equal(entry.img, "/uploads/map.png");
+  assert.equal(entry.gridSize, 64);
+  assert.equal(entry.backgroundColor, "#aabbcc");
+  assert.ok(
+    events.some(function (event) {
+      return event.type === "room:directories-update";
+    }),
+    "scene settings must broadcast room:directories-update",
+  );
+
+  // Hostile values are clamped to the supported range and colour format.
+  session.updateSceneSettings(scene.id, {
+    gridSize: 9999,
+    backgroundColor: "not-a-colour",
+  });
+  const clamped = session.getSceneSettings(scene.id);
+  assert.equal(clamped.gridSize, 400);
+  assert.equal(clamped.backgroundColor, "#12151c");
+});
+
+test("scene activation and snapshot include the saved settings", function () {
+  const session = new EncounterSession({ id: "scenes-settings-payload" });
+  const scene = session.createDirectoryEntry("scenes", { name: "Крипта" });
+  session.updateSceneSettings(scene.id, {
+    img: "/uploads/crypt.png",
+    gridSize: 140,
+    backgroundColor: "#223344",
+  });
+
+  const events = [];
+  session.subscribe(function (eventType, payload) {
+    events.push({ type: eventType, payload: payload });
+  });
+  session.activateScene(scene.id);
+
+  const activation = events.find(function (event) {
+    return event.type === "room:scene-activated";
+  });
+  assert.ok(activation);
+  assert.equal(activation.payload.scene.img, "/uploads/crypt.png");
+  assert.equal(activation.payload.scene.gridSize, 140);
+  assert.equal(activation.payload.scene.backgroundColor, "#223344");
+
+  const snapshot = session.snapshot();
+  assert.equal(snapshot.scene.gridSize, 140);
+  assert.equal(snapshot.scene.backgroundColor, "#223344");
+});
+
+test("scene settings survive saveToDisk/loadFromDisk", async function () {
+  const file = tempFile("settings");
+  try {
+    const session = new EncounterSession({ id: "scenes-settings-persist", dataFile: file });
+    const scene = session.createDirectoryEntry("scenes", { name: "Море" });
+    session.updateSceneSettings(scene.id, {
+      img: "/uploads/sea.png",
+      gridSize: 80,
+      backgroundColor: "#334455",
+    });
+    await session.flushPersistence();
+
+    const restored = new EncounterSession({ id: "scenes-settings-persist", dataFile: file });
+    const result = await restored.loadFromDisk();
+    assert.equal(result.ok, true);
+    const settings = restored.getSceneSettings(scene.id);
+    assert.equal(settings.img, "/uploads/sea.png");
+    assert.equal(settings.gridSize, 80);
+    assert.equal(settings.backgroundColor, "#334455");
+  } finally {
+    await fs.rm(file, { force: true });
+  }
+});
+
+test("duplicating a scene keeps walls, drawings, lights and tokens", function () {
+  const session = new EncounterSession({ id: "scenes-copy" });
+  const scene = session.createDirectoryEntry("scenes", {
+    name: "Оригинал",
+    img: "/uploads/original.png",
+    gridSize: 120,
+    backgroundColor: "#102030",
+    walls: [{ id: "w1", x1: 0, y1: 0, x2: 100, y2: 0 }],
+    drawings: [{ id: "d1", type: "rect", x: 1, y: 1 }],
+    lights: [{ id: "l1", x: 2, y: 2, bright: 20, dim: 40 }],
+    tokens: [{ id: "t1", actorId: "actor-1", x: 3, y: 4 }],
+  });
+
+  const copy = session.createDirectoryEntry("scenes", {
+    name: scene.name + " (Copy)",
+    img: scene.img,
+    gridSize: scene.gridSize,
+    backgroundColor: scene.backgroundColor,
+    walls: scene.walls,
+    drawings: scene.drawings,
+    lights: scene.lights,
+    tokens: scene.tokens,
+  });
+
+  const canvas = session.getSceneCanvas(copy.id);
+  assert.equal(canvas.walls.length, 1);
+  assert.equal(canvas.drawings.length, 1);
+  assert.equal(canvas.lights.length, 1);
+  assert.equal(canvas.tokens.length, 1);
+  assert.equal(canvas.tokens[0].actorId, "actor-1");
+});
+
+test("deleting the active scene falls back to the base scene and broadcasts it", function () {
+  const session = new EncounterSession({ id: "scenes-delete-active" });
+  const scene = session.createDirectoryEntry("scenes", { name: "Временная" });
+  session.activateScene(scene.id);
+
+  const events = [];
+  session.subscribe(function (eventType, payload) {
+    events.push({ type: eventType, payload: payload });
+  });
+
+  session.deleteDirectoryEntry("scenes", scene.id);
+
+  const activation = events.find(function (event) {
+    return event.type === "room:scene-activated";
+  });
+  assert.ok(activation);
+  assert.equal(activation.payload.activeSceneId, null);
+  assert.equal(session.activeSceneId, null);
+});
+
+
 
 async function main() {
   let failures = 0;

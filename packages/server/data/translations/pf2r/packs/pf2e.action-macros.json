@@ -1,0 +1,221 @@
+{
+	"label": "Макросы действий",
+	"mapping": {
+		"name": "name"
+	},
+	"entries": {
+		"Administer First Aid - Stabilize: Medicine": {
+			"name": "Первая помощь - Стабилизировать: Медицина"
+		},
+		"Administer First Aid - Stop Bleeding: Medicine": {
+			"name": "Первая помощь - Остановить кровотечение: Медицина"
+		},
+		"Athletics: Arcane Slam": {
+			"name": "Арканное придавливание: Атлетика"
+		},
+		"Balance: Acrobatics": {
+			"name": "Балансировать: Акробатика"
+		},
+		"Bon Mot: Diplomacy": {
+			"name": "Острота: Дипломатия"
+		},
+		"Climb: Athletics": {
+			"name": "Карабкаться: Атлетика"
+		},
+		"Coerce: Intimidation": {
+			"name": "Принуждение: Запугивание"
+		},
+		"Command an Animal: Nature": {
+			"name": "Команда животному: Природа"
+		},
+		"Conceal an Object: Stealth": {
+			"name": "Скрыть объект: Скрытность"
+		},
+		"Craft: Crafting": {
+			"name": "Создать: Ремесло"
+		},
+		"Create a Diversion - Distracting Words: Deception": {
+			"name": "Отвлечь внимание - Отвлекающие слова: Обман"
+		},
+		"Create a Diversion - Gesture: Deception": {
+			"name": "Отвлечь внимание - Жест: Обман"
+		},
+		"Create a Diversion - Trick: Deception": {
+			"name": "Отвлечь внимание - Трюк: Обман"
+		},
+		"Create Forgery: Society": {
+			"name": "Создать подделку: Общество"
+		},
+		"Decipher Writing: Arcana": {
+			"name": "Расшифровка текста: Аркана"
+		},
+		"Decipher Writing: Occultism": {
+			"name": "Расшифровка текста: Оккультизм"
+		},
+		"Decipher Writing: Religion": {
+			"name": "Расшифровка текста: Религия"
+		},
+		"Decipher Writing: Society": {
+			"name": "Расшифровка текста: Общество"
+		},
+		"Demoralize: Intimidation": {
+			"name": "Деморализовать: Запугивание"
+		},
+		"Disable Device: Thievery": {
+			"name": "Отключение устройства: Воровство"
+		},
+		"Disarm: Athletics": {
+			"name": "Разоружение: Атлетика"
+		},
+		"Encouraging Words": {
+			"name": "Ободряющие слова"
+		},
+		"Escape": {
+			"name": "Вырваться"
+		},
+		"Escape: Acrobatics": {
+			"name": "Вырваться: Акробатика"
+		},
+		"Escape: Athletics": {
+			"name": "Вырваться: Атлетика"
+		},
+		"Escape: Unarmed Attack": {
+			"name": "Вырваться: Безоружная атака"
+		},
+		"Exploration: Avoid Notice": {
+			"name": "Исследование: Избегать обнаружения"
+		},
+		"Feint: Deception": {
+			"name": "Финт: Обман"
+		},
+		"Force Open: Athletics": {
+			"name": "Открыть силой: Атлетика"
+		},
+		"Gather Information: Diplomacy": {
+			"name": "Собрать информацию: Дипломатия"
+		},
+		"Grapple: Athletics": {
+			"name": "Захватить: Атлетика"
+		},
+		"Hide: Stealth": {
+			"name": "Спрятаться: Скрытность"
+		},
+		"High Jump: Athletics": {
+			"name": "Прыжок в высоту: Атлетика"
+		},
+		"Impersonate: Deception": {
+			"name": "Перевоплотиться: Обман"
+		},
+		"Lie: Deception": {
+			"name": "Лгать: Обман"
+		},
+		"Long Jump: Athletics": {
+			"name": "Прыжок в длину: Атлетика"
+		},
+		"Make an Impression: Diplomacy": {
+			"name": "Произвести впечатление: Дипломатия"
+		},
+		"Maneuver in Flight: Acrobatics": {
+			"name": "Маневрирование в полете: Акробатика"
+		},
+		"Palm an Object: Thievery": {
+			"name": "Ловкость рук: Воровство"
+		},
+		"Perform - Acting: Performance": {
+			"name": "Выступить - Пьеса: Выступление"
+		},
+		"Perform - Comedy: Performance": {
+			"name": "Выступить - Комедия: Выступление"
+		},
+		"Perform - Dance: Performance": {
+			"name": "Выступить - Танец: Выступление"
+		},
+		"Perform - Oratory: Performance": {
+			"name": "Выступить - Ораторство: Выступление"
+		},
+		"Perform - Play keyboard instrument: Performance": {
+			"name": "Выступить - Игра на клавишном инструменте: Выступление"
+		},
+		"Perform - Play percussion instrument: Performance": {
+			"name": "Выступить - Игра на ударном инструменте: Выступление"
+		},
+		"Perform - Play string instrument: Performance": {
+			"name": "Выступить - Игра на струнном инструменте: Выступление"
+		},
+		"Perform - Play wind instrument: Performance": {
+			"name": "Выступить - Игра на духовом инструменте: Выступление"
+		},
+		"Perform - Singing: Performance": {
+			"name": "Выступить - Пение: Выступление"
+		},
+		"Pick a Lock: Thievery": {
+			"name": "Вскрытие замка: Воровство"
+		},
+		"Raise a Shield": {
+			"name": "Поднять щит"
+		},
+		"Repair: Crafting": {
+			"name": "Ремонт: Ремесло"
+		},
+		"Reposition: Athletics": {
+			"name": "Перестановка: Атлетика"
+		},
+		"Request: Diplomacy": {
+			"name": "Просьба: Дипломатия"
+		},
+		"Seek: Perception": {
+			"name": "Поиск: Восприятие"
+		},
+		"Sense Direction: Survival": {
+			"name": "Определить направление: Выживание"
+		},
+		"Sense Motive: Perception": {
+			"name": "Понять намерение: Восприятие"
+		},
+		"Shove: Athletics": {
+			"name": "Толкнуть: Атлетика"
+		},
+		"Sneak: Stealth": {
+			"name": "Красться: Скрытность"
+		},
+		"Squeeze: Acrobatics": {
+			"name": "Протиснуться: Акробатика"
+		},
+		"Steal: Thievery": {
+			"name": "Украсть: Воровство"
+		},
+		"Steel Your Resolve": {
+			"name": "Укрепить решимость"
+		},
+		"Subsist: Society": {
+			"name": "Проживание: Общество"
+		},
+		"Subsist: Survival": {
+			"name": "Проживание: Выживание"
+		},
+		"Swim: Athletics": {
+			"name": "Плавание: Атлетика"
+		},
+		"Tamper: Crafting": {
+			"name": "Ремесло: Вмешательство"
+		},
+		"Track: Survival": {
+			"name": "Выслеживание: Выживание"
+		},
+		"Treat Disease: Medicine": {
+			"name": "Лечение болезни: Медицина"
+		},
+		"Treat Poison: Medicine": {
+			"name": "Лечение от яда: Медицина"
+		},
+		"Trip: Athletics": {
+			"name": "Опрокидывание: Атлетика"
+		},
+		"Tumble Through: Acrobatics": {
+			"name": "Проскочить: Акробатика"
+		},
+		"Whirling Throw: Athletics": {
+			"name": "Круговой бросок: Атлетика"
+		}
+	}
+}

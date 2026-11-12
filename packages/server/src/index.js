@@ -39,7 +39,21 @@ const PERSISTENCE_ENABLED =
   process.env.PF2E_PERSIST === "1" ||
   (process.env.PF2E_PERSIST !== "0" && require.main === module);
 
+// Step 6.5: UI translation dictionaries. The upstream community layout and the
+// compact local layout are both supported.
+const TRANSLATIONS_DIR =
+  process.env.TRANSLATIONS_DIR || path.join(__dirname, "..", "data", "translations");
+const UI_TRANSLATION_FILES = Object.freeze({
+  ru: [
+    path.join(TRANSLATIONS_DIR, "pf2r", "data", "community", "pf2e", "pf2e.json"),
+    path.join(TRANSLATIONS_DIR, "pf2r", "pf2e.json"),
+  ],
+});
+const _uiTranslationCache = new Map();
+
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+// Step 6.4: a full world export can exceed 100 MB once maps/fog/actors grow.
+const MAX_WORLD_IMPORT_BYTES = 256 * 1024 * 1024;
 const UPLOAD_EXTENSIONS = {
   "image/png": ".png",
   "image/jpeg": ".jpg",
@@ -105,7 +119,8 @@ function sendJson(res, statusCode, body, extraHeaders) {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Expose-Headers": "X-Category, X-Total-Count, X-Filtered-Count",
+    "Access-Control-Expose-Headers":
+      "X-Category, X-Lang, X-Total-Count, X-Filtered-Count",
   };
   if (extraHeaders) {
     Object.assign(headers, extraHeaders);
@@ -114,12 +129,123 @@ function sendJson(res, statusCode, body, extraHeaders) {
   res.end(payload);
 }
 
+/**
+ * Read a small JSON body for the lobby endpoints. The lobby only creates
+ * profiles (name/role), so a tight 64 KiB cap is enough.
+ */
+function readJsonBody(req, limitBytes) {
+  const limit = Number.isInteger(limitBytes) ? limitBytes : 64 * 1024;
+  return new Promise(function (resolve, reject) {
+    let received = 0;
+    const chunks = [];
+    req.on("data", function (chunk) {
+      received += chunk.length;
+      if (received > limit) {
+        reject(new Error("Request body is too large."));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", function () {
+      const text = Buffer.concat(chunks).toString("utf8").trim();
+      if (text === "") {
+        resolve({});
+        return;
+      }
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+          reject(new Error("Request body must be a JSON object."));
+          return;
+        }
+        resolve(parsed);
+      } catch (error) {
+        reject(new Error("Invalid JSON body."));
+      }
+    });
+    req.on("error", function (error) {
+      reject(error);
+    });
+  });
+}
+
 function decodePathSegment(value) {
   try {
     return decodeURIComponent(value);
   } catch (error) {
     return value;
   }
+}
+
+/** Step 6.5: `?lang=ru|en`; unknown values fall back to English. */
+function readLanguageParam(value) {
+  const language = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return language === "ru" ? "ru" : "en";
+}
+
+/**
+ * Read and cache the interface dictionary. English intentionally returns an
+ * empty object: the client's `t()` helper then shows the key/English fallback.
+ */
+function readUiTranslations(language) {
+  if (language !== "ru") {
+    return {};
+  }
+  if (_uiTranslationCache.has(language)) {
+    return _uiTranslationCache.get(language);
+  }
+  for (const filePath of UI_TRANSLATION_FILES[language] || []) {
+    if (!fs.existsSync(filePath)) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        _uiTranslationCache.set(language, parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.warn("Failed to read UI translations: " + error.message);
+    }
+  }
+  _uiTranslationCache.set(language, {});
+  return {};
+}
+
+/** Step 6.4: only a connected GM profile may export/import a world. */
+function isGmRequest(session, memberId) {
+  if (!session || typeof memberId !== "string" || memberId.trim() === "") {
+    return false;
+  }
+  const gm =
+    session.getMember(memberId) || session.getProfile(memberId) || null;
+  return Boolean(gm && gm.role === "gm");
+}
+
+function firstFieldValue(value) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** Step 6.6: collect repeated and comma-separated list filters. */
+function collectListFilter(searchParams, names) {
+  const result = [];
+  const seen = new Set();
+  for (const name of names) {
+    for (const raw of searchParams.getAll(name)) {
+      if (typeof raw !== "string") {
+        continue;
+      }
+      for (const part of raw.split(",")) {
+        const value = part.trim().toLowerCase();
+        if (value !== "" && !seen.has(value)) {
+          seen.add(value);
+          result.push(value);
+        }
+      }
+    }
+  }
+  return result;
 }
 
 function parseIndexFilters(searchParams) {
@@ -162,6 +288,95 @@ function parseIndexFilters(searchParams) {
   const type = searchParams.get("type");
   if (type) {
     filters.type = type;
+  }
+
+  // Step 6.6: equipment filters. Each query value may be repeated or contain a
+  // comma-separated list (`?rarity=rare,unique`).
+  const rarity = collectListFilter(searchParams, ["rarity", "rarities"]);
+  if (rarity.length > 0) {
+    filters.rarity = rarity;
+  }
+
+  const itemTypes = collectListFilter(searchParams, ["itemTypes", "itemType"]);
+  if (itemTypes.length > 0) {
+    filters.itemTypes = itemTypes;
+  }
+
+  const armorCategories = collectListFilter(searchParams, [
+    "armorCategories",
+    "armorCategory",
+  ]);
+  if (armorCategories.length > 0) {
+    filters.armorCategories = armorCategories;
+  }
+
+  const weaponCategories = collectListFilter(searchParams, [
+    "weaponCategories",
+    "weaponCategory",
+  ]);
+  if (weaponCategories.length > 0) {
+    filters.weaponCategories = weaponCategories;
+  }
+
+  // Step 6.7: include/exclude trait filters and the advanced spell/bestiary/
+  // feat accordion groups. Every list accepts repeated or comma-separated
+  // values, exactly like the equipment filters above.
+  const traitsIn = collectListFilter(searchParams, ["traitsIn", "traits_in"]);
+  if (traitsIn.length > 0) {
+    filters.traitsIn = traitsIn;
+  }
+  const traitsOut = collectListFilter(searchParams, ["traitsOut", "traits_out"]);
+  if (traitsOut.length > 0) {
+    filters.traitsOut = traitsOut;
+  }
+
+  const spellCategories = collectListFilter(searchParams, [
+    "spellCategories",
+    "spellCategory",
+  ]);
+  if (spellCategories.length > 0) {
+    filters.spellCategories = spellCategories;
+  }
+
+  const traditions = collectListFilter(searchParams, [
+    "traditions",
+    "tradition",
+  ]);
+  if (traditions.length > 0) {
+    filters.traditions = traditions;
+  }
+
+  const ranks = collectListFilter(searchParams, ["ranks", "rank", "levels"]);
+  if (ranks.length > 0 && filters.level === undefined) {
+    // `parseLevelFilter` treats an array as an exact-match list.
+    filters.level = ranks;
+  }
+
+  const sizes = collectListFilter(searchParams, ["sizes", "size"]);
+  if (sizes.length > 0) {
+    filters.sizes = sizes;
+  }
+
+  const featCategories = collectListFilter(searchParams, [
+    "featCategories",
+    "featCategory",
+  ]);
+  if (featCategories.length > 0) {
+    filters.featCategories = featCategories;
+  }
+
+  const skills = collectListFilter(searchParams, ["skills", "skill"]);
+  if (skills.length > 0) {
+    filters.skills = skills;
+  }
+
+  const priceMin = searchParams.get("priceMin");
+  if (priceMin !== null) {
+    filters.priceMin = priceMin;
+  }
+  const priceMax = searchParams.get("priceMax");
+  if (priceMax !== null) {
+    filters.priceMax = priceMax;
   }
 
   const ancestry = searchParams.get("ancestry");
@@ -303,6 +518,120 @@ function handleUpload(req, res) {
   });
 }
 
+/**
+ * Step 6.4: replace the current world from an uploaded JSON file.
+ *
+ * The route is GM-only. The uploaded document must contain the `directories`
+ * and `users` root keys; the session then reuses the persistence restore path,
+ * queues `_scheduleSave()` and broadcasts `room:reload` so every client
+ * reconnects to the imported campaign.
+ */
+function handleWorldImport(req, res, url) {
+  const querySessionId = url.searchParams.get("sessionId") || "default";
+  const queryMemberId = url.searchParams.get("memberId") || "";
+  const preflightSession = getSession(querySessionId);
+  if (queryMemberId && !isGmRequest(preflightSession, queryMemberId)) {
+    sendJson(res, 403, {
+      error: "forbidden",
+      message: "Only the GM can import a world.",
+    });
+    return;
+  }
+
+  const form = formidable({
+    maxFileSize: MAX_WORLD_IMPORT_BYTES,
+    maxFiles: 1,
+    keepExtensions: true,
+  });
+
+  form.parse(req, function (error, fields, files) {
+    if (error) {
+      sendJson(res, error.httpCode === 413 ? 413 : 400, {
+        error: "import-failed",
+        message: error.message,
+      });
+      return;
+    }
+
+    let file = files.file || files.world || files.upload;
+    if (!file) {
+      const keys = Object.keys(files || {});
+      if (keys.length > 0) {
+        file = files[keys[0]];
+      }
+    }
+    if (Array.isArray(file)) {
+      file = file[0];
+    }
+    if (!file || !file.filepath) {
+      sendJson(res, 400, {
+        error: "import-failed",
+        message: "No world JSON file was provided (expected field name 'file').",
+      });
+      return;
+    }
+
+    const sessionId =
+      String(firstFieldValue(fields.sessionId) || querySessionId) || "default";
+    const memberId = String(
+      firstFieldValue(fields.memberId) || queryMemberId || "",
+    );
+    const session = getSession(sessionId);
+
+    (async function () {
+      try {
+        if (!isGmRequest(session, memberId)) {
+          sendJson(res, 403, {
+            error: "forbidden",
+            message: "Only the GM can import a world.",
+          });
+          return;
+        }
+
+        const text = await fs.promises.readFile(file.filepath, "utf8");
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (parseError) {
+          sendJson(res, 400, {
+            error: "invalid-json",
+            message: "The uploaded file is not valid JSON.",
+          });
+          return;
+        }
+
+        const result = session.importWorld(parsed);
+        if (!result.ok) {
+          sendJson(res, 400, {
+            error: "invalid-world",
+            reason: result.reason,
+            message:
+              "The world must be a JSON object with 'directories' and 'users' root keys.",
+          });
+          return;
+        }
+
+        broadcast(session, "room:reload", {
+          reason: "world-import",
+          by: memberId,
+          importedAt: new Date().toISOString(),
+        });
+        sendJson(res, 200, { ok: true, imported: true, sessionId: session.id });
+      } catch (readError) {
+        sendJson(res, 500, {
+          error: "import-failed",
+          message:
+            readError instanceof Error ? readError.message : String(readError),
+        });
+      } finally {
+        fs.promises.rm(file.filepath, { force: true }).catch(function () {
+          // Temporary upload cleanup is best-effort.
+        });
+      }
+    })();
+  });
+}
+
 /** Serve a file from `data/uploads` for `/uploads/<filename>` URLs. */
 async function serveUpload(req, res, url) {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -404,6 +733,65 @@ function handleRequest(req, res) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/lobby") {
+    const sessionId = url.searchParams.get("sessionId") || "default";
+    const session = getSession(sessionId);
+    sendJson(res, 200, {
+      sessionId: session.id,
+      users: session.getProfiles(),
+    });
+    return;
+  }
+
+  // Step 6.4: GM-only world export. The payload is the same document that
+  // `EncounterSession#saveToDisk()` writes, including unsaved in-memory state.
+  if (req.method === "GET" && url.pathname === "/api/lobby/export") {
+    const sessionId = url.searchParams.get("sessionId") || "default";
+    const memberId = url.searchParams.get("memberId") || "";
+    const session = getSession(sessionId);
+    if (!isGmRequest(session, memberId)) {
+      sendJson(res, 403, {
+        error: "forbidden",
+        message: "Only the GM can export the world.",
+      });
+      return;
+    }
+    sendJson(res, 200, session.exportWorld(), {
+      "Content-Disposition": 'attachment; filename="world-export.json"',
+    });
+    return;
+  }
+
+  // Step 6.4: GM-only world import (multipart/form-data, field name `file`).
+  if (req.method === "POST" && url.pathname === "/api/lobby/import") {
+    handleWorldImport(req, res, url);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/lobby/users") {
+    readJsonBody(req)
+      .then(function (body) {
+        const session = getSession(body.sessionId || "default");
+        const user = session.createProfile({
+          name: body.name,
+          role: body.role,
+          color: body.color,
+        });
+        sendJson(res, 201, {
+          sessionId: session.id,
+          user: user,
+          users: session.getProfiles(),
+        });
+      })
+      .catch(function (error) {
+        sendJson(res, 400, {
+          error: "profile-create-failed",
+          message: error instanceof Error ? error.message : String(error),
+        });
+      });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/sessions") {
     sendJson(res, 200, {
       sessions: Array.from(sessions.values()).map(function (session) {
@@ -413,11 +801,46 @@ function handleRequest(req, res) {
     return;
   }
 
+  // Step 6.5: interface dictionary for the client `t()` helper.
+  if (req.method === "GET" && url.pathname === "/api/i18n") {
+    const language = readLanguageParam(url.searchParams.get("lang"));
+    sendJson(res, 200, readUiTranslations(language), {
+      "Cache-Control": "public, max-age=300",
+    });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/compendiums") {
-    const categories = catalogService.listCategories();
+    const language = readLanguageParam(url.searchParams.get("lang"));
+    const categories = catalogService.listCategories(language);
     sendJson(res, 200, {
+      lang: language,
       categories: categories,
-      catalogs: catalogService.listCatalogs(),
+      catalogs: catalogService.listCatalogs(language),
+    });
+    return;
+  }
+
+  // Step 6.7: trait palette for the Compendium Browser. This must be matched
+  // before the generic item route so `facets` is not treated as an item id.
+  const facetsMatch = url.pathname.match(/^\/api\/compendiums\/([^/]+)\/facets$/);
+  if (req.method === "GET" && facetsMatch) {
+    const categoryId = decodePathSegment(facetsMatch[1]);
+    const language = readLanguageParam(url.searchParams.get("lang"));
+    if (!catalogService.hasCategory(categoryId, language)) {
+      sendJson(res, 404, { error: "category-not-found", category: categoryId });
+      return;
+    }
+    const type = url.searchParams.get("type");
+    const traits = catalogService.listTraits(
+      categoryId,
+      type ? { type: type } : {},
+      language,
+    );
+    sendJson(res, 200, {
+      category: categoryId,
+      lang: language,
+      traits: traits,
     });
     return;
   }
@@ -426,13 +849,14 @@ function handleRequest(req, res) {
   if (req.method === "GET" && itemMatch) {
     const categoryId = decodePathSegment(itemMatch[1]);
     const itemId = decodePathSegment(itemMatch[2]);
+    const language = readLanguageParam(url.searchParams.get("lang"));
 
-    if (!catalogService.hasCategory(categoryId)) {
+    if (!catalogService.hasCategory(categoryId, language)) {
       sendJson(res, 404, { error: "category-not-found", category: categoryId });
       return;
     }
 
-    const item = catalogService.getItem(categoryId, itemId);
+    const item = catalogService.getItem(categoryId, itemId, language);
     if (!item) {
       sendJson(res, 404, {
         error: "item-not-found",
@@ -449,7 +873,8 @@ function handleRequest(req, res) {
   const categoryMatch = url.pathname.match(/^\/api\/compendiums\/([^/]+)$/);
   if (req.method === "GET" && categoryMatch) {
     const categoryId = decodePathSegment(categoryMatch[1]);
-    const catalog = catalogService.getCategory(categoryId);
+    const language = readLanguageParam(url.searchParams.get("lang"));
+    const catalog = catalogService.getCategory(categoryId, language);
 
     if (!catalog) {
       sendJson(res, 404, { error: "category-not-found", category: categoryId });
@@ -457,10 +882,11 @@ function handleRequest(req, res) {
     }
 
     const filters = parseIndexFilters(url.searchParams);
-    const entries = catalogService.getIndex(categoryId, filters);
+    const entries = catalogService.getIndex(categoryId, filters, language);
 
     sendJson(res, 200, entries, {
       "X-Category": catalog.id,
+      "X-Lang": catalog.lang,
       "X-Total-Count": String(catalog.entries.length),
       "X-Filtered-Count": String(entries.length),
     });
@@ -624,10 +1050,14 @@ wss.on("connection", function (ws) {
         if (session.getMember(memberId)) {
           session.removeMember(memberId);
         }
+        // Phase 6.2: when the id belongs to a persistent lobby profile, that
+        // profile is authoritative for name and role. A player can never
+        // escalate to GM by sending `role: "gm"` for a player account.
+        const profile = session.getProfile(memberId);
         const member = session.addMember({
           id: memberId,
-          name: payload.name,
-          role: payload.role,
+          name: profile ? profile.name : payload.name,
+          role: profile ? profile.role : payload.role,
           controlledIds: payload.controlledIds,
         });
         state.member = member;
@@ -674,6 +1104,7 @@ wss.on("connection", function (ws) {
           text: payload.text,
           image: payload.image,
           visibility: payload.visibility,
+          card: payload.card,
         });
         broadcastChatUpdate(session);
         return;
@@ -744,6 +1175,39 @@ wss.on("connection", function (ws) {
         return;
       }
 
+      // Step 6.8: scene preloading. The GM asks the room to warm the image
+      // cache; the server resolves the scene image and broadcasts it to every
+      // connected client, which only creates an `Image()` (no scene switch).
+      if (type === "room:preload-scene") {
+        const settings = session.getSceneSettings(payload.sceneId);
+        broadcast(session, "room:preload-scene", {
+          sceneId: settings.id,
+          name: settings.name,
+          img: settings.img,
+          by: member.id,
+        });
+        return;
+      }
+
+      // Step 6.3: scene configuration (background image, grid size, outside
+      // colour). The server persists it on the scene entry and the standard
+      // `room:directories-update` broadcast keeps every client in sync.
+      if (type === "room:update-scene") {
+        if (member.role !== "gm") {
+          throw new Error("Only the GM can configure scenes.");
+        }
+        session.updateSceneSettings(
+          payload.sceneId,
+          {
+            img: payload.img,
+            gridSize: payload.gridSize,
+            backgroundColor: payload.backgroundColor,
+          },
+          member.id,
+        );
+        return;
+      }
+
       if (type === "room:scene-canvas-update") {
         session.updateSceneCanvas(
           payload.sceneId,
@@ -761,6 +1225,7 @@ wss.on("connection", function (ws) {
           payload.sceneId,
           payload.fogExploration,
           member.id,
+          payload.actorId,
         );
         return;
       }
@@ -771,7 +1236,14 @@ wss.on("connection", function (ws) {
       }
 
       if (type === "room:create-actor") {
-        session.createDirectoryEntry("actors", payload);
+        // Phase 6.1: a player who creates an actor becomes its Owner. The GM
+        // may pass an explicit matrix, but players cannot forge ownership.
+        const actorPayload = Object.assign({}, payload);
+        delete actorPayload.ownership;
+        if (member.role !== "gm") {
+          actorPayload.ownerId = member.id;
+        }
+        session.createDirectoryEntry("actors", actorPayload);
         return;
       }
 
@@ -799,7 +1271,40 @@ wss.on("connection", function (ws) {
       if (type === "room:update-actor") {
         session.updateActor(
           payload.actorId,
-          { name: payload.name, system: payload.system, items: payload.items },
+          {
+            name: payload.name,
+            system: payload.system,
+            items: payload.items,
+            ownership: payload.ownership,
+          },
+          member.id,
+          member.role,
+        );
+        return;
+      }
+
+      // Step 5.5: actor context-menu deletion. The generic `room:delete-entry`
+      // also supports other directory kinds for future menu entries.
+      if (
+        type === "room:delete-entry" ||
+        type === "room:delete-actor" ||
+        type === "room:delete-scene" ||
+        type === "room:delete-item" ||
+        type === "room:delete-journal"
+      ) {
+        const kindByEvent = {
+          "room:delete-entry":
+            typeof payload.kind === "string" ? payload.kind : null,
+          "room:delete-actor": "actors",
+          "room:delete-scene": "scenes",
+          "room:delete-item": "items",
+          "room:delete-journal": "journals",
+        };
+        const entryId =
+          payload.entryId || payload.actorId || payload.sceneId || payload.itemId || payload.journalId;
+        session.deleteDirectoryEntry(
+          kindByEvent[type],
+          entryId,
           member.id,
           member.role,
         );
@@ -955,12 +1460,14 @@ wss.on("connection", function (ws) {
       }
 
       if (type === "compendium:list") {
+        const language = readLanguageParam(payload.lang);
         send(
           ws,
           "compendium:list",
           {
-            categories: catalogService.listCategories(),
-            catalogs: catalogService.listCatalogs(),
+            lang: language,
+            categories: catalogService.listCategories(language),
+            catalogs: catalogService.listCatalogs(language),
           },
           requestId,
         );
@@ -969,22 +1476,37 @@ wss.on("connection", function (ws) {
 
       if (type === "compendium:get") {
         const categoryId = payload.categoryId || payload.catalogId;
-        if (!catalogService.hasCategory(categoryId)) {
+        const language = readLanguageParam(payload.lang);
+        if (!catalogService.hasCategory(categoryId, language)) {
           throw new Error("Unknown compendium category: " + String(categoryId));
         }
 
         const itemId = payload.itemId || payload.id;
         if (itemId) {
-          const item = catalogService.getItem(categoryId, itemId);
-          send(ws, "compendium:get", { categoryId: categoryId, item: item }, requestId);
+          const item = catalogService.getItem(categoryId, itemId, language);
+          send(
+            ws,
+            "compendium:get",
+            { categoryId: categoryId, lang: language, item: item },
+            requestId,
+          );
           return;
         }
 
-        const entries = catalogService.getIndex(categoryId, payload.filters || {});
+        const entries = catalogService.getIndex(
+          categoryId,
+          payload.filters || {},
+          language,
+        );
         send(
           ws,
           "compendium:get",
-          { categoryId: categoryId, count: entries.length, entries: entries },
+          {
+            categoryId: categoryId,
+            lang: language,
+            count: entries.length,
+            entries: entries,
+          },
           requestId,
         );
         return;

@@ -14,7 +14,7 @@ const LIBRARY_LABELS = {
  * browser window.
  */
 const CATEGORY_TABS = {
-  equipment: "weapons",
+  equipment: "equipment",
   spells: "spells",
   feats: "feats",
   actions: "actions",

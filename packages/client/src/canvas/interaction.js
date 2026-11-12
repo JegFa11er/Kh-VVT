@@ -10,6 +10,11 @@
 
 import { Graphics } from "pixi.js";
 
+import {
+  confirmAction,
+  openActorSheet,
+  openTokenHud,
+} from "../ui/overlays/dialog-service.js";
 import { showToast } from "../ui/toast.js";
 
 const WALL_TOOLS = new Set([
@@ -22,13 +27,6 @@ const WALL_TOOLS = new Set([
 ]);
 
 const DRAW_TOOLS = new Set(["rect", "ellipse", "freehand"]);
-
-function confirmAction(message) {
-  if (typeof window === "undefined" || typeof window.confirm !== "function") {
-    return false;
-  }
-  return window.confirm(message);
-}
 
 export class InteractionLayer {
   constructor(app, viewport, layers = {}) {
@@ -369,26 +367,47 @@ export class InteractionLayer {
         this.drawLayer.setColor(detail.color);
       }
       if (tool === "clear" && this.drawLayer) {
-        if (confirmAction("Удалить все рисунки?")) {
+        confirmAction({
+          title: "Очистить холст",
+          message: "Удалить все рисунки на сцене?",
+          danger: true,
+        }).then((confirmed) => {
+          if (!confirmed) {
+            return;
+          }
           this.drawLayer.clear();
           this._notifySceneChanged();
-        }
+        });
       }
     }
 
     if (category === "wall" && tool === "clear" && this.wallLayer) {
-      if (confirmAction("Удалить все стены?")) {
+      confirmAction({
+        title: "Очистить стены",
+        message: "Удалить все стены на сцене?",
+        danger: true,
+      }).then((confirmed) => {
+        if (!confirmed) {
+          return;
+        }
         this.wallLayer.clear();
         this._notifySceneChanged();
-      }
+      });
     }
 
     if (category === "light") {
       if (tool === "clear" && this.lightLayer) {
-        if (confirmAction("Удалить весь свет?")) {
+        confirmAction({
+          title: "Очистить освещение",
+          message: "Удалить все источники света на сцене?",
+          danger: true,
+        }).then((confirmed) => {
+          if (!confirmed) {
+            return;
+          }
           this.lightLayer.clear();
           this._notifySceneChanged();
-        }
+        });
       }
       if (tool === "darkness" && this.lightLayer) {
         this.lightLayer.setDarkness(detail.level);
@@ -403,6 +422,9 @@ export class InteractionLayer {
         // Clear the accumulated texture locally, then ask the server to wipe
         // `scenes[id].fogExploration` and broadcast `room:reset-fog`.
         this.fogLayer.reset({ notify: true });
+        if (this.visionLayer) {
+          this.visionLayer.refresh();
+        }
         showToast("Туман войны сброшен");
       }
     }
@@ -588,14 +610,57 @@ export class InteractionLayer {
       this.gesture = null;
     }
     if (doubleClick && category === "light" && this.lightLayer) {
-      if (this.lightLayer.handleDoubleClick(point)) {
+      // The light editor is async because its radii dialog is an in-game React
+      // prompt; only consume the click when a bulb was actually hit.
+      if (this.lightLayer.sourceAt(point)) {
+        const pending = this.lightLayer.handleDoubleClick(point);
         this._cancelGesture();
         this._suppressClick = true;
+        if (pending && typeof pending.then === "function") {
+          pending
+            .then((handled) => {
+              if (handled) {
+                this._notifySceneChanged();
+              }
+            })
+            .catch(() => {});
+        } else if (pending) {
+          this._notifySceneChanged();
+        }
         return;
       }
     }
 
     if (event.button === 2) {
+      // Step 5.8: RMB on a token opens the in-game Token HUD instead of
+      // clearing the selection. The viewport's stage listener runs first and
+      // arms a camera pan, so stop it explicitly.
+      if (
+        category === "token" &&
+        tool === "select" &&
+        this.tokenLayer
+      ) {
+        const token = this.tokenLayer.tokenAt(point);
+        if (token) {
+          if (this.viewport) {
+            this.viewport.panning = false;
+          }
+          if (!this.tokenLayer.isSelected(token.combatantId)) {
+            this.tokenLayer.selectToken(token.combatantId);
+          }
+          const actorId =
+            typeof this.tokenLayer.actorIdForToken === "function"
+              ? this.tokenLayer.actorIdForToken(token)
+              : token.actorId || null;
+          openTokenHud({
+            tokenId: token.combatantId,
+            actorId: actorId,
+            world: { x: token.x, y: token.y },
+          });
+          return;
+        }
+      }
+
       // Right-drag is always the camera. Make sure a previous marquee/token
       // gesture has not left the drag plugin paused, then let the viewport's
       // own pointerdown listener start panning.
@@ -634,6 +699,21 @@ export class InteractionLayer {
     }
     if (event.button !== 0) {
       return;
+    }
+
+    // Step 5.8: double-clicking a token opens the linked character sheet.
+    if (doubleClick && category === "token" && tool === "select" && this.tokenLayer) {
+      const token = this.tokenLayer.tokenAt(point);
+      const actorId =
+        token && typeof this.tokenLayer.actorIdForToken === "function"
+          ? this.tokenLayer.actorIdForToken(token)
+          : null;
+      if (actorId) {
+        this._resumeCamera();
+        this._suppressClick = true;
+        openActorSheet(actorId);
+        return;
+      }
     }
 
     if (category === "token") {
@@ -852,8 +932,14 @@ export class InteractionLayer {
           event.global.y - press.screen.y,
         ) <= 5;
       if (isClick) {
-        this.drawLayer.handleTextClick(point);
-        this._notifySceneChanged();
+        const pending = this.drawLayer.handleTextClick(point);
+        if (pending && typeof pending.then === "function") {
+          pending
+            .then(() => this._notifySceneChanged())
+            .catch(() => {});
+        } else {
+          this._notifySceneChanged();
+        }
       }
     }
 

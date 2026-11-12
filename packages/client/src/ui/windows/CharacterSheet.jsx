@@ -1,23 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { useTranslation } from "../i18n.js";
 import { useStore } from "../StoreContext.jsx";
+import {
+  OWNERSHIP_LEVELS,
+  canEditActor,
+  canViewActor,
+  getOwnershipLevel,
+  normalizeOwnership,
+} from "../permissions.js";
+import { showToast } from "../toast.js";
 import {
   SAVES,
   SKILLS,
+  FEAT_SECTIONS,
   applyClassToActor,
   armorClassBreakdown,
+  clampHpToMax,
   createActorFeatFromDocument,
   createActorItemFromDocument,
   createActorSpellFromDocument,
   initiativeModifier,
   isPhysicalItemType,
   iwrLabel,
+  parseHpInput,
   prepareActorData,
   prepareActorSystem,
   perceptionModifier,
   saveModifier,
   signed,
+  trimBackgroundBoosts,
 } from "./character/character-data.js";
 import AttributeBuilderModal from "./character/AttributeBuilderModal.jsx";
 import CompendiumSelectModal from "./character/CompendiumSelectModal.jsx";
@@ -27,28 +40,70 @@ import {
   SpeedsEditorModal,
 } from "./character/CharacterModals.jsx";
 import {
-  ActionsTab,
-  BlindRollButton,
   CharacterTab,
   CombatTab,
   CommitInput,
   EffectsTab,
   FeatsTab,
+  BiographyTab,
   InventoryTab,
   RankBadge,
   SkillsTab,
   SpellsTab,
 } from "./character/CharacterTabs.jsx";
 
+// Step 6.5: visible labels are resolved through the interface dictionary.
+// The literal `label` is the English fallback used before `/api/i18n` loads
+// and whenever the user selects EN.
 const SHEET_TABS = [
-  { id: "character", icon: "🪪", label: "Основа" },
-  { id: "combat", icon: "⚔️", label: "Бой" },
-  { id: "inventory", icon: "🎒", label: "Инвентарь" },
-  { id: "actions", icon: "①", label: "Действия" },
-  { id: "spells", icon: "✦", label: "Заклинания" },
-  { id: "feats", icon: "🏅", label: "Черты" },
-  { id: "skills", icon: "✋", label: "Навыки" },
-  { id: "effects", icon: "☀", label: "Эффекты" },
+  {
+    id: "character",
+    icon: "🪪",
+    label: "Character",
+    labelKey: "PF2E.TabCharacterLabel",
+  },
+  {
+    id: "combat",
+    icon: "⚔️",
+    label: "Combat",
+    labelKey: "PF2E.TabActionsEncounterLabel",
+  },
+  {
+    id: "inventory",
+    icon: "🎒",
+    label: "Inventory",
+    labelKey: "PF2E.TabInventoryLabel",
+  },
+  {
+    id: "spells",
+    icon: "✦",
+    label: "Spells",
+    labelKey: "PF2E.CompendiumBrowser.TabSpell",
+  },
+  {
+    id: "feats",
+    icon: "🏅",
+    label: "Feats",
+    labelKey: "PF2E.CompendiumBrowser.TabFeat",
+  },
+  {
+    id: "skills",
+    icon: "✋",
+    label: "Skills",
+    labelKey: "PF2E.SkillsLabel",
+  },
+  {
+    id: "effects",
+    icon: "☀",
+    label: "Effects",
+    labelKey: "PF2E.EffectsLabel",
+  },
+  {
+    id: "biography",
+    icon: "📜",
+    label: "Biography",
+    labelKey: "PF2E.Platform.Biography.Tab",
+  },
 ];
 
 const IWR_SECTIONS = [
@@ -137,7 +192,8 @@ function compendiumSelectionDetails(category, document, fallback) {
   if (category === "backgrounds") {
     return {
       ...source,
-      boosts: system.boosts,
+      // Step 5.5: every background grants exactly two boosts.
+      boosts: trimBackgroundBoosts(system.boosts),
       trainedSkills: system.trainedSkills,
       traits: doc.traits,
     };
@@ -150,6 +206,7 @@ function compendiumSelectionDetails(category, document, fallback) {
       keyAbility: Array.isArray(system.keyAbility?.value)
         ? system.keyAbility.value
         : fallback?.keyAbility || [],
+      trainedSkills: system.trainedSkills,
     };
   }
   return source;
@@ -171,6 +228,9 @@ export default function CharacterSheet({ actorId, onClose }) {
     myUserId,
     activeRole,
   } = useStore();
+  // Step 6.7: subscribed to the StoreContext language revision, so every tab
+  // label and localised sheet caption re-renders immediately on RU/EN change.
+  const { t } = useTranslation();
 
   const actor = useMemo(() => {
     const entries = directories?.actors?.entries || [];
@@ -183,14 +243,31 @@ export default function CharacterSheet({ actorId, onClose }) {
   const preparedActor = useMemo(() => prepareActorData(actor), [actor]);
   const preparedSystem = preparedActor.system;
 
-  const owner = useMemo(
-    () => (users || []).find((user) => user.characterId === actorId) || null,
-    [users, actorId],
-  );
-  const isGM = activeRole === "gm";
-  const isOwner = Boolean(owner && myUserId && owner.id === myUserId);
-  const canClose = isGM || isOwner || !owner;
-  const editable = isGM || isOwner || !owner;
+  const owner = useMemo(() => {
+    const ownership = normalizeOwnership(actor ? actor.ownership : null);
+    const owners = Object.keys(ownership).filter(
+      (key) => key !== "default" && ownership[key] === OWNERSHIP_LEVELS.OWNER,
+    );
+    return (
+      (users || []).find((user) => owners.includes(user.id)) ||
+      (users || []).find((user) => user.characterId === actorId) ||
+      null
+    );
+  }, [users, actor, actorId]);
+  const permission = getOwnershipLevel(actor, myUserId, activeRole);
+  const canView = canViewActor(actor, myUserId, activeRole);
+  const editable = canEditActor(actor, myUserId, activeRole);
+  const canClose = true;
+
+  // Level 0/1 must never leave a sheet visible. The directory and token
+  // double-click paths already filter this, but the sheet is also reachable
+  // through stale events, so it self-checks against the live matrix.
+  useEffect(() => {
+    if (actor && !canView) {
+      showToast("Нет доступа", { kind: "error" });
+      onClose();
+    }
+  }, [actor, canView, onClose]);
 
   const [system, setSystem] = useState(() => preparedSystem);
   // `prepareActorData` migrates legacy `system.inventory.items` rows into the
@@ -333,15 +410,31 @@ export default function CharacterSheet({ actorId, onClose }) {
     persist(system, trimmed);
   };
 
-  const sendChat = (text, plain = false, visibility = "public") => {
+  const sendChat = (text, plain = false, visibility = "public", card = null) => {
     if (!networkClient || !text) {
       return;
     }
     const message = text.startsWith("/r ") || !plain ? text : "Использует: " + text;
     networkClient
-      .sendChatMessage({ text: message, visibility })
+      .sendChatMessage({ text: message, visibility, card })
       .catch((sendError) => {
         setError(sendError.message || "Не удалось отправить сообщение в чат.");
+      });
+  };
+
+  /**
+   * Step 5.6: the sheet's initiative button registers the actor in the
+   * encounter. The server creates the encounter when needed, rolls the actor's
+   * initiative and broadcasts the Combat Tracker state.
+   */
+  const rollInitiative = () => {
+    if (!networkClient || !actor) {
+      return;
+    }
+    networkClient
+      .sendIntent("roll-initiative", { actorId: actor.id, secret: false })
+      .catch((rollError) => {
+        setError(rollError.message || "Не удалось бросить инициативу.");
       });
   };
 
@@ -505,6 +598,9 @@ export default function CharacterSheet({ actorId, onClose }) {
   };
 
   const handleSheetDragOver = (event) => {
+    if (!editable) {
+      return;
+    }
     if (event.dataTransfer?.types?.includes("application/json")) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
@@ -538,8 +634,22 @@ export default function CharacterSheet({ actorId, onClose }) {
     if (!document) {
       document = await fetchCompendiumDocument(category, entry.id);
     }
+    // Step 5.7: a drop onto a typed slot (ancestry/class/skill/general) binds
+    // the feat to that slot and forces the feat into the matching section.
+    const slotType =
+      target && ["ancestry", "class", "skill", "general"].includes(target.slotType)
+        ? target.slotType
+        : null;
+    // Step 5.8.1: an explicit section drop wins for the non-slot lists. In
+    // particular a feat dropped onto "Бонусные способности" is pinned to
+    // `system.category = "bonus"` so later automatic sorting cannot move it.
+    const sectionIds = new Set(FEAT_SECTIONS.map((section) => section.id));
+    const dropSection =
+      target && sectionIds.has(target.section) ? target.section : null;
+    const forcedCategory = slotType || dropSection || undefined;
     const feat = createActorFeatFromDocument(document, {
       slotId: target && target.slotId ? target.slotId : "",
+      category: forcedCategory,
     });
     feat.id = createUniqueItemId(feat.id);
     const previousFeatId =
@@ -644,6 +754,9 @@ export default function CharacterSheet({ actorId, onClose }) {
   };
 
   const handleSheetDrop = (event) => {
+    if (!editable) {
+      return;
+    }
     const serialized =
       event.dataTransfer?.getData("application/json") ||
       event.dataTransfer?.getData("text/plain");
@@ -893,8 +1006,6 @@ export default function CharacterSheet({ actorId, onClose }) {
         return <CombatTab {...commonTabProps} />;
       case "inventory":
         return <InventoryTab {...commonTabProps} />;
-      case "actions":
-        return <ActionsTab {...commonTabProps} />;
       case "spells":
         return <SpellsTab {...commonTabProps} />;
       case "feats":
@@ -903,6 +1014,8 @@ export default function CharacterSheet({ actorId, onClose }) {
         return <SkillsTab {...commonTabProps} />;
       case "effects":
         return <EffectsTab {...commonTabProps} />;
+      case "biography":
+        return <BiographyTab {...commonTabProps} />;
       case "character":
       default:
         return <CharacterTab {...commonTabProps} />;
@@ -988,16 +1101,26 @@ export default function CharacterSheet({ actorId, onClose }) {
   };
 
   const initiativeOptions = [
-    { value: "perception", label: "Восприятие" },
+    {
+      value: "perception",
+      label: t("PF2E.PerceptionLabel", "Perception"),
+    },
     ...SAVES.map((save) => ({ value: save.key, label: save.label })),
-    ...SKILLS.map((skill) => ({ value: skill.key, label: skill.label })),
+    ...SKILLS.map((skill) => ({
+      value: skill.key,
+      label: t(skill.labelKey, skill.name || skill.label),
+    })),
   ];
 
   return createPortal(
     <div className="pf2e-sheet-backdrop" role="presentation">
       <section
         ref={sheetRef}
-        className={"pf2e-sheet" + (compact ? " pf2e-sheet--compact" : "")}
+        className={
+          "pf2e-sheet" +
+          (compact ? " pf2e-sheet--compact" : "") +
+          (!editable ? " pf2e-sheet--readonly" : "")
+        }
         role="dialog"
         aria-label={"Лист персонажа: " + actor.name}
         onDragOver={handleSheetDragOver}
@@ -1030,6 +1153,18 @@ export default function CharacterSheet({ actorId, onClose }) {
           </div>
           <div className="pf2e-sheet__chrome-status">
             {saving ? <span className="pf2e-save-state">Сохранение…</span> : null}
+            {!editable ? (
+              <span
+                className="pf2e-readonly-badge"
+                title={
+                  permission === OWNERSHIP_LEVELS.OBSERVER
+                    ? "Наблюдатель: лист доступен только для чтения"
+                    : "Нет прав на редактирование"
+                }
+              >
+                👁 Только чтение
+              </span>
+            ) : null}
             <span className="pf2e-owner-badge">
               {owner ? "Игрок: " + owner.name : "Без владельца"}
             </span>
@@ -1057,55 +1192,63 @@ export default function CharacterSheet({ actorId, onClose }) {
         ) : null}
 
         <div className="pf2e-sheet__body">
-          <aside className="pf2e-sidebar" aria-label="Ключевые показатели">
+          <aside className="pf2e-sidebar" aria-label="Ключевые показатели" inert={!editable}>
             <section className="pf2e-sidebar__block">
               <header className="pf2e-sidebar__header">
-                <h2>Хиты</h2>
+                <h2>{t("PF2E.HitPointsHeader", "Hit Points")}</h2>
                 <span className="pf2e-sidebar__hint">HP</span>
               </header>
               <div className="pf2e-hp">
-                <label className="pf2e-hp__stat pf2e-hp__stat--temp">
-                  <span>Врем.</span>
-                  <CommitInput
-                    type="number"
-                    min="0"
-                    value={hp.temp || 0}
-                    disabled={!editable}
-                    onCommit={(value) =>
-                      patchPath(["attributes", "hp", "temp"], Math.max(0, Number(value) || 0))
-                    }
-                  />
-                </label>
                 <label className="pf2e-hp__stat pf2e-hp__stat--current">
                   <span>Текущие</span>
                   <CommitInput
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={hp.value || 0}
                     disabled={!editable}
-                    onCommit={(value) =>
-                      patchPath(["attributes", "hp", "value"], Math.max(0, Number(value) || 0))
-                    }
+                    title="Введите число или дельту (+10 / -5)"
+                    onCommit={(value) => {
+                      const parsed = parseHpInput(value, hp.value || 0);
+                      const next = clampHpToMax(
+                        parsed === null ? hp.value || 0 : parsed,
+                        hp.max,
+                      );
+                      patchPath(["attributes", "hp", "value"], next);
+                      return next;
+                    }}
                   />
                 </label>
                 <div className="pf2e-hp__max">
                   <span>Макс.</span>
-                  <CommitInput
-                    type="number"
-                    min="0"
+                  <input
+                    className="pf2e-input pf2e-input--readonly"
+                    type="text"
+                    inputMode="numeric"
                     value={hp.max || 0}
-                    disabled={!editable}
-                    onCommit={(value) =>
-                      patchPath(["attributes", "hp", "max"], Math.max(1, Number(value) || 1))
-                    }
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly="true"
+                    title="Максимальные хиты рассчитываются автоматически"
                   />
                 </div>
               </div>
+              <label className="pf2e-hp-temp">
+                <span>Временные хиты</span>
+                <CommitInput
+                  type="number"
+                  min="0"
+                  value={hp.temp || 0}
+                  disabled={!editable}
+                  onCommit={(value) =>
+                    patchPath(["attributes", "hp", "temp"], Math.max(0, Number(value) || 0))
+                  }
+                />
+              </label>
             </section>
 
             <section className="pf2e-sidebar__block">
               <header className="pf2e-sidebar__header">
-                <h2>Броня</h2>
+                <h2>{t("PF2E.DefensesLabel", "Defense")}</h2>
                 <span className="pf2e-sidebar__hint">AC</span>
               </header>
               <div className="pf2e-ac-row">
@@ -1131,27 +1274,55 @@ export default function CharacterSheet({ actorId, onClose }) {
                       }
                     }}
                   >
+                    <span className="pf2e-ac__caption">
+                      {t("PF2E.ArmorClassShortLabel", "AC")}
+                    </span>
+                    <button
+                      type="button"
+                      className="pf2e-small-button pf2e-ac__mod-button"
+                      title="Показать слагаемые КБ и временные модификаторы"
+                      aria-expanded={acOpen}
+                      onClick={() => setAcOpen((current) => !current)}
+                    >
+                      Мод.
+                    </button>
+                  </div>
+                  {/* Step 5.8: the AC value lives in its own absolutely
+                      positioned layer above the graphic block, so a two-digit
+                      number can never be clipped. */}
+                  <div className="pf2e-ac__value">
+                    <input
+                      className="pf2e-input pf2e-input--readonly"
+                      type="text"
+                      inputMode="numeric"
+                      value={acDerived.value ?? system.attributes?.ac?.value ?? 10}
+                      readOnly
+                      tabIndex={-1}
+                      aria-readonly="true"
+                      title="Класс брони рассчитывается автоматически"
+                    />
+                  </div>
+                </div>
+
+                <label className="pf2e-shield-hp">
+                  <span className="pf2e-shield-hp__values">
                     <CommitInput
                       type="number"
-                      value={system.attributes?.ac?.value ?? 10}
-                      disabled={!editable}
+                      min="0"
+                      value={shield.hp?.value || 0}
+                      disabled={!editable || !(shield.hp?.max > 0)}
                       onCommit={(value) =>
-                        patchPath(["attributes", "ac", "value"], Number(value) || 10)
+                        patchPath(["attributes", "shield", "hp", "value"], Math.max(0, Number(value) || 0))
                       }
                     />
-                    <span>КБ</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="pf2e-small-button pf2e-ac__mod-button"
-                    title="Показать слагаемые КБ и временные модификаторы"
-                    aria-expanded={acOpen}
-                    onClick={() => setAcOpen((current) => !current)}
-                  >
-                    Мод.
-                  </button>
+                    <em>/ {shield.hp?.max || 0}</em>
+                  </span>
+                  <span className="pf2e-shield-hp__caption">
+                    {t("PF2E.ShieldLabel", "Shield")}
+                  </span>
+                </label>
 
-                  {acOpen ? (
+                {acOpen ? (
                     <div className="pf2e-ac-popover" role="dialog" aria-label="Расчёт КБ">
                       <header className="pf2e-ac-popover__header">
                         <strong>Расчёт КБ</strong>
@@ -1283,26 +1454,12 @@ export default function CharacterSheet({ actorId, onClose }) {
                       ) : null}
                     </div>
                   ) : null}
-                </div>
-                <label className="pf2e-shield-hp">
-                  <span>Щит</span>
-                  <CommitInput
-                    type="number"
-                    min="0"
-                    value={shield.hp?.value || 0}
-                    disabled={!editable || !(shield.hp?.max > 0)}
-                    onCommit={(value) =>
-                      patchPath(["attributes", "shield", "hp", "value"], Math.max(0, Number(value) || 0))
-                    }
-                  />
-                  <em>/ {shield.hp?.max || 0}</em>
-                </label>
               </div>
             </section>
 
             <section className="pf2e-sidebar__block">
               <header className="pf2e-sidebar__header">
-                <h2>Восприятие</h2>
+                <h2>{t("PF2E.PerceptionLabel", "Perception")}</h2>
                 <span className="pf2e-sidebar__hint">МДР</span>
               </header>
               <div className="pf2e-roll-row">
@@ -1360,7 +1517,7 @@ export default function CharacterSheet({ actorId, onClose }) {
 
             <section className="pf2e-sidebar__block">
               <header className="pf2e-sidebar__header">
-                <h2>Инициатива</h2>
+                <h2>{t("PF2E.InitiativeLabel", "Initiative")}</h2>
                 <select
                   className="pf2e-initiative-select"
                   value={system.initiative?.statistic || "perception"}
@@ -1378,9 +1535,9 @@ export default function CharacterSheet({ actorId, onClose }) {
                 <button
                   type="button"
                   className="pf2e-roll-button pf2e-roll-button--small pf2e-initiative-roll"
-                  title="Мгновенный бросок инициативы"
-                  aria-label="Мгновенный бросок инициативы"
-                  onClick={() => sendChat("/r 1d20" + signed(initiative) + " Инициатива")}
+                  title="Добавить в бой и бросить инициативу"
+                  aria-label="Бросок инициативы"
+                  onClick={rollInitiative}
                 >
                   <span className="pf2e-d20">d20</span>
                 </button>
@@ -1389,8 +1546,8 @@ export default function CharacterSheet({ actorId, onClose }) {
                 <button
                   type="button"
                   className="pf2e-roll-button"
-                  title="Бросок инициативы"
-                  onClick={() => sendChat("/r 1d20" + signed(initiative) + " Инициатива")}
+                  title="Добавить в бой и бросить инициативу"
+                  onClick={rollInitiative}
                 >
                   <span className="pf2e-d20">d20</span>
                 </button>
@@ -1419,20 +1576,6 @@ export default function CharacterSheet({ actorId, onClose }) {
                     >
                       <span className="pf2e-d20">d20</span>
                     </button>
-                    <BlindRollButton
-                      title={"Тайный спасбросок: " + save.label}
-                      onClick={() =>
-                        sendChat(
-                          "/r 1d20" +
-                            signed(saveModifier(system, save.key)) +
-                            " " +
-                            save.label +
-                            " (тайно)",
-                          false,
-                          "blind",
-                        )
-                      }
-                    />
                     <span className="pf2e-save__modifier">
                       {signed(saveModifier(system, save.key))}
                     </span>
@@ -1511,6 +1654,7 @@ export default function CharacterSheet({ actorId, onClose }) {
                     max="20"
                     value={level}
                     disabled={!editable}
+                    aria-label="Уровень"
                     onCommit={handleLevelChange}
                   />
                 </label>
@@ -1538,28 +1682,31 @@ export default function CharacterSheet({ actorId, onClose }) {
 
             <nav className="pf2e-sheet-nav" role="tablist" aria-label="Вкладки листа">
               <span className="pf2e-sheet-nav__title">Лист персонажа</span>
-              {SHEET_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  className={
-                    "pf2e-sheet-nav__tab" +
-                    (activeTab === tab.id ? " pf2e-sheet-nav__tab--active" : "")
-                  }
-                  title={tab.label}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <span className="pf2e-sheet-nav__icon" aria-hidden="true">
-                    {tab.icon}
-                  </span>
-                  <span className="pf2e-sheet-nav__label">{tab.label}</span>
-                </button>
-              ))}
+              {SHEET_TABS.map((tab) => {
+                const tabLabel = t(tab.labelKey, tab.label);
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    className={
+                      "pf2e-sheet-nav__tab" +
+                      (activeTab === tab.id ? " pf2e-sheet-nav__tab--active" : "")
+                    }
+                    title={tabLabel}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <span className="pf2e-sheet-nav__icon" aria-hidden="true">
+                      {tab.icon}
+                    </span>
+                    <span className="pf2e-sheet-nav__label">{tabLabel}</span>
+                  </button>
+                );
+              })}
             </nav>
 
-            <div className="pf2e-sheet-content">{renderTab()}</div>
+            <div className="pf2e-sheet-content" inert={!editable}>{renderTab()}</div>
           </div>
         </div>
         <span

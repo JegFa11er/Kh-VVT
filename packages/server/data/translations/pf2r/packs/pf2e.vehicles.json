@@ -1,0 +1,1740 @@
+{
+	"label": "Транспортные средства",
+	"folders": {
+		"Lost Omens: Hellfire Dispatches": "Lost Omens: Hellfire Dispatches",
+		"Pathfinder Battlecry!": "Pathfinder Battlecry!"
+	},
+	"mapping": {
+		"name": {
+			"path": "name",
+			"converter": "actorNameConverter"
+		},
+		"descriptionHazard": "system.details.description",
+		"crew": "system.details.crew",
+		"piloting": "system.details.pilotingCheck",
+		"speedVehicle": "system.details.speed",
+		"items": {
+			"path": "items",
+			"converter": "actorItemCollectionConverter"
+		}
+	},
+	"entries": {
+		"Adaptable Paddleboat": {
+			"name": "Адаптируемый катамаран",
+			"descriptionHazard": "<p>Эта заводная лодка-амфибия движется по воде с помощью заводных водяных колёс, сохраняя медленный, постоянный темп. При необходимости, с помощью хитроумного заводного механизма, лодка переставляет водяные колеса и превращает их в колеса, подходящие для суши.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 16), Мореходные знания (КС 16) или Ремесло (КС 18)",
+			"speedVehicle": "плавания 15 футов (заводная)",
+			"items": [
+				{
+					"id": "UZrxxtljdLoLewB9",
+					"name": "Развернуть колеса",
+					"description": "<p>Пилот нажимает на рычаг, активирующий заводные компоненты, превращая водяные колёса адаптируемого катамарана в колёса для езды по земле. Это даёт адаптируемому катамарану Скорость 20 футов и снижает его Скорость плавания до 5 футов. Эта трансформация длится до тех пор, пока пилот не отключит колеса, снова использовав эту активность.</p>"
+				},
+				{
+					"id": "3Vt9tFjjJmSsJ99w",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 16, ожидание</p>"
+				}
+			]
+		},
+		"Air Cycle": {
+			"name": "Air Cycle",
+			"descriptionHazard": "<p>This clockwork vehicle consists of a small wheeled platform under a pair of wings made with a light wooden frame covered by sturdy cloth. An air cycle must be launched from a high altitude, similar to a glider. Once airborne, however, the air cycle can be kept aloft and controlled using a system of pedals and steering handles to control its speed and direction. If you stop pedaling the air cycle, it functions as a glider.</p>",
+			"crew": "1 пилот",
+			"piloting": "Athletics (DC 21) or Piloting Lore (DC 19)",
+			"speedVehicle": "fly 25 feet (clockwork, wind)",
+			"items": [
+				{
+					"id": "EKI3Klo7ag2vzNLi",
+					"name": "Aerial Launch",
+					"description": "<p>Air cycles can be carried into battle beneath a larger airship and dropped from higher altitudes.</p>"
+				},
+				{
+					"id": "cqnHmqahIXXnm7S2",
+					"name": "Заводка",
+					"description": "<p>10 minutes of wind-up, 1 hour of operational time, [[/act disable-device dc=19]]{DC 19}, standby.</p>"
+				}
+			]
+		},
+		"Airship": {
+			"name": "Воздушный корабль",
+			"crew": "1 пилот, 5 других членов экипажа",
+			"piloting": "Знания пилотирования (КС 30), Ремесло (КС 32), Аркана (КС 32) или Природа (КС 32)",
+			"speedVehicle": "полёт 50 футов (алхимическая, магическая)",
+			"items": [
+				{
+					"id": "zGMODH6r1X3ZbwB1",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Ambling Surveyor": {
+			"name": "Геодезический иноходец",
+			"descriptionHazard": "<p>Этот огромный магический заводной вездеход двигается на гусеницах, которые облегчают передвижение устройства в различных неблагоприятных условиях. В нём есть магические заводные птицы, которые могут передавать визуальную информацию обратно.</p>",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Знания вождения (КС 32) или Ремесло (КС 34)",
+			"speedVehicle": "15 футов (заводная, магическая)",
+			"items": [
+				{
+					"id": "DoCusD26UNQbmFNI",
+					"name": "Гусеницы",
+					"description": "<p>Это транспортное средство передвигается на гусеницах, приводимых в движение рядом шестерёнок и колес, что позволяет ему с лёгкостью преодолевать пересеченную местность. Земля, камень, обломки, склоны и заросли не являются для геодезического иноходца сложной местностью. Геодезический иноходец игнорирует @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложную местность} из земли, камня, обломков, склонов и зарослей, а особо сложная местность, вызванная этими особенностями, является для него просто сложной местностью.</p>"
+				},
+				{
+					"id": "Yr2rxvC8Hzmb70KZ",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "eXdF4IskaccqgTpS",
+					"name": "Обследование",
+					"description": "<p><strong>Требования:</strong> Геодезический иноходец не двигается</p><hr /><p><strong>Эффект:</strong> Пилот и экипаж выпускают коллекцию из 6 заводных птиц, которые в течение 2 часов облетают окрестности в радиусе 1 мили вокруг геодезического иноходца. Все, что видят птицы, магически передается обратно экипажу геодезического иноходца в виде иллюзорных изображений, которые они должны каталогизировать в реальном времени, если они хотят использовать эту информацию для полного обследования местности и создания карты. Птицы возвращаются через 2 часа. Птицы используют базовые характеристики @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.9Uc7T3x3cxNo7lvY]{Заводных шпионов}, если на них нападают, или если их Восприятие важно для определения того, что они могут увидеть, однако они выполняют только действие Обследование и не имеют других способностей заводного шпиона. Замена птиц стоит 250 зм за каждую.</p>"
+				},
+				{
+					"id": "R4Co971n6x5ZNJHd",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 32, ожидание</p>"
+				}
+			]
+		},
+		"Apparatus of the Octopus": {
+			"name": "Аппарат-осьминог",
+			"descriptionHazard": "<p>Этот аппарат, по форме напоминающий осьминога (реже кальмара или другое водное существо), использует почти полностью магическую тягу. Заводные детали составляют элементы управления и механизмы для улучшения некоторых функциональных возможностей, но магия приводит в движение зубчатые колеса и шестерни этого транспортного средства. Хотя ему нужен только пилот, он может опционально иметь второго члена экипажа, что может быть полезно, если он управляет руками или глазами аппарата.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 28) или Ремесло (КС 30)",
+			"speedVehicle": "5 футов, 40 футов (магическая, заводная)",
+			"items": [
+				{
+					"id": "KFSpJiu6uoHoZl1b",
+					"name": "Управление руками",
+					"description": "<p>Член экипажа управляет рычагом, устроенным как джойстик, что позволяет ему выдвигать руки аппарата и манипулировать ими. Хотя руки не могут атаковать и выполнять такие тонкие действия, как @UUID[Compendium.pf2e.actionspf2e.Item.cYdz2grcOcRt4jk6], @UUID[Compendium.pf2e.actionspf2e.Item.RDXXE7wMrSPCLv5k] или открытие пробки на бутыльке с зельем, они могут захватывать и удерживать вплоть до 50 Масс.</p>"
+				},
+				{
+					"id": "jv3XUW2upC7aFRtR",
+					"name": "Открыть глаза",
+					"description": "<p>Член экипажа тянет за рычаг, чтобы открыть глаза аппарата, которые светят ярким светом в радиусе 20 футов и тусклым светом на следующие 20 футов. Член экипажа может снова использовать это действие, чтобы закрыть глаза.</p>"
+				},
+				{
+					"id": "uoev6dRtG1YFWPrn",
+					"name": "Открыть иллюминаторы",
+					"description": "<p>Член экипажа тянет за рычаг, чтобы открыть 2 иллюминатора, что позволяет экипажу видеть снаружи аппарата, а другим существам — заглядывать в него. Член экипажа может снова использовать это действие, чтобы закрыть иллюминаторы.</p>"
+				},
+				{
+					"id": "mTjyYbkFbVeKoGO8",
+					"name": "Погружаемый",
+					"description": "<p>Аппарат-осьминог может защитить экипаж и пассажиров от давления воды на максимальной глубине в @Unit[Foot|5000]{5 000 футов} и содержит достаточно воздуха на 12 часов для одного пилота либо на 6 часов для пилота и пассажира или члена экипажа.</p>"
+				}
+			]
+		},
+		"Armored Carriage": {
+			"name": "Бронированная карета",
+			"descriptionHazard": "<p>Медленная, но верная, бронированная карета сочетает в себе заводной механизм с защитным корпусом для безопасной и комфортной поездки.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 20) или Ремесло (КС 22)",
+			"speedVehicle": "25 футов (заводная)",
+			"items": [
+				{
+					"id": "oWlyE6XYOLX2gBB6",
+					"name": "Оружейное крепление",
+					"description": "<p>У этого транспортного средства есть 1 заднее оружейное крепление, которое может быть оснащено дистанционным оружием. При покупке это крепление пустует. Для установки или снятия оружия на это крепление требуется 10 минут, успешная проверка @Check[crafting|dc:20|name:Установить оружие]{Ремесла}, а также подходящее для установки оружие.</p>"
+				},
+				{
+					"id": "eMf9xcynjFjF5ma8",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 20, ожидание</p>"
+				}
+			]
+		},
+		"Armored Sleigh": {
+			"name": "Armored Sleigh",
+			"descriptionHazard": "<p>Designed to traverse frozen climates, armored sleighs are constructed from heavy oaken timbers covered with iron. These massive vehicles can readily traverse frozen and snow-covered ground while protecting the pilot and crew from the cold.</p>",
+			"crew": "2 pilots, 8 crew",
+			"piloting": "Driving Lore (DC 36) or Nature (DC 38 to DC 46, depending on pulling creatures)",
+			"speedVehicle": "the Speed of the slowest pulling creature (pulled by 4 Huge creatures)",
+			"items": [
+				{
+					"id": "huNcuOUPCQnRwzLa",
+					"name": "Габарит",
+					"description": "<p>60 feet long, 30 feet wide, 20 feet high</p>"
+				},
+				{
+					"id": "myNha9udsrz9laBz",
+					"name": "Ледоход",
+					"description": "<p>The armored sleigh ignores difficult terrain caused by ice or snow.</p>"
+				},
+				{
+					"id": "jXZhSyXIoxCZH7mO",
+					"name": "Insulated",
+					"description": "<p>Protections from the icy landscape are built into the front of this vehicle, providing sanctuary from the cold. The pilot and crew are protected from severe and extreme cold. The pilot also gains resistance 10 to all cold damage.</p>"
+				},
+				{
+					"id": "ZC34GK9VgjIwe15Y",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Atakebune": {
+			"name": "Atakebune",
+			"descriptionHazard": "<p>The structure of these gargantuan vessels is fully covered by iron. These vessels are akin to floating fortresses rather than true warships, and are typically used in coastal actions and for river blockades. They use oars for propulsion, as their full iron cladding, as well as their bulk, impedes propulsion via sails.</p><p>Many of these vessels are beautifully gilded with red and gold inlays across their iron cladding. This added weight only further contributes to their suspect stability.</p>",
+			"crew": "1 пилот, 8 гребцов",
+			"piloting": "Мореходные знания (КС 27), Дипломатия (КС 29) или Запугивание (КС 29)",
+			"speedVehicle": "30 футов (гребная)",
+			"items": [
+				{
+					"id": "TlSnIZDRiC1KWeOU",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Augustana's Pride": {
+			"name": "Augustana's Pride",
+			"descriptionHazard": "<p>The majestic <em>Augustana's Pride</em> is usually kept docked at its eponymous port, but is put on active duty in times of great need. Constructed almost entirely of duskwood, with accents painted in Andoren blue and gold, this warship is the crowning jewel of the navy.</p>",
+			"crew": "1 pilot, 50 crew",
+			"piloting": "Sailing Lore (DC 40), Diplomacy (DC 42), or Intimidation (DC 42)",
+			"speedVehicle": "swim 35 feet (wind)",
+			"items": [
+				{
+					"id": "fHtOIyTjYW7DcczN",
+					"name": "Вдохновляющее присутствие",
+					"description": "<p>300 feet. The sight of the Andoren navy's flagship bolsters its fleet and its crew. At the beginning of their turns or when they enter the aura, allied creatures on board the ship and allied creatures within a @Template[type:emanation|distance:300] who can see the ship gain a +1 status bonus to attack rolls, damage rolls, and saves against fear for 1 round.</p>"
+				},
+				{
+					"id": "ffutEdrEyoFo0EWu",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has 6 weapon mounts, three on each side of the vehicle. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:40] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Automated Cycle": {
+			"name": "Автоматический велосипед",
+			"descriptionHazard": "<p>Этот заводной велосипед обеспечивает большую часть своей подвижности благодаря зубчатым колесам и шестерёнкам, которые позволяют ему двигаться в разумном темпе без необходимости в значительных усилиях со стороны пилота. Пилот использует систему педалей и рулевого управления для контроля скорости и направления движения транспортного средства. Это транспортное средство оснащено 2 колясками, по одной с каждой стороны от пилота.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 15) или Ремесло (КС 17)",
+			"speedVehicle": "30 футов (заводная)",
+			"items": [
+				{
+					"id": "L0S2jaWemV8ndKIE",
+					"name": "Коляски",
+					"description": "<p>Каждая из двух колясок может вмещать 1 пассажира или 10 Масс. Скорость автоматического велосипеда снижается на 5 футов за каждую коляску, в которой находится пассажир или груз.</p>"
+				},
+				{
+					"id": "lctMsuE0KxKUZgnH",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 14, ожидание</p>"
+				}
+			]
+		},
+		"Backpack Balloon": {
+			"name": "Backpack Balloon",
+			"descriptionHazard": "<p>What appears to be a simple, if bulky, backpack conceals clockwork devices that can inflate two large balloons, carrying the backpack's wearer through the air for brief periods of time. In addition, propellers allow the pilot to move while airborne.</p>",
+			"crew": "1 пилот",
+			"piloting": "Athletics (DC 24) or Piloting Lore (DC 22)",
+			"speedVehicle": "fly 20 feet (alchemical, clockwork, wind)",
+			"items": [
+				{
+					"id": "zUcSWtLmI7zoyoYJ",
+					"name": "Deploy Balloons",
+					"description": "<p>The pilot engages a lever that activates the clockwork components to launch two large tethered balloons and fill them with lighter-than-air gas. On the outside of the backpack is a small clockwork propeller. This allows the wearer to wind up and pilot the vehicle.</p><p>This transformation lasts until the pilot disengages the balloons by using this activity again.</p>"
+				},
+				{
+					"id": "xvVoNoxMpRCx3uQo",
+					"name": "Stowable",
+					"description": "<p>By spending 10 minutes repacking, the backpack balloons can be stowed after the pilot has disengaged them.</p>"
+				},
+				{
+					"id": "0R49mrYVzoBBqP85",
+					"name": "Заводка",
+					"description": "<p>10 minutes of wind-up, 30 minutes of operational time, [[/act disable-device dc=22]]{DC 22}, standby</p><hr /><p>For a clockwork to act, it must be wound with a unique key by another creature. This takes 1 minute. Once wound, it remains operational for the listed amount of time, usually 24 hours, after which time it becomes unaware of its surroundings and can't act until it's wound again. Some clockworks' abilities require them to spend some of their remaining operational time. They can't spend more than they have and shut down immediately once they have 0 time remaining. If it's unclear when a clockwork was last wound, most clockwork keepers wind all their clockworks at a set time, typically 8 a.m.</p><p>A clockwork that lists standby in its wind-up entry can enter standby mode as a 3-action activity. Its operational time doesn't decrease in standby, but it can sense its surroundings (with a -2 penalty to Perception). It can't act, with one exception: when it perceives a creature, it can exit standby as a reaction (rolling initiative if appropriate).</p><p>A creature can attempt to Disable a Device to wind a clockwork down (with a DC listed in the wind-up entry). For each success, the clockwork loses 1 hour of operational time. This can be done even if the clockwork is in standby mode.</p>"
+				}
+			]
+		},
+		"Baochuan": {
+			"name": "Baochuan",
+			"descriptionHazard": "<p>The keel of these vessels consists of wooden beams bound together with iron hoops to provide added stability during ocean transits. In stormy weather, holes in the prow partially fill with water when the ship pitches forward, lessening the violent turbulence caused by waves. Renowned for their seaworthiness, Baochuan were often chosen for transporting valuable treasure or important emissaries during stormy seasons. As such, they're often referred to as \"treasure ships\" and highly sought prizes by pirates.</p>",
+			"crew": "1 пилот, 200 членов экипажа",
+			"piloting": "Sailing Lore (DC 31) or Nature (DC 33)",
+			"speedVehicle": "плавания 30 футов (ветряная)",
+			"items": [
+				{
+					"id": "DmMftTCrXCi4fBWi",
+					"name": "Слабость 10 к огню пока не сломано"
+				}
+			]
+		},
+		"Bathysphere": {
+			"name": "Батисфера",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 20), Инженерные знания (КС 20) или Ремесло (КС 22)",
+			"speedVehicle": "плавания 20 футов (алхимическая; только под водой)",
+			"items": [
+				{
+					"id": "Qx3tJuimyRKT7l2W",
+					"name": "Трос",
+					"description": "<p>Батисфера поднимается и опускается с кабеля на поверхности и может двигаться только вертикально.</p>"
+				},
+				{
+					"id": "7LOtkjkF6S8p6CRA",
+					"name": "Привязанный буй",
+					"description": "<p>Экипаж и пассажиры могут дышать пока транспортное средство находится под водой на глубине до @Unit[Foot|500]{500 футов}.</p>"
+				},
+				{
+					"id": "upS8Tctv0gf8rQOC",
+					"name": "Сброс балласта",
+					"description": "<p>Пилот скидывает балласт батисферы. В конце хода пилота батисфера двигается со своей утроенной Скоростью.</p>"
+				}
+			]
+		},
+		"Battery Tower": {
+			"name": "Battery Tower",
+			"descriptionHazard": "<p>Black powder siege towers use the same rules as other siege towers.</p>",
+			"crew": " 1 pilot, 150 turners, 2,200 pushers",
+			"piloting": "Diplomacy (DC 37), Intimidation (DC 37), or Warfare Lore (DC 35)",
+			"speedVehicle": " 10 feet (pushed, turned)",
+			"items": [
+				{
+					"id": "gmtQZ9QzVq0CTB1H",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "bgr3l9R7TMpSYb7q",
+					"name": "Tiered",
+					"description": "<p>A battery tower has five levels. The crew operate at the bottom tier, turning a giant capstan, and up to four passengers can fit on that floor, enough for a full crew for a bombard. The remaining levels carry 50 passengers each. The tiers are specifically meant to be protective, and give those within the battery tower greater cover (or standard cover if the battery tower is broken). A massive ladder runs diagonally through the center of the battery tower, from the front of the top tier to the rear of the bottom tier. The ladder is wide enough for two crew or passengers to climb simultaneously.</p>"
+				},
+				{
+					"id": "NPYMeT9SpDiUl907",
+					"name": "Weaponry",
+					"description": "<p>A battery tower is usually loaded with black powder siege weapons for heavy assaults, with bombards on the bottom two floors and cannons on the other floors. Their Price is included in that of the battery tower. When building a battery tower, you can choose to replace any of these with other siege weapons of a lower Price. If you want a more expensive siege weapon, you must Craft it separately. Passengers of the battery tower can crew these siege weapons.</p>"
+				}
+			]
+		},
+		"Battle Dirigible": {
+			"name": "Battle Dirigible",
+			"descriptionHazard": "<p>These heavily armored rigid airships are carried aloft by a series of massive gasbags carried within the framework of their hull, protected from damage by a hide and metal skin. Used to control the battlefield from the air, these airships carry both their own armaments as well as one or more gliders mounted on rails for quick deployment along the sides and top.</p>",
+			"crew": "1 pilot, 9 crew",
+			"piloting": "Arcana (DC 37), Crafting (DC 37), or Piloting Lore (DC 35)",
+			"speedVehicle": "полёт 50 футов (алхимическая, магическая)",
+			"items": [
+				{
+					"id": "WodipRtBR55xNfOy",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "8aFZ02PVBVeMw4ey",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has four weapon mounts, one on each corner of the gondola. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 3 hours, a successful @Check[crafting|dc:35] check, and an appropriate weapon. Three of these weapon mounts can be equipped with Medium or smaller ranged siege weapons, and the fourth can be equipped with a Large or smaller ranged siege weapon.</p>"
+				},
+				{
+					"id": "QsEjXH2LvOJNGXCL",
+					"name": "Габарит",
+					"description": "<p>100 feet long, 50 feet wide, 50 feet high</p>"
+				}
+			]
+		},
+		"Bone Ship": {
+			"name": "Костяной корабль",
+			"descriptionHazard": "<p>После прохода костяного корабля редко остаётся что-то живое — только смерть, разрушения и красные от крови волны, которые бьются и пенятся в его кильватере. Когда формируется костяной корабль, некромантическая магия выкапывает огромные кости с морского дна и медленно сгибает их со злым умыслом. Рёбра китов обычно служат основой корпуса, а их огромные позвоночники превращаются в мачты. Мышцы и сухожилия скрепляют корабль вместе, натягиваясь и ослабляясь, чтобы точно поворачивать его во время плавания.</p><p>Когда костяной корабль сталкивается с другим судном или находит иную возможность посеять смерть, разбросанные по кораблю мелкие трупы оживают, образуя команду и абордажную группу. Каждый член команды напоминает гуманоидный скелет, но они могут быть сделаны из костей нескольких существ. Для сражений корабль также создает магические пушки выполненные из костей, которые выстреливают костяные осколки и обломки при помощи магических взрывов. Маленькие чёрные самоцветы, которыми усеян весь корпус корабля, хранят души утонувшей команды, так как костяной корабль это проклятое наследие погибших моряков.</p><p>Когда в море происходит массовая гибель, часто из-за того, что целый корабль тонет вдали от берега, страдания умирающих жертв могут породить костяной корабль. Это событие может произойти, когда моряк обращается с последней мольбой к тёмному богу или когда божество использует возможность связать души многих мертвых моряков вместе в качестве разрушительной демонстрации божественной силы. Если костяной корабль не создан в результате божественного вмешательства, он может медленно и естественным путем вырасти из одного из кораблей, пилотируемых моряками-нежитью, известными как @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.lCDygpomjUnutb5b]{Драугры}. Когда корабли драугров бороздят моря и топят другие суда, они могут собирать все больше душ и костей, в итоге становясь костяными кораблями. Эти суда выглядят отличными от многих других костяных кораблей, будто сделанные из разных кусков или имеющие асимметричный внешний вид.</p><p>Костяной корабль почти ненасытен, у него неутолимый аппетит к смерти, разрушению и новым душам для пополнения своего экипажа. Эти желания проистекают из первопричины, либо заложенной в корабль его создателем, либо собранной из разрозненных последних желаний составляющих его мертвых душ. Например, божество может послать костяной корабль с особой миссией, чтобы передать сообщение или избавиться от особенно настойчивого противника или раздражителя. Хотя костяные корабли обычно путешествуют по волнам, им не нужно дышать, и они могут выполнять подводные миссии по приказу своего создателя.</p><p>Костяные корабли пользуются легендарной репутацией среди моряков. Эта нежить может появиться из ниоткуда, чтобы посеять разрушение, а если после кораблекрушения на корабле отсутствуют тела членов экипажа, в беде могут обвинить костяной корабль. Море может принести внезапную смерть многими способами, но вечное порабощение души представляет собой более страшную участь, чем просто смерть.</p>",
+			"crew": "1 пилот, 12 членов экипажа",
+			"piloting": "Sailing Lore (DC 40), Religion (DC 38); the ship's propulsion is wind if Sailing Lore is used, or magical if Religion is used",
+			"speedVehicle": "плавание 40 футов"
+		},
+		"Bunta": {
+			"name": "Bunta",
+			"descriptionHazard": "<p>This hand-woven coracle appears large enough to hold only a single person. When you pilot the boat, however, you can take on up to a dozen passengers, which ride in your soul. While there, their bodies and equipment are absorbed into you—they are aware of everything you sense and can communicate telepathically with you or any other passengers, but otherwise can't act except to Recall Knowledge and use actions that require only the use of their mind (as determined by the GM). They can exit your soul, or you can remove any number of them using a single action—which has the concentrate trait—causing them to appear in a space adjacent to <em>Bunta</em>. If you leave <em>Bunta</em> or are killed, any creatures in your soul immediately exit your body into the nearest available space. If you leave <em>Bunta</em> after piloting it, you can use a single action, which has the concentrate trait, to store the boat in your soul. You can remove it from your soul into an adjacent square with another such action. If <em>Bunta</em> takes enough damage to destroy it, it bursts into golden mist, then reforms over 24 hours in its last pilot's soul.</p>",
+			"crew": "1 пилот",
+			"piloting": "Arcana (DC 30), Nature (DC 30), or Sailing Lore (DC 32)",
+			"speedVehicle": "fly 40 feet (magical), swim 40 feet (magical), swim 20 feet (rowed)",
+			"items": [
+				{
+					"id": "cSPwkOlj0iGk1iND",
+					"name": "Активация",
+					"description": "<p><strong>Активация:</strong> @Glyph[Action 3] @UUID[Compendium.pf2e.actionspf2e.Item.pvQ5rY2zrtPI614F], вообразить, команда</p><p><strong>Требования:</strong> You are piloting <em>Bunta</em></p><p><strong>Эффект:</strong> A silver river flows from your heart, traveling forward in a line that flows around obstacles as if it were water. If <em>Bunta</em> travels at least its speed along the river each round for 10 minutes, you arrive at another plane as if you cast @UUID[Compendium.pf2e.spells-srd.Item.5bTt2CvYHPvaR7QQ]. You arrive in a destination you specify, or a random location if you don't have a choice. If <em>Bunta</em> ever does not travel at least its Speed in a round, you can disrupt this activation. If you continue, you have a 1% cumulative chance of ending up in a random extraplanar location for each round that <em>Bunta</em> did not travel at least its Speed, to a maximum of a 60% chance if <em>Bunta</em> didn't travel at least its Speed for the full 10 minutes. As long as you remain on <em>Bunta</em>, you are protected from any harmful effects of the plane's environment.</p>"
+				},
+				{
+					"id": "tNXnjpVwYxDnck4o",
+					"name": "Secret of Souls",
+					"description": "<p>You pilot <em>Bunta</em> into a creature's soul, finding and restoring its true nature. <em>Bunta</em> attempts to counteract all magical effects on the creature. Its counteract rank is 20, with a counteract modifier of [[/r 1d20+40 #Counteract]]{+40}.</p>"
+				},
+				{
+					"id": "rE4lq3Kyp6tvwM6K",
+					"name": "Уничтожение",
+					"description": "<p><em>Bunta</em> can only be permanently destroyed if Old-Mage Jatembe unweaves it, then submerges each reed in the River Styx at the base of Pharasma's Spire.</p>"
+				},
+				{
+					"id": "QItYJDojJ9ncPNBt",
+					"name": "Spirit Ship",
+					"description": "<p><em>Bunta</em> can be damaged by spells like @UUID[Compendium.pf2e.spells-srd.Item.PHVHBbdHeQRfjLmE] that damage a creature's spirit directly, and such effects ignore <em>Bunta</em>'s hardness.</p>"
+				}
+			]
+		},
+		"Caisson": {
+			"name": "Caisson",
+			"descriptionHazard": "<p>This heavily armored wagon is designed to transport black powder and other flammable munitions in and around combat zones. It has extra armor plating that increases its weight to several times that of an ordinary wagon. Due to this extra weight, the armored wagon is quite slow.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 19) или Ремесло (КС 21)",
+			"speedVehicle": "15 feet (clockwork)",
+			"items": [
+				{
+					"id": "3aMytFuZW7MG9K0E",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "WBWEDPfUhbkTJuOh",
+					"name": "Заводка",
+					"description": "<p>1 hour of wind-up, 6 hours of operational time, [[/act disable-device dc=19]]{DC 19}, standby</p><hr /><p>For a clockwork to act, it must be wound with a unique key by another creature. This takes 1 minute. Once wound, it remains operational for the listed amount of time, usually 24 hours, after which time it becomes unaware of its surroundings and can't act until it's wound again. Some clockworks' abilities require them to spend some of their remaining operational time. They can't spend more than they have and shut down immediately once they have 0 time remaining. If it's unclear when a clockwork was last wound, most clockwork keepers wind all their clockworks at a set time, typically 8 a.m.</p><p>A clockwork that lists standby in its wind-up entry can enter standby mode as a 3-action activity. Its operational time doesn't decrease in standby, but it can sense its surroundings (with a -2 penalty to Perception). It can't act, with one exception: when it perceives a creature, it can exit standby as a reaction (rolling initiative if appropriate).</p><p>A creature can attempt to Disable a Device to wind a clockwork down (with a DC listed in the wind-up entry). For each success, the clockwork loses 1 hour of operational time. This can be done even if the clockwork is in standby mode.</p>"
+				},
+				{
+					"id": "bXhue1I61hEB7Gmf",
+					"name": "Габарит",
+					"description": "<p>10 feet long, 10 feet wide, 8 feet high</p>"
+				}
+			]
+		},
+		"Carriage": {
+			"name": "Карета",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 16), или Природа (КС от 18 до 26 в зависимости от тянущих существ)",
+			"speedVehicle": "Скорость самого медленного тянущего существа (тянется 2 Большими существами)"
+		},
+		"Cart": {
+			"name": "Телега",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 14), или Природа (КС от 16 до 24 в зависимости от тянущих существ)",
+			"speedVehicle": "Скорость тянущего существа (тянется 1 Большим существом)"
+		},
+		"Cauldron of Flying": {
+			"name": "Cauldron of Flying",
+			"descriptionHazard": "<p>A large cooking pot 4 feet high and 5 feet in diameter, bulging slightly in the middle and flaring at the top.</p>",
+			"crew": "1 пилот",
+			"piloting": "Arcana (DC 24), Occultism (DC 20), or Piloting Lore (DC 22)",
+			"speedVehicle": "полёт 30 футов (магическая)",
+			"items": [
+				{
+					"id": "L5LOLKdKxPBT5LCB",
+					"name": "Iron Rim",
+					"description": "<p>The cauldron provides its pilot with @UUID[Compendium.pf2e.other-effects.Item.I9lfZUiCwMiGogVi]{Standard Cover}, although this cover doesn't typically provide any bonus to Stealth checks, as a flying cauldron is both visible and suspicious.</p>"
+				}
+			]
+		},
+		"Cavern Crawler": {
+			"name": "Cavern Crawler",
+			"descriptionHazard": "<p>This massive undead vehicle is created by crafting a piloting and cargo compartment within the husk of a massive cave worm and then infusing the remains with void energy. This compartment has breathable air as well as sealable weapon ports. Designed specifically to burrow under and then behind enemy positions, cavern crawlers can attack enemies on their flank or bring supplies and reinforcements to troops deep behind enemy lines.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Arcana (DC 42) or Driving Lore (DC 40)",
+			"speedVehicle": "30 feet, burrow 30 feet (clockwork, magical)",
+			"items": [
+				{
+					"id": "a8TydEao18VqapWR",
+					"name": "Габарит",
+					"description": "<p>100 feet long, 30 feet wide, 30 feet high</p>"
+				},
+				{
+					"id": "YjzXzqLZdUUgbEwv",
+					"name": "Tunnel",
+					"description": "<p>The cavern crawler can burrow through solid stone at a Speed of 15 feet. The pilot can choose to leave a tunnel.</p>"
+				},
+				{
+					"id": "mUDFSYDXMbTtoTve",
+					"name": "Ласточка",
+					"description": "<p>Two crew members each perform a 3-action activity on their turn to open the caravan crawler's mouth and eat a Huge or smaller creature adjacent to the vehicle, who must attempt a @Check[fortitude|dc:40] save. A creature can choose to fail. On a failure, the creature is swallowed by the cavern crawler, moved into the passenger bay, and knocked @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]. This action fails if the passenger bay is full.</p>"
+				}
+			]
+		},
+		"Chariot (Heavy)": {
+			"name": "Тяжёлая колесница",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 18), или Природа (КС от 20 до 28 в зависимости от тянущих существ)",
+			"speedVehicle": "Скорость самого медленного тянущего существа (тянется 2 Большими существами)"
+		},
+		"Chariot (Light)": {
+			"name": "Лёгкая колесница",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 14), или Природа (КС от 16 до 24 в зависимости от тянущих существ)",
+			"speedVehicle": "Скорость тянущего существа (тянется 1 Большим существом)"
+		},
+		"Cliff Crawler": {
+			"name": "Утёсоход",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Знания пилотирования (КС 27), Инженерные Знания (КС 27), Природа (КС 29) или Аркана (КС 29)",
+			"speedVehicle": "карабканья 40 футов (магическая)",
+			"items": [
+				{
+					"id": "jUfFzSzu0PIwCSgB",
+					"name": "Горный транспортер",
+					"description": "<p>Для утёсохода скалы и камни не являются @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}, и он может преодолевать большинство вертикальных скальных и каменных поверхностей с вплоть до половиной своей Скорости.</p>"
+				}
+			]
+		},
+		"Clockwork Borer": {
+			"name": "Заводной бур",
+			"descriptionHazard": "<p>Заводной бур это, по сути, огромный адамантиновый бур, прикреплённый к большой тележке с колёсами. Заводные шестерни внутри приводят в движение сам бур и вращают дрель, позволяя ему быстро прокапываться сквозь рыхлый материал и с меньшей скоростью даже сквозь твёрдый камень.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 26) или Ремесло (КС 28)",
+			"speedVehicle": "20 футов, рытьё 10 футов (заводная)",
+			"items": [
+				{
+					"id": "TPj4AFDezXubgaJm",
+					"name": "Адамантиновый бур",
+					"description": "<p>В то время как большинство Скоростей рытья позволяют существу или транспортному средству двигаться только в рыхлой почве или земле, это транспортное средство оснащено адамантиновым буром и может рыть через коренные подстилающие породы и камень со скоростью 5 футов в минуту.</p>"
+				},
+				{
+					"id": "scXXuno9YNm1GWXK",
+					"name": "Поворотные сиденья",
+					"description": "<p>Сиденья этого транспортного средства установлены на утяжелённой платформе, которая поворачивается по мере движения транспортного средства, автоматически регулируя положение под действием силы тяжести. Сидящие существа остаются в вертикальном положении независимо от положения или угла наклона транспортного средства.</p>"
+				},
+				{
+					"id": "hCwx6Q30DbNVZa88",
+					"name": "Неповоротливый",
+					"description": "<p>Из-за своей неповоротливости, этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "kQbyDtF75cOAr2Lc",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 26, ожидание</p>"
+				}
+			]
+		},
+		"Clockwork Bumblebee": {
+			"name": "Заводной шмель",
+			"descriptionHazard": "<p>Это причудливое транспортное средство перевозит небольшое количество пассажиров и членов экипажа. Оно способно на короткие полёты, но вес заводных механизмов не дает поддерживать его длительное время. Пилот, экипаж и пассажир едут на спине, сидя на встроенных сёдлах.</p>",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Знания вождения (КС 26) или Ремесло (КС 28)",
+			"speedVehicle": "полёт 30 футов (заводная)",
+			"items": [
+				{
+					"id": "TMYxeMEQ1ilLoAlJ",
+					"name": "Заводка",
+					"description": "<p>(10 минут завода, 10 минут работы, КС 26, ожидание)</p><p>Чтобы заводной механизм начал работать, его должно завести другое существо уникальным ключом. Это занимает 1 минуту. После заводки он остаётся работоспособным в течение указанного времени, обычно 24 часа, после чего он перестаёт осознавать своё окружение и не может действовать, пока его снова не заведут. Некоторые способности заводного механизма требуют, чтобы он потратил часть своего оставшегося рабочего времени. Он не может потратить больше, чем у него есть, и немедленно выключается, как только у него остаётся 0 оставшегося времени. Если неясно, когда заводной механизм был заведён в последний раз, большинство хозяев заводных механизмов заводят все свои заводные механизмы в установленное время, обычно в 8 утра.</p><p>Заводной механизм, в записи о заводке которого указано состояние ожидания, может перейти в режим ожидания как действие из 3 действий. Его рабочее время не уменьшается в режиме ожидания, но он может ощущать своё окружение (со штрафом −2 к Восприятию). Он не может действовать, за одним исключением: когда он воспринимает существо, он может выйти из режима ожидания в качестве реакции (бросая инициативу, если это уместно).</p><p>Существо может попытаться @UUID[Compendium.pf2e.actionspf2e.Item.cYdz2grcOcRt4jk6]{отключить устройство}, чтобы заглушить заводной механизм (с указанием КС в записи о заводке). За каждый успех заводной механизм теряет 1 час рабочего времени. Это можно сделать, даже если заводной механизм находится в режиме ожидания.</p>"
+				}
+			]
+		},
+		"Clockwork Castle": {
+			"name": "Заводной замок",
+			"descriptionHazard": "<p>Хотя название несколько преувеличивает его размеры, тем не менее, магический заводной замок это огромная передвижная крепость, построенная на 10 паукообразных заводных ногах, с 3 этажами дворцовых помещений внутри. Легенды рассказывают об уникальном заводном замке, который значительно превосходит этот размера и, возможно, является самостоятельным артефактом.</p>",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Знания вождения (КС 35), Ремесло (КС 37), Аркана (КС 39)",
+			"speedVehicle": "40 футов (заводная, магическая)",
+			"items": [
+				{
+					"id": "MBdI0c7xv3ufaJM8",
+					"name": "Защита от окружающей среды",
+					"description": "<p>Температура внутри этого транспортного средства поддерживается магически. Существа, находящиеся в этом транспорте, защищены от сильных холода и жары, а также экстремальных холода и жары.</p>"
+				},
+				{
+					"id": "3WQ9vWhVa2yyJCcV",
+					"name": "Роскошное жильё",
+					"description": "<p>Это транспортное средство содержит мостик, инженерное помещение, отдельные спальные места для вплоть до 13 человек и 4 дополнительных помещения (обычно столовая, кухня, туалет и комната для собраний).</p>"
+				},
+				{
+					"id": "dabct2Mb2XcbWKwb",
+					"name": "Манёвренность",
+					"description": "<p>Это транспортное средство передвигается на 10 паукообразных ногах, которые позволяют ему быстро поворачивать, разворачиваться на месте и даже двигаться назад. Каждый поворот на 90 градусов, сделанный менее чем за длину транспорта, стоит 5 дополнительных футов движения; так, например, чтобы развернуться и начать движение назад, транспортному средству требуется 10 футов движения. Когда этот транспорт @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3]{Сломан}, он теряет эти преимущества.</p>"
+				},
+				{
+					"id": "VqS08x8SzApqcmVy",
+					"name": "Оружейные крепления",
+					"description": "<p>Это транспортное средство имеет на крыше 4 оружейных крепления; по 1 креплению на каждом углу транспорта. При покупке, эти крепления для оружия изначально пусты. Для установки или снятия оружия требуется 10 минут, успешная @Check[crafting|dc:35|name:Прикрепить оружие] и подходящее оружие. Три из этих креплений могут быть оснащены дистанционным оружием, а четвертое — дистанционным осадным оружием Большого размера или менее.</p>"
+				},
+				{
+					"id": "0CcYSQlAiZcoMkF0",
+					"name": "Пронзающий шаг",
+					"description": "<p>Два члена экипажа в свои ходы выполняют активность из 3-х действий, чтобы пронзить врагов поблизости заводными ногами замка. В конце хода второго персонажа, все существа под транспортом или рядом с ним, получают @Damage[7d8[piercing]] (@Check[reflex|dc:35|basic|name:Избежать ноги]).</p>"
+				},
+				{
+					"id": "tS9MnEsewMslgzhi",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 35, ожидание</p>"
+				}
+			]
+		},
+		"Clockwork Hopper": {
+			"name": "Заводной попрыгун",
+			"descriptionHazard": "<p>Заводной попрыгун по форме похож на большого кролика и совершает прыжковые движения, избегая препятствий на земле, однако качающиеся прыжки могут быть неровными и вызывать укачивание у некоторых ездоков.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 22) или Ремесло (КС 24)",
+			"speedVehicle": "35 футов (заводная)",
+			"items": [
+				{
+					"id": "gafl9oZCmfSGtfxj",
+					"name": "Попрыгун",
+					"description": "<p>Это транспортное средство прыгает по местности при движении по земле. Заводной попрыгун игнорирует @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложную местность} из-за земли, камней, обломков, склонов и зарослей, а особо сложная местность, вызванная этими особенностями, является для транспорта просто сложной местностью.</p>"
+				},
+				{
+					"id": "zEf7XS6RlEjM0VSO",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 22, ожидание</p>"
+				},
+				{
+					"id": "uP38cyn9BsX8ni0O",
+					"name": "Massive Jump",
+					"description": "<p>The pilot engages a spring-driven mechanism that rockets the clockwork hopper into the air, in a grand leap. The vehicle jumps in a straight line in the direction of its current heading without touching the ground, landing in a space of solid ground up to 70 feet forward and up to 30 feet up. Creatures adjacent to the spaces a hopper lands in take @Damage[4d10[bludgeoning]] damage with a @Check[reflex|dc:22|basic|name:Avoid clockwork hopper], and are knocked @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60] on a critical failure. The clockwork hopper can't use Massive Jump again for 1 minute. Massive Jump stops working if the clockwork hopper is @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3].</p>"
+				}
+			]
+		},
+		"Clockwork Wagon": {
+			"name": "Заводной фургон",
+			"descriptionHazard": "<p>Заводной фургон это медленный, громоздкий фургон с зубчатыми колёсами и шестернями по всему интерьеру и внешней поверхности, что позволяет ему перевозить в 2 раза больше груза, чем обычному фургону. Однако, места для пассажиров в нём меньше, чем в обычном фургоне.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 18) или Ремесло (КС 20)",
+			"speedVehicle": "20 футов (заводная)",
+			"items": [
+				{
+					"id": "0pWllu1H0c2ZTJbM",
+					"name": "Тягач",
+					"description": "<p>Этот транспорт создан для перевозки тяжёлого груза на дальние расстояния. Он может вмещать 400 Масс груза.</p>"
+				},
+				{
+					"id": "7OqKezdHChnhLvmc",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "38Zgv0sAfLXH2dfB",
+					"name": "Заводка",
+					"description": "<p>1 час завода, 8 часов работы, КС 18, ожидание</p>"
+				}
+			]
+		},
+		"Clunkerjunker": {
+			"name": "Хламдулет",
+			"descriptionHazard": "<p>Излюбленный гоблинами хламдулет это, по сути, бронированная тележка, построенная из хлама, которая использует воспламеняющиеся горючие химикаты, взрывы и алхимические реакции для приведения себя в движение. Хотя первоначальная идея впечатляет, а стоимость создания удивительно мала, эти развалюхи, к сожалению, имеют большую склонность к неисправностям, и всегда находятся на волосок от катастрофы.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 16) или Ремесло (КС 18)",
+			"speedVehicle": "30 футов (алхимическая)",
+			"items": [
+				{
+					"id": "79YskaB7D1bAmIDD",
+					"name": "Взрывоопасный огнемёт",
+					"description": "<p>В свой ход пилот выполняет активность из 3 действий, чтобы выпустить алхимический огонь через борта этого транспортного средства. Для этого требуется 3 колбы @UUID[Compendium.pf2e.equipment-srd.Item.yd3kEK21YknZLlcT]{Малого алхимического огня}, которые пилот загружает в вентиляционное отверстие частью этой активности. Затем пилот должен совершить @Check[flat|dc:5]{Чистую проверку}. При успехе существа, находящиеся рядом с этим транспортным средством, получают @Damage[1d8[fire]] (@Check[reflex|dc:15|basic|name:Избежать пламя]). При провале происходит обратный эффект, наносящий @Damage[1d8[fire]] пилоту и всем пассажирам, без спасброска.</p>"
+				},
+				{
+					"id": "yKd1wGx6zmlBwk0u",
+					"name": "Разваливается",
+					"description": "<p>Когда этот транспорт получает физический урон, пилот должен совершить @Check[flat|dc:11]{Чистую проверку} (или @Check[flat|dc:20]{Чистую проверку} при получении критического попадания). При провале бронированная обшивка трескается и транспорт теряет свою Твёрдость и получает штраф обстоятельства −4 к КБ.</p>"
+				},
+				{
+					"id": "Gy4AuNFAGBzfjRFq",
+					"name": "Смог",
+					"description": "<p>10 футов. Когда это транспортное средство пилотируется, оно постоянно испускает тонкую дымку из дыма и химикатов. Существа в ауре (включая пилота и пассажиров) получают штраф обстоятельства −1 к @Trait[Visual]{визуальным} проверкам Восприятия.</p>"
+				}
+			]
+		},
+		"Combat Catamaran": {
+			"name": "Combat Catamaran",
+			"descriptionHazard": "<p>This high-speed sailing ship is designed to track down fleeing vessels. When traveling downwind, the combat catamaran can deploy a pair of huge kite-like spinnakers that dramatically increase its speed.</p>",
+			"crew": "2 pilot, 5 crew",
+			"piloting": "Nature (DC 33) or Sailing Lore (DC 31)",
+			"speedVehicle": "swim 30 feet or 50 feet using spinnakers (wind)",
+			"items": [
+				{
+					"id": "oUF5jQd985RKQxDl",
+					"name": "Габарит",
+					"description": "<p>40 feet long, 40 feet wide, 80 feet high</p>"
+				},
+				{
+					"id": "xrqdMttCPa8erSAH",
+					"name": "Deploy Spinnakers",
+					"description": "<p>This vehicle has massive kite-like spinnakers. Deploying and retracting these spinnakers takes two crew members to each perform a 3-action activity on their turn. While the spinnakers are deployed, the weapons installed on the weapon mounts can't fire.</p>"
+				},
+				{
+					"id": "WKcmxoJseJKLLsby",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has 2 weapon mounts, with one on each of its hulls. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:31] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Combat Kite": {
+			"name": "Combat Kite",
+			"crew": "1 пилот",
+			"piloting": "Nature (DC 24) or Piloting Lore (DC 22)",
+			"speedVehicle": "fly 15 feet (magical, wind)",
+			"items": [
+				{
+					"id": "udUWMy1N6PlT1qTM",
+					"name": "Cargo Release",
+					"description": "<p>The combat kite can carry a glider or up to 20 Bulk of materials. The glider or materials can be remotely released by Interacting with the magical tether.</p>"
+				}
+			]
+		},
+		"Combat Transport": {
+			"name": "Combat Transport",
+			"descriptionHazard": "<p>These massive vehicles incorporate multiple gas filled bladders and clockwork technology to quickly deploy troops in battle. With a large fuselage bracketed by equally large gas bladders, combat transports utilize both aft-mounted and bottom-mounted clockwork fans to move and hover.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Crafting (DC 36) or Piloting Lore (DC 34)",
+			"speedVehicle": "fly 40 feet (alchemical, clockwork, wind)",
+			"items": [
+				{
+					"id": "5um0QCV3dFiwQPyY",
+					"name": "Габарит",
+					"description": "<p>80 feet long, 60 feet wide, 30 feet high</p>"
+				},
+				{
+					"id": "miNi90XzTOPt0eem",
+					"name": "Парение",
+					"description": "<p>Combat transports have a series of six large clockwork fans built into their flat under body. These fans can be activated when Stopping the vehicle to allow it to hover within 5 feet of the surface so that troops can be quickly deployed via forward and aft ramps, regardless of the nature of the terrain.</p>"
+				},
+				{
+					"id": "MlFBTJ5DjdpbaXW2",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "B6R2bCS8bj5B0kiv",
+					"name": "Заводка",
+					"description": "<p>30 minutes of wind-up, 3 hours of operational time, [[/act disable-device dc=34]]{DC 34}, standby</p><hr /><p>For a clockwork to act, it must be wound with a unique key by another creature. This takes 1 minute. Once wound, it remains operational for the listed amount of time, usually 24 hours, after which time it becomes unaware of its surroundings and can't act until it's wound again. Some clockworks' abilities require them to spend some of their remaining operational time. They can't spend more than they have and shut down immediately once they have 0 time remaining. If it's unclear when a clockwork was last wound, most clockwork keepers wind all their clockworks at a set time, typically 8 a.m.</p><p>A clockwork that lists standby in its wind-up entry can enter standby mode as a 3-action activity. Its operational time doesn't decrease in standby, but it can sense its surroundings (with a -2 penalty to Perception). It can't act, with one exception: when it perceives a creature, it can exit standby as a reaction (rolling initiative if appropriate).</p><p>A creature can attempt to Disable a Device to wind a clockwork down (with a DC listed in the wind-up entry). For each success, the clockwork loses 1 hour of operational time. This can be done even if the clockwork is in standby mode.</p>"
+				}
+			]
+		},
+		"Cook's Caravan": {
+			"name": "Cook's Caravan",
+			"descriptionHazard": "<p>An army travels on its stomach, and this wagon train is designed to keep that stomach full. Composed of five heavy wagons connected via a series of flexible corridors, this caravan carries provisions and provides dining services for troops. The lead and middle wagons contain full-service galleys while the second and fourth wagons are stocked to the brim with foodstuffs. The last wagon in the caravan contains a boiler and scullery services for cleaning kitchen utensils and dishes. On the roof of each wagon is an herb garden to ensure a fresh supply for all meals, and mounted beneath all wagons are water and beer storage. Each cook's caravan carries enough supplies to feed its crew, passengers, 12 Large creatures, and 500 soldiers for a month before needing to be restocked.</p>",
+			"crew": "5 pilot, 25 crew",
+			"piloting": "Driving Lore (DC 40) or Nature (DC 42 to DC 45 depending on the pulling creatures)",
+			"speedVehicle": "the Speed of the slowest pulling creature (pulled by 12 Large creatures)",
+			"items": [
+				{
+					"id": "Uyksp5Oz4BKXVgmF",
+					"name": "Габарит",
+					"description": "<p>100 feet long, 30 feet wide, 20 feet high</p>"
+				},
+				{
+					"id": "oswX58DR5DSlxdOO",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Cutter": {
+			"name": "Куттер",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Мореходные знания (КС 22) или Природа (КС 24)",
+			"speedVehicle": "плавания 30 футов (ветряная)",
+			"items": [
+				{
+					"id": "RJf32Bczb9zQaFqs",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Djong": {
+			"name": "Djong",
+			"descriptionHazard": "<p>Djongs are immense multi-decked outriggers used by the Tian-Sing for transit within the Minata archipelago. Similar in design to the smaller karakoa, djongs have an open hull design that makes them very fast and exceptionally stable, capable of carrying hundreds of rowers on their decks, as well as a large woven triangular sail on a mast. The broad platforms on the djongs made them excellent for ferrying cargo, and their size and stability enabled them to host hundreds of warriors and their gear for transport. During peacetime, djongs are often used to host major celebrations and important weddings, with dignitaries bringing large entourages on their own djongs and then rafting up with other celebrants to form a floating village.</p><p>The size of the djongs is limited by the availability of the large timber required to form each of its twin hulls. Many of the giant trees suitable to build djongs have been harvested, making the surviving djongs even more valuable, with their overall length becoming a metric of status for their owners.</p>",
+			"crew": "1 пилот, 400 гребцов",
+			"piloting": "Мореходные знания (КС 34), Дипломатия (КС 36) или Запугивание (КС 36)",
+			"speedVehicle": "плавания 50 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "AU5iAjOfKnbaizIn",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Duskwood Corvette": {
+			"name": "Duskwood Corvette",
+			"descriptionHazard": "<p>This triple-masted warship is crafted mainly from sturdy duskwood brought down from Andoran's Darkmoon Vale. Naval captains must prove their worth before securing a post on such a valuable vessel.</p>",
+			"crew": "1 pilot, 10 crew, 10 rowers",
+			"piloting": "Sailing Lore (DC 28), Diplomacy (DC 31), or Intimidation (DC 31)",
+			"speedVehicle": "плавания 40 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "qbMRfca8VtpHX6aa",
+					"name": "Stealthy",
+					"description": "<p>Due to its ebony coloration, a duskwood corvette is difficult to detect under certain conditions. It is @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W] in dim light.</p>"
+				},
+				{
+					"id": "EJtZdtjCGRdVD1Rz",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has 2 weapon mounts, one on each side of the vehicle. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:28] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Firefly": {
+			"name": "Светлячок",
+			"descriptionHazard": "<p>Светлячок сочетает в себе магию и технологию, используя магию электричества и магнетизм, чтобы парить прямо над землей. Хотя светлячок по форме больше похож на коробку, чем на насекомое, он получил свое название благодаря постоянному свечению света и питающей его магии электричества, а также благодаря стабилизирующим магнитам, которые выступают по бокам примерно в тех же местах, где выступали бы крылья.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 20), Аркана (КС 22) или Ремесло (КС 22)",
+			"speedVehicle": "парение 20 футов (магическая, электрическая)",
+			"items": [
+				{
+					"id": "XLttadhtgYoOq6f1",
+					"name": "Вспышка",
+					"description": "<p>Пилот перегружает транспорт, в результате чего оно создает вспышку брильянтового света. Все существа, попавшие в яркий свет от его ауры <em>\"Свечения\"</em>, должны преуспеть в спасброске @Check[fortitude|dc:19|name:Избежать вспышки]{Стойкости}, иначе будут @UUID[Compendium.pf2e.conditionitems.Item.TkIyaNPgTZFBCCuh]{Ослеплены} на 1 минуту. Свет светлячка тускнеет на 10 минут, уменьшая его свечение до 10-футового тусклого света, и в это время он не может использовать <em>\"Вспышку\"</em>. <em>\"Вспышка\"</em> перестаёт работать, если светлячок сломан.</p>"
+				},
+				{
+					"id": "ChjOaa11CkBJeVJ8",
+					"name": "Свечение",
+					"description": "<p>Питаемое магической молнией, это транспортное средство излучает яркий свет в 20 футах и тусклый свет в следующих 20 футах.</p>"
+				},
+				{
+					"id": "fG2IE4D8GEe8e98D",
+					"name": "Парение",
+					"description": "<p>Это транспортное средство удерживается в воздухе с помощью быстро вращающихся пропеллеров, которые позволяют ему парить в воздухе на высоте @Unit[Foot|1]{1 фута}. Оно не способно лететь выше, и когда пилот останавливает магию или транспортное средство ломается, оно опускается на землю на 1 фут.</p>"
+				}
+			]
+		},
+		"Firework Pogo": {
+			"name": "Firework Pogo",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 21) или Ремесло (КС 19)",
+			"speedVehicle": "Jump Jet (Alchemical)",
+			"items": [
+				{
+					"id": "V0Iw3ZOvbTqoxlvz",
+					"name": "Jump Jet",
+					"description": "<p>The firework pgo moves exclusively via @UUID[Compendium.pf2e.actionspf2e.Item.d5I6018Mci2SWokk]{Leaping}. For each action spent to @UUID[Compendium.pf2e.actionspf2e.Item.uS3qDAgOkZ7b8ERL], the pogo Leaps 20 feet horizontally or 10 feet vertically.</p>"
+				},
+				{
+					"id": "W01aasqmTJL5TpkW",
+					"name": "Unstable Launch",
+					"description": "<p>When the pilot uses a 3-action activity to recklessly @UUID[Compendium.pf2e.actionspf2e.Item.uS3qDAgOkZ7b8ERL] the firework pogo, it emits a burst of flames on launch that deals @Damage[3d6[fire]] damage to the pilot, the pogo itself, and each creature in a 10-foot radius (@Check[reflex|dc:19|basic] save).</p>"
+				}
+			]
+		},
+		"Floating Camouflage Blind": {
+			"name": "Floating Camouflage Blind",
+			"descriptionHazard": "<p>The floating camouflage blind comprises a wooden platform fastened to a pair of pontoons and is powered by a small clockwork motor. On this platform are four short walls, with a canvas cover providing protection from the elements. Typically, the outside of the blind is painted to blend in with any surrounding foliage. Floating camouflage blinds are often placed near the mouth of strategic waterways so that traffic can be stealthily monitored.</p>",
+			"crew": "1 пилот",
+			"piloting": "Crafting (DC 21) or Sailing Lore (DC 19",
+			"speedVehicle": "swim 10 feet (clockwork)",
+			"items": [
+				{
+					"id": "fjG9iutGUirWKbtu",
+					"name": "Заводка",
+					"description": "<p>10 minutes of wind-up, 1 hour of operational time, [[/act disable-device dc=19]]{DC 19}, standby</p><hr /><p>For a clockwork to act, it must be wound with a unique key by another creature. This takes 1 minute. Once wound, it remains operational for the listed amount of time, usually 24 hours, after which time it becomes unaware of its surroundings and can't act until it's wound again. Some clockworks' abilities require them to spend some of their remaining operational time. They can't spend more than they have and shut down immediately once they have 0 time remaining. If it's unclear when a clockwork was last wound, most clockwork keepers wind all their clockworks at a set time, typically 8 a.m.</p><p>A clockwork that lists standby in its wind-up entry can enter standby mode as a 3-action activity. Its operational time doesn't decrease in standby, but it can sense its surroundings (with a -2 penalty to Perception). It can't act, with one exception: when it perceives a creature, it can exit standby as a reaction (rolling initiative if appropriate).</p><p>A creature can attempt to Disable a Device to wind a clockwork down (with a DC listed in the wind-up entry). For each success, the clockwork loses 1 hour of operational time. This can be done even if the clockwork is in standby mode.</p>"
+				}
+			]
+		},
+		"Flying Fortress": {
+			"name": "Flying Fortress",
+			"descriptionHazard": "<p>The ultimate battlefield command center, this massive skyborne castle serves as a platform for launching aerial assaults on land-based and sea-based enemy positions. By hovering over an enemy position, the flying fortress can lay waste to enemies who lack countering siege weapons by firing down on their frontline defenses.</p>",
+			"crew": "1 pilot, 25 crew",
+			"piloting": "Arcana (DC 42) or Piloting Lore (DC 40)",
+			"speedVehicle": "fly 30 feet (clockwork, magical, wind)",
+			"items": [
+				{
+					"id": "oHxWHVUjvrntFRiu",
+					"name": "Габарит",
+					"description": "<p>70 feet long, 70 feet wide, 80 feet high</p>"
+				},
+				{
+					"id": "hHuH4ZhAExxchTxv",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "Qz9Kx0LrJvHnpBOZ",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has eight weapon mounts, with two on each side of the fortress. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:40] check, and an appropriate weapon. These weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Flying Submersible": {
+			"name": "Flying Submersible",
+			"descriptionHazard": "<p>This tubular vehicle flies with the aid of a pair of large gas-inflated balloons. With a clockwork-powered aft propeller, the vehicle can move forward if there are no extreme headwinds. Upon landing in the water, the balloons are deflated and stowed within the vehicle, while the aft propeller continues to move it on the surface of the water. By filling a long ballast tank in the vehicle's keel, it can then submerge and travel underwater. The vehicle can stay submerged for only 1 hour until it must resurface to refresh its oxygen supply. The weapons of this vehicle are in a special compartment that allows them to be fired and reloaded underwater.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Athletics (DC 38), Piloting Lore (DC 38), Sailing Lore (DC 36)",
+			"speedVehicle": "swim 30 (alchemical, clockwork)",
+			"items": [
+				{
+					"id": "f9kbmNNkDQy8bSg2",
+					"name": "Габарит",
+					"description": "<p>60 feet long, 40 feet wide, 40 feet high</p>"
+				},
+				{
+					"id": "v5Jv0mJcVUEylX0j",
+					"name": "Земноводный",
+					"description": "<p>This vehicle can land on water and then submerge up to a depth of 200 feet.</p>"
+				},
+				{
+					"id": "gQ7lxAlWZocn7vCA",
+					"name": "Deploy Balloons",
+					"description": "<p>The pilot engages a lever that activates the clockwork components to launch two massive tethered balloons and fill them with lighter-than-air gas. This grants the flying submersible a fly Speed of 30 but removes its swim Speed. This transformation lasts until the pilot disengages the balloons by performing this action again.</p>"
+				},
+				{
+					"id": "nr8xxBKjI4FBoqK6",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has two weapon mounts. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:36] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Galley": {
+			"name": "Галера",
+			"crew": "1 пилот, 20 гребцов",
+			"piloting": "Мореходные знания (КС 27), Дипломатия (КС 29) или Запугивание (КС 29)",
+			"speedVehicle": "плавания 30 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "tFb8nV3bxHVLeU8Z",
+					"name": "Манёвренность",
+					"description": "<p>С полным набором умелых гребцов, гребная галера может быстро поворачивать, разворачиваться на месте и даже грести назад. Каждый поворот на 90 градусов, сделанный менее чем за длину транспорта, стоит 5 дополнительных футов движения. Она может грести назад не быстрее половины своей Скорости, и она не может поворачивать во время гребли назад.</p>"
+				}
+			]
+		},
+		"Geobukseon": {
+			"name": "Geobukseon",
+			"descriptionHazard": "<p>These squat vessels are built with a protective shelllike covering on their deck rather than the open main deck design of most sailing vessels. The fully covered deck protects the vessel's 80 rowers and complement of 50 soldiers from arrows and incendiary weapons. In addition, this armored deck is covered with iron spikes to discourage enemies from attempting to board.</p><p>On the bow of the vessel is mounted a dragon head which can emit sulfur smoke to effectively hide its movement in close combat. Below the dragon head is mounted a large anchor with a wooden crest shaped like a face, and these can be used to ram into enemy ships.</p>",
+			"crew": "1 пилот, 80 гребцов",
+			"piloting": "Мореходные знания (КС 30), Дипломатия (КС 32) или Запугивание (КС 32)",
+			"speedVehicle": "плавание 30 футов (гребная)",
+			"items": [
+				{
+					"id": "pBSi7pjOr9qNTYAC",
+					"name": "Smoking Breath",
+					"description": "<p>When the geobukseon Stops, it's @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W] by the smoke for 1 round or until it next moves. The geobukseon can't use this concealment to @UUID[Compendium.pf2e.actionspf2e.Item.XMcnh4cSI32tljXa] or @UUID[Compendium.pf2e.actionspf2e.Item.VMozDqMMuK5kpoX4].</p>"
+				},
+				{
+					"id": "1kgEMCsta3jRjgwD",
+					"name": "Turtleback Spikes",
+					"description": "<p>The roof of a geobukseon is difficult terrain and hazardous terrain. A creature that moves on the roof takes @Damage[1d6[piercing]] damage for every square of that area it moves into. Falling @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60] on the geobukseon's roof deals @Damage[5d6[piercing]] damage.</p>"
+				}
+			]
+		},
+		"Glider": {
+			"name": "Планер",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 14) или Природа (КС 16)",
+			"speedVehicle": "полёт 25 футов (ветряная)",
+			"items": [
+				{
+					"id": "Ix4GHIqSUqHawiG8",
+					"name": "Начальное падение",
+					"description": "<p>Единственный способ запустить планер — спрыгнуть с крутого склона при благоприятном состоянии ветра. Планер неуправляем и каждый раунд падает на 60 футов, пока пилот успешно не @UUID[Compendium.pf2e.actionspf2e.Item.yh9O9BQjwWrAIiuf]{Возьмёт управление}. Если планер упадет на землю до того, как пилот успешно \"Возьмёт управление\", то и пилот и планер получают урон от падения.</p>"
+				}
+			]
+		},
+		"Helepolis": {
+			"name": "Helepolis",
+			"descriptionHazard": "<p>The helepolis uses both pushed propulsion and turned propulsion to turn a capstan. Turned propulsion uses the same rules as rowed propulsion. Pushed propulsion uses the same rules as pulled.</p>",
+			"crew": "1 pilot, 200 turners, 3000 pushers",
+			"piloting": "Diplomacy (DC 37), Intimidation (DC 37), or Warfare Lore (DC 35)",
+			"speedVehicle": "10 feet (pushed, turned)",
+			"items": [
+				{
+					"id": "LUwtad4TFV730JPb",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "dxxn3NqH1AvntQbw",
+					"name": "Tiered",
+					"description": "<p>A helepolis has six levels. The crew operate at the bottom tier, turning a giant capstan. There's room remaining on that tier for up to six passengers (enough for a full heavy ballista siege crew; see Weaponry). Each of the remaining five levels carries up to 60 passengers. The tiers are specifically meant to be protective and give those within the helepolis greater cover (or standard cover if the helepolis is @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3]). A massive ladder runs diagonally through the center of the helepolis, from the front of the top tier to the rear of the bottom tier. The ladder is wide enough for two crew or passengers to climb simultaneously.</p>"
+				},
+				{
+					"id": "gs1T9M7KLq7a9JmG",
+					"name": "Weaponry",
+					"description": "<p>The siege tower is loaded to the brim with siege weapons—typically bristling with heavy ballistas on its first and second tiers and ballistas on its third, fourth, and fifth. The Price of these weapons is included in that of the helepolis. When building a helepolis, you can choose to replace any of these with other siege weapons with a lower Price. If you want a more expensive siege weapon, you must Craft it separately. Because of the helepolis's structure, any siege weapon in it must launch its payload straight ahead. For instance, a ballista or springald could function in a helepolis, but not a catapult or trebuchet. Passengers of the helepolis can crew these siege weapons.</p>"
+				}
+			]
+		},
+		"Hellclad Trireme": {
+			"name": "Hellclad Trireme",
+			"descriptionHazard": "<p>This imposing warship is known for transforming into an ironclad juggernaut when plates of blackened iron covered in spikes are lowered over its rowing ports. Most hellclad triremes have threatening figureheads shaped like screaming devils.</p>",
+			"crew": "1 pilot, 10 crew, 10 rowers",
+			"piloting": "Sailing Lore (DC 31), Diplomacy (DC 33), or Intimidation (DC 33)",
+			"speedVehicle": "плавания 30 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "HYMBW14i3aE12Doq",
+					"name": "Armor of Nessus",
+					"description": "<p>Over the course of 1 minute, the ship's crew lowers spiky metal plates across key sections of the hull. The ship gains a +2 circumstance bonus to its AC and immunity to precision damage. Its collision damage becomes piercing damage. Its weakness to fire is reduced to 5, but its swim Speed is reduced to 15 feet and it can no longer be rowed. The crew can retract the plates by taking another minute.</p>"
+				},
+				{
+					"id": "OM5HqzqvEOdNf7R8",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has 2 weapon mounts, one on each side of the vehicle. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:31] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Hillcross Glider": {
+			"name": "Hillcross Glider",
+			"descriptionHazard": "<p>Hillcross gliders are made of bone and stretched hide, tied together with</p><p>sinew, and sealed with a glue made from animal fat.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 19) или Природа (КС 21)",
+			"speedVehicle": "полёт 35 футов (ветряная)",
+			"items": [
+				{
+					"id": "xB0A9RW1Zi6TC7g0",
+					"name": "Начальное падение",
+					"description": "<p>The only way to launch a Hillcross glider is to jump off a steep incline with favorable wind conditions. The glider is uncontrolled and falls 60 feet each round until the pilot successfully @UUID[Compendium.pf2e.actionspf2e.Item.yh9O9BQjwWrAIiuf]{Takes Control}. If the glider hits the ground before the pilot Takes Control, the pilot and the glider both take falling damage.</p>"
+				}
+			]
+		},
+		"Hot Air Balloon": {
+			"name": "Воздушный шар",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 16) или Природа (КС 18)",
+			"speedVehicle": "полёт 20 футов (ветряная)",
+			"items": [
+				{
+					"id": "PLw9fb62MWWOHQ3N",
+					"name": "Дрейф",
+					"description": "<p>The hot air balloon lacks steering and relies on favorable wind currents to carry it in the right direction. If the pilot fails to maintain control of the hot air balloon, the balloon drifts whichever way the wind carries it, moving up to four times its Speed each round as determined by the GM.</p>"
+				}
+			]
+		},
+		"Ice Breaker": {
+			"name": "Ice Breaker",
+			"descriptionHazard": "<p>Colder oceans are often beset with heavy layers of sea ice, providing some kingdoms natural barriers to sea-based assaults and bombardments. To counter this, as well as to resupply troops in these areas, engineers designed massive steam-powered ice breakers. Powered by a dozen steam boilers lit with arcane flames, these ships can make their way through heavy ice fields that would crush most vessels, leaving an open channel behind them for other ships to follow.</p>",
+			"crew": "1 pilot, 25 crew",
+			"piloting": "Arcana (DC 42) or Sailing Lore (DC 40)",
+			"speedVehicle": "swim 40 feet or 20 feet in heavy ice (clockwork, magical)",
+			"items": [
+				{
+					"id": "58hgK2dQGyCZ2AtQ",
+					"name": "Габарит",
+					"description": "<p>120 feet long, 40 feet wide, 50 feet high</p>"
+				},
+				{
+					"id": "RUDtXii4Oi89aeZn",
+					"name": "Проход через льды",
+					"description": "<p>This vessel can move through sea ice up to 20 feet thick, leaving a path of open water behind it.</p>"
+				},
+				{
+					"id": "sQgDqTnfS4q9DdgX",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "EnrnSkd1bkrMlaQs",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has eight weapon mounts; one each on the bow and stern, and three mounted on each side. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:40] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Iceboat": {
+			"name": "Iceboat",
+			"descriptionHazard": "<p>In addition to sailing across open water, this vessel can also travel at high speeds over frozen rivers, lakes, oceans, and fjords.</p>",
+			"crew": "1 пилот, 1 член экипажа",
+			"piloting": "Nature (DC 24) or Sailing Lore (DC 22)",
+			"speedVehicle": "50 feet on ice (wind), swim 30 feet (wind)",
+			"items": [
+				{
+					"id": "gfqiKy68ytWvW2OV",
+					"name": "Ледоход",
+					"description": "<p>Ice is not difficult terrain for iceboats. However, they're unable to travel over land unless it's completely covered in ice.</p>"
+				},
+				{
+					"id": "FFhaWaFrk7hnhcum",
+					"name": "Steel Keel",
+					"description": "<p>Iceboats have steel blades affixed to their keels and outriggers that enable them to travel over ice at tremendous speed.</p>"
+				}
+			]
+		},
+		"Ironclad": {
+			"name": "Ironclad",
+			"descriptionHazard": "<p>This heavy gunboat features solid hardwood timbers covered with thick iron plates riveted together to protect the portions of the vessel above the waterline. These timbers slope inboard at an angle to reduce the effectiveness of siege projectiles and cannon shots. The vessel is powered by a twin pair of propellers spun by steam from boilers that are magically fired, yielding glowing blue smoke through its twin pair of smokestacks. Ironclads are so formidable that a single one has been known to blockade an entire port by itself against more traditional wooden ships.</p>",
+			"crew": "1 pilot, 19 crew",
+			"piloting": "Arcana (DC 42) or Sailing Lore (DC 40)",
+			"speedVehicle": "swim 40 feet (magical)",
+			"items": [
+				{
+					"id": "S2YyMZIBF4csYxyg",
+					"name": "Габарит",
+					"description": "<p>100 feet long, 60 feet wide, 20 feet high</p>"
+				},
+				{
+					"id": "RArIVjfgQkucB1UI",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "UGbQZpoFLMeY4Sgo",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has four weapon mounts, two on each side of the vehicle. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:40] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Karakoa": {
+			"name": "Karakoa",
+			"descriptionHazard": "<p>Karakoa are large twin-hulled outriggers used by the Tian-Sing for transit within the massive Minata archipelago. Fast and sturdy, karakoa are distinct from other Tian vessels in that they're equipped with platforms for transporting warriors and fighting at sea. During peacetime, they're also used as trading ships, able to carry goods and passengers. While capable of crossing oceans, their open hull design may perform poorly during rough seas as breaking whitecaps could swamp the craft.</p>",
+			"crew": "1 пилот, 20 гребцов",
+			"piloting": "Sailing Lore (DC 20) or Athletics (DC 22)",
+			"speedVehicle": "плавания 40 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "sT706wnF5RTbupUP",
+					"name": "Слабость 10 к огню пока не сломано"
+				}
+			]
+		},
+		"Longship": {
+			"name": "Longship",
+			"crew": "1 пилот, 10 гребцов",
+			"piloting": "Мореходные знания (КС 26), Дипломатия (КС 28) или Запугивание (КС 28)",
+			"speedVehicle": "плавания 40 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "MRaXvaSDe5OvOwnS",
+					"name": "Манёвренность",
+					"description": "<p>With a full complement of skilled rowers, a rowed longship can turn swiftly, turn in place, and even row backwards. Each 90-degree turn made in less than a vehicle length costs 5 extra feet of movement. It can row backwards no faster than half its speed, and it can't turn while rowing backwards.</p>"
+				}
+			]
+		},
+		"Medical Wagon": {
+			"name": "Medical Wagon",
+			"descriptionHazard": "<p>Medical wagons are frequent sights near the battlefield. These wagons carry various mundane and magical medical supplies and are generally staffed by a medic. A small gurney is mounted in the back of the wagon for transporting personnel or for use as an emergency operating table.</p>",
+			"crew": "1 пилот, 1 член экипажа",
+			"speedVehicle": "Скорость тянущего существа (тянется 1 Большим существом)",
+			"items": [
+				{
+					"id": "rtaIKM2ljVIGRhna",
+					"name": "Enhanced Medicinal Tools",
+					"description": "<p>When attempting a Medicine check inside a medical wagon, you gain a +2 item bonus.</p>"
+				}
+			]
+		},
+		"Mobile Command Post": {
+			"name": "Mobile Command Post",
+			"descriptionHazard": "<p>This utilitarian vehicle resembles a small encampment, complete with protective barriers, a kitchen, sleeping quarters, and partitioned offices, all mounted on ironclad timbers. Beneath these timbers is a series of cogs and wheels, enclosed by a solid chain track made of iron plates. These tracks enable the mobile command post to move over all types of terrain, albeit at a slow pace. Once in position, these tracks fold up, allowing the vehicle's base to rest on the ground while providing extra protection along the sides of the vehicle.</p>",
+			"crew": "1 pilot, 9 crew",
+			"piloting": "Arcana (DC 37), Crafting (DC 37), or Driving Lore (DC 35)",
+			"speedVehicle": "20 feet (clockwork, magical)",
+			"items": [
+				{
+					"id": "kCO9msUmChonUP7K",
+					"name": "Габарит",
+					"description": "<p>90 feet long, 50 feet wide, 20 feet high</p>"
+				},
+				{
+					"id": "z7FmMIh7GhEW7VFc",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Mobile Inn": {
+			"name": "Передвижная таверна",
+			"descriptionHazard": "<p>Передвижная таверна —- следующий шаг вперед по сравнению с @UUID[Compendium.pf2e.vehicles.Actor.WjOkOaWOGkLmuSq5]{Бронированной каретой}, который предоставляет ограниченные удобства простой (и тесной) таверны, чтобы сделать дальние поездки более терпимыми для богатых путешественников. По сути, это крошечный постоялый двор на колёсах, работающий на алхимических катализаторах и паровом двигателе, оснащённый печью, шкафом для утвари, умывальником, столом, двумя скамьями и компактным спальным чердаком, достаточно большим для размещения 4 человек. Его можно модифицировать, чтобы разместить 1 пассажира с гораздо большим комфортом или легко вместить 5 пассажиров, убрав все удобства.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 24) или Ремесло (КС 26)",
+			"speedVehicle": "30 футов (алхимическая)"
+		},
+		"Necro Roamer": {
+			"name": "Necro Roamer",
+			"descriptionHazard": "<p>Favored by necromancers, this vehicle is a heavily fortified, armored wooden shed mounted on the legs of a dozen undead creatures.</p>",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Arcana (DC 36) or Driving Lore (DC 34)",
+			"speedVehicle": "30 feet (magical)",
+			"items": [
+				{
+					"id": "gJX0Lvluxa32duRR",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has two rooftop weapon mounts. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:36] check, and an appropriate weapon. These weapon mounts can be equipped with Large or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Nighthawk": {
+			"name": "Nighthawk",
+			"crew": "1 пилот",
+			"piloting": "Athletics (DC 29) or Piloting Lore (DC 27)",
+			"speedVehicle": "полёт 35 футов (ветряная)",
+			"items": [
+				{
+					"id": "hSynFTcsCqIXxVGK",
+					"name": "Aerial Launch",
+					"description": "<p>Nighthawks can be carried into battle beneath a larger airship and dropped from higher altitudes.</p>"
+				}
+			]
+		},
+		"Raft": {
+			"name": "Плот",
+			"crew": "1 пилот",
+			"piloting": "Атлетика (КС 14) или Мореходные знания (КС 12)",
+			"speedVehicle": "плавание 10 футов (гребная)",
+			"items": [
+				{
+					"id": "rwza6SRk2Qv2kNXK",
+					"name": "Переносная",
+					"description": "<p>Плот могут нести по суше 2 Средних существа или 1 Большое. Во время этого существа @UUID[Compendium.pf2e.conditionitems.Item.D5mg6Tc7Jzrj6ro7]{Перегружены}.</p>"
+				}
+			]
+		},
+		"Rowboat": {
+			"name": "Вёсельная лодка",
+			"crew": "1 пилот",
+			"piloting": "Атлетика (КС 16) или Мореходные знания (КС 14)",
+			"speedVehicle": "плавание 20 футов (гребная)",
+			"items": [
+				{
+					"id": "9UcPAPPrzEhaoWgY",
+					"name": "Переносная",
+					"description": "<p>Вёсельную лодку могут нести по суше 2 Средних существа или 1 Большое. Во время этого существа @UUID[Compendium.pf2e.conditionitems.Item.D5mg6Tc7Jzrj6ro7]{Перегружены}.</p>"
+				}
+			]
+		},
+		"Sailing Ship": {
+			"name": "Парусное судно",
+			"crew": "1 пилот, 8 членов экипажа",
+			"piloting": "Мореходные знания (КС 26), Дипломатия (КС 28) или Запугивание (КС 28)",
+			"speedVehicle": "плавания 40 футов (ветряная)",
+			"items": [
+				{
+					"id": "2UISHdYECuDVkedh",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Sand Barge": {
+			"name": "Sand Barge",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Diplomacy (DC 24), Intimidation (DC 24), or Sailing Lore (DC 22)",
+			"speedVehicle": "40 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "rvLRBCsFQMdUKtar",
+					"name": "Sand Skimmer",
+					"description": "<p>The sand barge can travel over sand, water, and quicksand equally well, but it can't traverse solid ground.</p>"
+				}
+			]
+		},
+		"Sand Diver": {
+			"name": "Песчаный ныряльщик",
+			"descriptionHazard": "<p>Песчаный ныряльщик — транспортное средство в форме скорпиона, использующее для передвижения алхимическую тягу. Хвостоподобная часть действует как теплоотвод и выпускает алхимические пары позади водителя, когда он зарывается. Вместо клешней у него спереди два механизма для рытья, которые позволяют ему прокапывать через песок.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 18) или Ремесло (КС 20)",
+			"speedVehicle": "20 футов, рытьё 10 футов (алхимическая)",
+			"items": [
+				{
+					"id": "PqsmKTcXOM0aNYo8",
+					"name": "След осколков",
+					"description": "<p>Песчаный ныряльщик может @UUID[Compendium.pf2e.actionspf2e.Item.H6v1VgowHaKHnVlG]{Рыть} только сквозь песок, используя жар и пламя из своего алхимического ядра, чтобы медленно рыть себе путь. Алхимические испарения, остающиеся после него, задерживаются под землей по мере \"Рытья\", временно катализируя фрагменты песка в стеклоподобный побочный продукт. Существа, которые \"Роют\" через пространство, в котором за последние 24 часа \"Рыло\" это транспортное средство, получают @Damage[1d12[piercing]] от осколков (@Check[fortitude|dc:17|basic|name:Избежать осколков]). Существо, которое продолжает \"Рыть\" через тот же участок пространства, через который недавно \"Рыл\" песчаный ныряльщик, должно продолжать совершать этот спасбросок каждый раунд, когда оно первый раз \"Роет\" через осколки.</p>"
+				},
+				{
+					"id": "rDwfQJPnK5YyRx7v",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Sand Racer": {
+			"name": "Sand Racer",
+			"crew": "1 пилот",
+			"piloting": "Driving Lore (DC 30), Crafting (DC 35), or Arcana (DC 36)",
+			"speedVehicle": "90 feet (thasteron)",
+			"items": [
+				{
+					"id": "PCG0t8B7xMicbSIn",
+					"name": "Burning Exhaust",
+					"description": "<p>Attempt a two-action Piloting check to Drive the sand racer.</p><hr /><p><strong>Критический успех:</strong> The sand racer moves up to its Speed and can turn normally. Choose up to two creatures that the sand racer was adjacent to when it began this movement. Both of those creatures take @Damage[6d6[fire]] damage from the sand racer's burning exhaust (@Check[reflex|dc:30|basic]).</p><p><strong>Успех:</strong> As critical success, but choose only one creature.</p><p><strong>Провал:</strong> As success, but the creature gains a +4 circumstance bonus to its Reflex save, and the sand racer moves its Speed in a straight line.</p><p><strong>Критический провал:</strong> You fail to blast any creatures with the burning exhaust. The sand racer moves its Speed in a straight line and becomes uncontrolled.</p>"
+				},
+				{
+					"id": "TbqVUPF2iKI2xCCf",
+					"name": "Ускорение",
+					"description": "<p><strong>Частота:</strong> Раз в 10 минут</p><hr /><p><strong>Эффект:</strong> The pilot triggers an injection of thasteron directly into the sand racer's engine to briefly increase its speed. For 1 round the sand racer's Speed becomes 180 feet, all piloting checks with the sand racer gain the reckless trait, and the pilot gains a +2 circumstance to any Acrobatics or piloting checks made to navigate specific challenges. A speed boost is terribly inefficient, and consumes a day's worth of fuel.</p>"
+				},
+				{
+					"id": "3KAdN0CvRHGl0Fap",
+					"name": "Exploratory Kit",
+					"description": "<p>Sand racers were built to aid in long-distance exploration of Akiton's sandy wastelands, and have storage capacity for 14 days of @UUID[Compendium.pf2e.equipment-srd.Item.L9ZV076913otGtiB] for a Medium creature and 14 days of fuel. They also have a small storage compartment in the front designed to store a @UUID[Compendium.pf2e.equipment-srd.Item.vLGDUFrg4yGzpTQX]{Repair Kit} and replacement parts for the more delicate pieces of machinery</p>"
+				}
+			]
+		},
+		"Sandsailer": {
+			"name": "Sandsailer",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Athletics (DC 39), Driving Lore (DC 34), Sailing Lore (DC 34), or Nature (DC 39)",
+			"speedVehicle": "80 футов (ветряная)"
+		},
+		"Second Kiss": {
+			"name": "Second Kiss",
+			"descriptionHazard": "<p>The Second Kiss is a massive rigid airship. An oval fabric envelope stretched over a wood‑and‑metal frame contains a dozen sealed gasbags of floranine gas that provide lift to get the vessel airborne. A pair of clockwork‑powered propellers mounted in nacelles on either side of the crew cabin provides forward motion. Crew steer the ship with rudders and ailerons in four massive tail fins.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Знания пилотирования (КС 30) или Ремесло (КС 32)",
+			"speedVehicle": "полёт 30",
+			"items": [
+				{
+					"id": "V0HecEvj92RlltT5",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Shark Diver": {
+			"name": "Shark Diver",
+			"crew": "1 пилот, 4 членов экипажа",
+			"piloting": "Знания пилотирования (КС 30) или Ремесло (КС 28)",
+			"speedVehicle": "40 футов (алхимическая)",
+			"items": [
+				{
+					"id": "O5JvDSJWNWG2VtpR",
+					"name": "Наэлектризовать",
+					"description": "<p><strong>Частота:</strong> Раз в минуту</p><hr /><p><strong>Эффект:</strong> Two crew members each perform a 2-action activity on their turn to emit an electrical pulse, dealing @Damage[6d6[electricity]] damage to all creatures within @Template[emanation|distance:10]{10 feet} of the shark diver. Crew and passengers of the shark diver are unaffected. Affected creatures must attempt a @Check[fortitude|dc:28|basic] save.</p>"
+				},
+				{
+					"id": "V86H5yeH71jmelzY",
+					"name": "Погружаемый",
+					"description": "<p>The shark diver can travel beneath the surface of the water, carrying an air reservoir suitable to sustain 11 Medium creatures for up to 24 hours. The shark diver can safely reach depths of up to 300 feet. If broken, the shark diver loses air from its reservoir, reducing the stored air by 10 minutes per round. A broken shark diver has its maximum depth reduced by half.</p>"
+				}
+			]
+		},
+		"Siege Barge": {
+			"name": "Siege Barge",
+			"descriptionHazard": "<p>These special barges were designed to siege river and oceanside fortresses and enemy encampments. In addition to carrying two huge siege weapons and their crews, these barges also hold a variety of stones and other siege projectiles.</p>",
+			"crew": "1 пилот, 4 членов экипажа",
+			"piloting": "Nature (DC 41 to 46 depending on the pulling creatures) or Sailing Lore (DC 39)",
+			"speedVehicle": "the Speed of the slowest pulling creature (pulled by 4 Huge creatures)",
+			"items": [
+				{
+					"id": "SVIwF7uOfnrPwzRX",
+					"name": "Габарит",
+					"description": "<p>60 feet long, 30 feet wide, 20 feet high</p>"
+				},
+				{
+					"id": "FqOevYKM14MsZEdA",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "6fORJn25X1MJPxO5",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has two weapon mounts. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:39] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Siege Dragon": {
+			"name": "Siege Dragon",
+			"descriptionHazard": "<p>Crafted to appear as a chunky adamantine dragon at a distance, this vehicle is designed to scare civilians and intimidate enemy armies on the battlefield below.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Arcana (DC 41), Crafting (DC 41), or Piloting Lore (DC 39)",
+			"speedVehicle": "40 fly 120 feet (clockwork, magical, wind)",
+			"items": [
+				{
+					"id": "L3l9AMAPPDLj42J5",
+					"name": "Frightful",
+					"description": "<p>A creature who is within 100 feet of a siege dragon at the start of its turn must succeed a @Check[will|dc:39] save or become @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2}. Regardless of the result of the saving throw, the creature is then temporarily immune to this effect for 24 hours.</p>"
+				},
+				{
+					"id": "t9Ml1GxjmWer9vBI",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has a weapon mount. At purchase, this weapon mount is initially empty. Installing or uninstalling a weapon into the mount requires 3 hours, a successful @Check[crafting|dc:39] check, and an appropriate weapon. The mount can be equipped with a Large or smaller ranged siege weapon.</p>"
+				}
+			]
+		},
+		"Siege Tower": {
+			"name": "Siege Tower",
+			"descriptionHazard": "<p>The siege tower uses pushed propulsion, which uses the same rules as pulled.</p>",
+			"crew": "1 pilot, 9 pushers",
+			"piloting": "Diplomacy (DC21), Initimidation (DC21), or Warfare Lore (DC 19)",
+			"speedVehicle": "10 feet (pushed by the pushers in the crew)",
+			"items": [
+				{
+					"id": "uIzebnQMmGWvKMo5",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "jslLtykhA68xleGI",
+					"name": "Tiered",
+					"description": "<p>A siege tower has five levels. The bottom level houses the crew, and each higher level carries up to 10 passengers. The tiers are specifically meant to be protective and give those within the siege tower greater cover (or standard cover if the siege tower is broken). Each tier is connected to the one above it by a 7-foot ladder.</p><p>The siege tower has a corvus at its highest tier: a vertical bridge that can be lowered to allow creatures to cross gaps. Lowering the corvus takes a total of 3 Interact actions. Moving the siege tower while the corvus is lowered is highly dangerous, especially for anyone on the corvus. When it's open, creatures in the top tier don't have cover from the side with the corvus, and creatures on the lowered corvus don't have cover except from below.</p>"
+				}
+			]
+		},
+		"Skimmer": {
+			"name": "Skimmer",
+			"descriptionHazard": "<p>This sleek vessel generally appears as a fast-moving catamaran. Using a pair of clockwork mechanisms, the main hulls can be lifted out of the water, with only the narrow blade of their keels remaining slightly below the surface, turning the skimmer into an even faster hydrofoil, doubling its normal speed.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Nature (DC 30) or Sailing Lore (DC 28)",
+			"speedVehicle": "swim 30 feet or 60 feet using hydrofoil (wind)",
+			"items": [
+				{
+					"id": "YQhLb8tPUoxCoxuV",
+					"name": "Deploy Hydrofoil",
+					"description": "<p>The skimmer's hydrofoils are deployed by pulling a lever, doubling the vehicle's normal Speed. However, this makes the vehicle less maneuverable, and it must move twice its length for each 90-degree turn it makes while the hydrofoils are deployed. The pilot can take this action again to retract the hydrofoils and return the skimmer to its normal Speed and maneuverability.</p>"
+				}
+			]
+		},
+		"Sky Chariot (Heavy)": {
+			"name": "Sky Chariot (Heavy)",
+			"crew": "1 пилот",
+			"piloting": "Arcana (DC 33), Nature (DC 33 to 41, depending on pulling creature), or Piloting Lore (DC 31)",
+			"speedVehicle": "the fly Speed of the slowest pulling creature (pulled by 6 Large creatures, 2 Huge creatures, or 1 Gargantuan creature)"
+		},
+		"Sky Chariot (Light)": {
+			"name": "Sky Chariot (Light)",
+			"crew": "1 пилот",
+			"piloting": "Arcana (DC 25), Nature (DC 25 to 33, depending on pulling creature), or Piloting Lore (DC 23)",
+			"speedVehicle": "the fly Speed of the slowest pulling creature (pulled by 2 Large creatures or 1 Huge creature)"
+		},
+		"Sky Chariot (Medium)": {
+			"name": "Sky Chariot (Medium)",
+			"crew": "1 пилот",
+			"piloting": "Arcana (DC 29), Nature (DC 29 to 37, depending on pulling creature), or Piloting Lore (DC 27)",
+			"speedVehicle": "the fly Speed of the slowest pulling creature (pulled by 4 Large creatures, 2 Huge creatures, or 1 Gargantuan creature)"
+		},
+		"Sky Chariot, Armored": {
+			"name": "Sky Chariot, Armored",
+			"descriptionHazard": "<p>This open-air vehicle is constructed similar to a sleigh, with four wheels in the place of runners and a set of sweeping wings extending from its sides. The wooden body of the vehicle is armored to protect the occupants, who can fire handheld weapons over the gunwales to gain cover from ranged attacks.</p>",
+			"crew": "1 пилот, 2 члена экипажа",
+			"piloting": "Arcana (DC 34), Nature (DC 34 to 42 depending on the pulling creature), or Piloting Lore (DC 32)",
+			"speedVehicle": "the fly Speed of the slowest pulling creature (pulled by 6 Large creatures, 2 Huge creatures, or 1 Gargantuan creature)",
+			"items": [
+				{
+					"id": "OklAHvVZjuO3XuoC",
+					"name": "Alchemical Launcher",
+					"description": "<p>Two crew members each perform a 3-action activity on their turn to launch a massive alchemical concoction from the chariot. The concoction explodes on impact, dealing @Damage[10d6[fire]|options:area-damage] damage to each creature in a @Template[type:burst|distance:15] up to 50 feet away (@Check[reflex|dc:30|basic] save).</p>"
+				}
+			]
+		},
+		"Sled": {
+			"name": "Сани",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 14), или Природа (КС от 16 до 24 в зависимости от тянущих существ)",
+			"speedVehicle": "the Speed of the slowest pulling creature (pulled by 2 Medium creatures or 4 Small creatures)",
+			"items": [
+				{
+					"id": "dWNVc3fRpbqaL7OS",
+					"name": "Ледоход",
+					"description": "<p>Ice and snow are not difficult terrain to a sled, but all other terrains are difficult terrain for it.</p>"
+				},
+				{
+					"id": "dDX0a93qZCir17NH",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Sleigh": {
+			"name": "Сани",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 15), или Природа (КС от 17 до 25 в зависимости от тянущих существ)",
+			"speedVehicle": "Скорость самого медленного тянущего существа (тянется 2 Большими существами или 6 Средними)",
+			"items": [
+				{
+					"id": "XvCWEJlIIDSfz2EA",
+					"name": "Ледоход",
+					"description": "<p>Лёд и снег не являются для саней @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}, но вся остальная местность является для них сложной местностью.</p>"
+				},
+				{
+					"id": "Buxx8NC3JQzeLsjs",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				}
+			]
+		},
+		"Smuggler's Speronara": {
+			"name": "Smuggler's Speronara",
+			"descriptionHazard": "<p>This merchant craft has no deck and only one mast. It has a relatively shallow hull for storing cargo, but also several hidden compartments for smuggling illicit goods.</p>",
+			"crew": "1 pilot, 2 crew, 4 rowers",
+			"piloting": "Sailing Lore (DC 23), Diplomacy (DC 25), or Intimidation (DC 25)",
+			"speedVehicle": "плавания 30 футов (гребная, ветряная)",
+			"items": [
+				{
+					"id": "xgXKpPcPa6XUwr1h",
+					"name": "Манёвренность",
+					"description": "<p>With a full complement of skilled rowers, a rowed speronara can turn swiftly, turn in place, and even row backward. Each 90-degree turn made in less than a vehicle length costs 5 extra feet of movement. It can row backward no faster than half its speed, and it can't turn while rowing backward.</p>"
+				},
+				{
+					"id": "fJ9ZHZUASrA64J5L",
+					"name": "Smuggling Compartments",
+					"description": "<p>The speronara can hold up to 20 Bulk of items in secret compartments that require a successful @Check[perception|dc:23] check to find.</p>"
+				}
+			]
+		},
+		"Snail Coach": {
+			"name": "Карета-улитка",
+			"descriptionHazard": "<p>Имея форму одноименного животного-тёзки, карета-улитка представляет собой тележку-троллейбус, приводимую в движение комбинацией магии и алхимических клейких веществ, с твёрдой внешней оболочкой для защиты от атак. Клейкий след позволяет ей подниматься и мешает преследующим врагам.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 23) или Ремесло (КС 25)",
+			"speedVehicle": "15 футов, карабканье 15 футов (алхимическая, магическая)",
+			"items": [
+				{
+					"id": "cFwKXyV5W3o1v3KK",
+					"name": "Клейкие выделения",
+					"description": "<p>Это транспортное средство выделяет алхимическое клейкое вещество, которое позволяет ему прилипать к твёрдым поверхностям и подниматься по ним. Пространства, по которым движется карета-улитка, на 1 раунд становится @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}. Любое существо, которое завершает свой ход на клейком веществе, должно преуспеть в спасброске @Check[reflex|dc:23|name:Избежать клея]{Рефлекса}, иначе получит штраф состояния −10 футов к своим Скоростям на 1 раунд. При критическом провале существо также @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Обездвижено} на 1 раунд ([[/act escape dc=23]]).</p>"
+				}
+			]
+		},
+		"Speedster": {
+			"name": "Спидстер",
+			"descriptionHazard": "<p>Спидстер — это легкий обтекаемый гибрид заводного механизма и алхимического шасси с паровым двигателем, по форме напоминающий лошадь или другое существо, приспособленное для скорости. Спидстеры созданы для поддержания быстрого темпа, который на короткие промежутки времени может стать ещё быстрее за счёт высвобождения накопленного парового давления для дополнительного ускорения.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 27) или Ремесло (КС 29)",
+			"speedVehicle": "50 футов (алхимическая, заводная)",
+			"items": [
+				{
+					"id": "iU2xj2sIMM3UdezU",
+					"name": "Ускорение",
+					"description": "<p>Пилот сбрасывает накопившееся давление в алхимическом паровом двигателе спидстера, чтобы временно увеличить его скорость. На [[/r 1d4 #раунды]]{1d4 раунда} Скорость спидстера становится 80 футов, а все действия движения, которые совершает пилот, получают признак @Trait[Reckless]{безрассудство}. Когда пилот совершает действие, которое уже имело бы признак безрассудство, то он использует на одну степень успеха хуже, чем ту, которую он получил при проверке пилотирования. Спидстер не может снова использовать <em>\"Ускорение\"</em> в течение 1 часа, так как для накапливания давления требует времени.</p>"
+				},
+				{
+					"id": "R2SaS8szVUWwiHQr",
+					"name": "Обтекаемый",
+					"description": "<p>Этот облегчённый транспорт не имеет дополнительного места для хранения груза.</p>"
+				},
+				{
+					"id": "kr1leAaQlGXDTwn6",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 2 часа работы, КС 28, ожидание</p>"
+				}
+			]
+		},
+		"Steam Cart": {
+			"name": "Паровая телега",
+			"descriptionHazard": "<p>Паровая телега выглядит как телега с алхимическим котлом, который производит пар для приведения в движение телеги с помощью простого двигателя.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 16) или Ремесло (КС 18)",
+			"speedVehicle": "25 футов (алхимическая)",
+			"items": [
+				{
+					"id": "kbVUEpQsOKNyw0BS",
+					"name": "Паровое облако",
+					"description": "<p>Каждый раз, когда паровая телега получает урон от столкновения, ее двигатель выбрасывает плотное облако пара в @Template[emanation|distance:5]{5-футовой эманации}. Паровая телега и все существа в пару становятся @UUID[Compendium.pf2e.conditionitems.Item.DmAIPqOBomZ7H95W]{Скрыты}, а существа вне пара становятся @Condition[Concealed]{скрыты} для существ внутри него. Пар рассеивается за 1 раунд.</p>"
+				}
+			]
+		},
+		"Steam Giant": {
+			"name": "Паровой гигант",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Знания вождения (КС 32) или Ремесло (КС 34)",
+			"speedVehicle": "20 футов (алхимическая)",
+			"items": [
+				{
+					"id": "Rb4MyOLlodPUZdJX",
+					"name": "Струя пламени",
+					"description": "<p>Два члена экипажа в свои ходы выполняют активность из 3-х действий, чтобы в конце хода второго персонажа произвести извержение пламени, вырывающееся из любого угла любого пространства, занимаемого паровым гигантом. Пламя наносит каждому существу в @Template[cone|distance:30]{30-футовом конусе} @Damage[6d8[fire]] (@Check[reflex|dc:32|basic]). Струя пламени перестает работать, если паровой гигант сломан.</p>"
+				}
+			]
+		},
+		"Steam Trolley": {
+			"name": "Паровая тележка",
+			"descriptionHazard": "<p>Паровая тележка это, по сути, гораздо большая @UUID[Compendium.pf2e.vehicles.Actor.FbSRhHvCmXBSVkrn], с более мощным алхимическим котлом и печью, питающаяся от более мощного парового двигателя.</p>",
+			"crew": "1 пилот, 1 член экипажа",
+			"piloting": "Знания вождения (КС 19) или Ремесло (КС 21)",
+			"speedVehicle": "25 футов (алхимическая)"
+		},
+		"Steam Turtle": {
+			"name": "Steam Turtle",
+			"descriptionHazard": "<p>This heavily armored aquatic vehicle resembles a gargantuan sea turtle covered with steel plates. The steam turtle is designed for beach landings and assaults on port facilities. Once it disables enemy fortifications, it extends a long boarding gangplank for troops to disembark and deploy.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Crafting (DC 37) or Sailing Lore (DC 35)",
+			"speedVehicle": "swim 30 feet (alchemical)",
+			"items": [
+				{
+					"id": "N548sqSbPhIQTCK2",
+					"name": "Габарит",
+					"description": "<p>80 feet long, 50 feet wide, 40 feet high</p>"
+				},
+				{
+					"id": "CW6raLjyLvZAPowB",
+					"name": "Неповоротливый",
+					"description": "<p>Этот транспорт должен сдвинуться на свою двойную длину за каждые совершаемые 90 градусов поворота.</p>"
+				},
+				{
+					"id": "SDMHRAgQKmX9GAlS",
+					"name": "Release Steam",
+					"description": "<p><strong>Частота:</strong> Раз в час</p><hr /><p><strong>Эффект:</strong> Two crew members each perform a 3-action activity on their turn to release a massive buildup of steam around the vehicle, dealing @Damage[11d6[fire]|options:area-damage] damage to each creature in a @Template[type:emanation|distance:10] (@Check[reflex|dc:35|basic] save). The release mechanism stops working if the vehicle is broken.</p>"
+				}
+			]
+		},
+		"Steelstone Assault Engine": {
+			"name": "Steelstone Assault Engine",
+			"descriptionHazard": "<p>This steam-powered vehicle has eight sets of axles, each with a pair of huge, spiked metal wheels that are independently powered and can independently shift up and down. This enables the engine to maintain a constant speed even over difficult terrain. On top of the vehicle sits a rotating weapon mount outfitted with a steelstone cannon.</p>",
+			"crew": "1 pilot, 5 crew",
+			"piloting": "Crafting (DC 41) or Driving Lore (DC 39)",
+			"speedVehicle": "25 feet (alchemical, clockwork)"
+		},
+		"Strider": {
+			"name": "Strider",
+			"crew": "1 пилот",
+			"piloting": "Знания пилотирования (КС 23), Инженерные знания (КС 23), Аркана (КС 25), Ремесло (КС 25)",
+			"speedVehicle": "30 футов (алхимическая, магическая)",
+			"items": [
+				{
+					"id": "b3OQJLYv4hEX7yhn",
+					"name": "Long Reach",
+					"description": "<p>The strider can bridge a gap as wide as 30 feet by Striding over it.</p>"
+				}
+			]
+		},
+		"The Dark Prince": {
+			"name": "The Dark Prince",
+			"descriptionHazard": "<p>A massive red-and-black warship, the <em>Dark Prince</em> sports an imposing figurehead of Asmodeus and terrifying faces carved along its gunwales. It patrols the area around the Arch of Aroden, keeping the waters free of pirates and enemies.</p>",
+			"crew": "1 pilot, 50 crew",
+			"piloting": "Sailing Lore (DC 40), Diplomacy (DC 42), or Intimidation (DC 42)",
+			"speedVehicle": "swim 20 feet (wind)",
+			"items": [
+				{
+					"id": "sZt2MpKv1ZxVus5m",
+					"name": "Dreadful Aura",
+					"description": "<p>The flagship of the Chelaxian navy exudes a malevolent air. At the beginning of their turns or when they enter the aura, enemy creatures on board the ship and enemy creatures within a @Template[type:emanation|distance:300] who can see the ship must succeed at a @Check[will|dc:39] save or become @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 1} (or @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2} on a critical failure). Regardless of the result, the creature is temporarily immune to this aura for 1 minute. However, an enemy creature on board can't reduce its frightened condition below 1 until it is no longer on board.</p>"
+				},
+				{
+					"id": "WFCnMmF2rL3jsq2f",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has 6 weapon mounts, three on each side of the vehicle. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:40] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				}
+			]
+		},
+		"Titanic Stomper": {
+			"name": "Титанический топтун",
+			"descriptionHazard": "<p>Один из самых опасных транспортных средств, созданных в Усталаве с использованием магии и новых стазиевых технологий, титанический топтун имеет форму длинной извилистой ящерицы или бехира с тщательно расположенными стазиевыми катушками и 8 большими топающими ногами. Титанические топтуны предназначены для уничтожения армий нежити. Их существует всего 2, что делает их почти уникальными, а создание новых застопорилось, поскольку некоторые из важнейших изобретателей были убиты при попытке разработать последующую технологию — меньший, но более мощный механизированный доспех под названием Гробларх, который в конце концов вышел из под контроля и убил своих создателей.</p>",
+			"crew": "1 пилот, 3 члена экипажа",
+			"piloting": "Знания пилотирования (КС 34), Ремесло (КС 36)",
+			"speedVehicle": "40 футов (магическая, электрическая)",
+			"items": [
+				{
+					"id": "vDMm6mf0S2i9JMzd",
+					"name": "Удар молнии",
+					"description": "<p>Два члена экипажа в свои ходы выполняют активность из 3-х действий, чтобы в конце хода второго персонажа произвести выстрел линией электричества. Эта линия молнии вырывается из передней части титанического топтуна, под углом по выбору членов экипажа и наносит каждому существу в @Template[line:distance:120]{120-футовой линии} @Damage[5d12[electricity]] (@Check[reflex|dc:34|basic|name:Избежать взрыва]). <em>\"Удар молнии\"</em> не работает, если титанический топтун @UUID[Compendium.pf2e.conditionitems.Item.6dNUvdb1dhToNDj3]{Сломан}.</p>"
+				},
+				{
+					"id": "QUHIpCfam8YMHy6U",
+					"name": "Поглощение электричества",
+					"description": "<p><strong>Триггер:</strong> Титанический топтун является целью или находится в области эффекта, наносящего урон электричеством</p><hr /><p><strong>Эффект:</strong> Пилот использует свою реакцию, чтобы активировать стазиевые катушки, которые отводят электричество в электрический двигатель титанического топтуна. В течение 1 минуты, следующий использованный <em>\"Удар молнии\"</em> увеличивает свой урон до @Damage[7d12[electricity]|shortLabel].</p>"
+				},
+				{
+					"id": "lTX8qPMdwaThuCnc",
+					"name": "Сотрясающий шаг",
+					"description": "<p>Земля сотрясается от каждого шага титанического топтуна. Когда это транспортное средство движется, существа на земле в радиусе 20 футов от траектории его движения должны совершить простой спасбросок Рефлекса КС 32. При провале они застигнуты врасплох на 1 раунд, а при критическом провале — падают @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p>"
+				}
+			]
+		},
+		"Two-Person Submersible": {
+			"name": "Two-Person Submersible",
+			"descriptionHazard": "<p>This clockwork vehicle can travel just below the surface of the water for short periods of time to bypass enemy blockades or covertly land on enemy beaches.</p>",
+			"crew": "1 пилот",
+			"piloting": "Crafting (DC 18) or Sailing Lore (DC 16)",
+			"speedVehicle": "swim 20 feet (clockwork)",
+			"items": [
+				{
+					"id": "R5WxR5cldJYz577k",
+					"name": "Заводка",
+					"description": "<p>30 minutes of wind-up, 3 hour of operational time, [[/act disable-device dc=16]]{DC 16}, standby</p><hr /><p>For a clockwork to act, it must be wound with a unique key by another creature. This takes 1 minute. Once wound, it remains operational for the listed amount of time, usually 24 hours, after which time it becomes unaware of its surroundings and can't act until it's wound again. Some clockworks' abilities require them to spend some of their remaining operational time. They can't spend more than they have and shut down immediately once they have 0 time remaining. If it's unclear when a clockwork was last wound, most clockwork keepers wind all their clockworks at a set time, typically 8 a.m.</p><p>A clockwork that lists standby in its wind-up entry can enter standby mode as a 3-action activity. Its operational time doesn't decrease in standby, but it can sense its surroundings (with a -2 penalty to Perception). It can't act, with one exception: when it perceives a creature, it can exit standby as a reaction (rolling initiative if appropriate).</p><p>A creature can attempt to Disable a Device to wind a clockwork down (with a DC listed in the wind-up entry). For each success, the clockwork loses 1 hour of operational time. This can be done even if the clockwork is in standby mode.</p>"
+				},
+				{
+					"id": "cn6AyWvKXJaJVNRq",
+					"name": "Погружаемый",
+					"description": "<p>This vehicle can travel just below the surface of the water.</p>"
+				}
+			]
+		},
+		"Undersurf Boat": {
+			"name": "Undersurf Boat",
+			"descriptionHazard": "<p>Resembling a large, oared kayak with closable hatches, the submersible surfboat was designed by azarketi shipwrights for use above and below the waves.</p>",
+			"crew": "1 pilot, 2 rowers",
+			"piloting": "Sailing Lore (DC 20), Diplomacy (DC 22), Intimidation (DC 22), or Nature (DC 22)",
+			"speedVehicle": "плавание 30 футов (гребная)",
+			"items": [
+				{
+					"id": "ZqmA2HBIYE0Er2D5",
+					"name": "Погружаемый",
+					"description": "<p>This vehicle can travel below the surface of the water, usually to a depth of no deeper than 60 feet. Though enclosed, it is not watertight, so crew and passengers must hold their breath or be able to breathe underwater.</p>"
+				}
+			]
+		},
+		"Velocipede": {
+			"name": "Velocipede",
+			"crew": "1 пилот",
+			"piloting": "Athletics (DC 15), Piloting Lore (DC 17)",
+			"speedVehicle": "The Speed of the pilot (pedaled [as rowed])",
+			"items": [
+				{
+					"id": "QwXzg5zGAZg4h78t",
+					"name": "Fragile",
+					"description": "<p>Driving the velocipede over difficult terrain increases the DC by an additional 2 and gains the reckless trait.</p>"
+				},
+				{
+					"id": "PcXltLxBnG3FD8dH",
+					"name": "Переносное",
+					"description": "<p>The velocipede can be pulled along the ground on its wheel by a Medium creature. The creature is encumbered.</p>"
+				}
+			]
+		},
+		"Vonthos's Golden Bridge": {
+			"name": "Золотой мост Вонтоса",
+			"descriptionHazard": "<p>Созданное волшебником Вонтосом в рамках его попытки пройти Испытание Звёздного Камня в Абсаломе, это странное транспортное средство считается магическим и технологическим чудом. Золотой мост Вонтоса — летающая сфера, сделанная из трона, окружённого несколькими заводными кольцами, покрытыми золотом и самоцветами, наполненными мощными адаптивными защитами, наделяющими его уникальными возможностями.</p>",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 36) или Аркана (КС 38)",
+			"speedVehicle": "полет 40 футов (магическая, заводная)",
+			"items": [
+				{
+					"id": "kt9xSEJnhJNdCBEy",
+					"name": "Пленительное богатство",
+					"description": "<p>40 футов.</p><p>Золото, самоцветы и другие украшения, покрывающие эту летающую сферу, излучают сверкающее великолепие, способное завораживать существ. Каждое существо, которое начинает свой ход внутри ауры, должно совершить @Check[will|dc:36|traits:magic]; при провале существо @UUID[Compendium.pf2e.conditionitems.Item.AdPVz7rbaVSRxHFg]{Заворожено} и @UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманено 2}, пока оно остается внутри ауры. Существо, получившее успех, становится временно иммунным на 1 час. Каждый раз, когда активируется <em>\"Призматическая защита\"</em>, область действия <em>\"Пленительного богатства\"</em> уменьшается на 10 футов на 1 час, до минимального значения 0 футов.</p>"
+				},
+				{
+					"id": "UQr6y2RUCvhlcvZ3",
+					"name": "Защитный барьер",
+					"description": "<p>Хотя вращающиеся кольца транспортного средства не закрывают пилота полностью, они обеспечивают невероятную защиту, магически поддерживая температуру внутри и отбивая физические атаки. Пилот защищён от сильных холода и жары, а также экстремальных холода и жары. Пилот также получает сопротивление 10 всему физическому урону (кроме адамантина).</p><p>@UUID[Compendium.pf2e.equipment-effects.Item.exwQF6E1FWmuxwBc]</p>"
+				},
+				{
+					"id": "izZwMB8zgdsWje9o",
+					"name": "Призматическая защита",
+					"description": "<p>Пилот использует силу магических самоцветов, спрятанных среди экстравагантных украшений этого транспорта, чтобы придать ему дополнительную защиту. Этот транспорт получает сопротивление 20 одному из следующих типов энергетического урона: звук, кислота, огонь, сила, холод или электричество. Это сопротивление действует до следующей активации <em>\"Призматической защиты\"</em>.</p>"
+				},
+				{
+					"id": "zni42kvDwzT6lzuW",
+					"name": "Заводка",
+					"description": "<p>10 минут завода, 1 час работы, КС 37, ожидание</p>"
+				}
+			]
+		},
+		"Wagon": {
+			"name": "Фургон",
+			"crew": "1 пилот",
+			"piloting": "Знания вождения (КС 15) или Природа (КС от 17 до 25 в зависимости от тянущего существа)",
+			"speedVehicle": "Скорость самого медленного тянущего существа (тянется 2 Большими существами)"
+		},
+		"War Strider": {
+			"name": "War Strider",
+			"descriptionHazard": "<p>This massive steam-powered vehicle resembles a giant insect with six articulated legs topped with a bulbous turret capable of swiveling 360 degrees to bring its forward-mounted weapons to bear on enemies in any direction. It has weapon ports on either side of its head that give the appearance of eyes. With its long, mechanized legs, it can easily climb over obstacles and cross wide chasms.</p>",
+			"crew": "1 pilot, 5 crew",
+			"piloting": "Crafting (DC 40) or Driving Lore (DC 38)",
+			"speedVehicle": "30 feet (alchemical, clockwork), ignores difficult terrain",
+			"items": [
+				{
+					"id": "ZSrYXt6FfwubLqI1",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has two forward-mounted weapon mounts. At purchase, these weapon mounts are initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:37] check, and an appropriate weapon. The weapon mounts can be equipped with Huge or smaller ranged siege weapons.</p>"
+				},
+				{
+					"id": "BxBXK2Lkg5eJv3OY",
+					"name": "Long Stride",
+					"description": "<p>A war strider can bridge a gap as wide as 30 feet during a move action as long as it has sufficient movement remaining.</p>"
+				}
+			]
+		},
+		"War Wagon": {
+			"name": "War Wagon",
+			"descriptionHazard": "<p>Often adorned with spikes and other defensive countermeasures, a war wagon is an intimidating sight on any battlefield. It can carry both soldiers and a siege weapon.</p>",
+			"crew": "1 пилот, 1 член экипажа",
+			"piloting": "Driving Lore (DC 24) or Nature (DC 26 to DC 34 depending on the pulling creatures",
+			"speedVehicle": "the Speed of the slowest pulling creature (pulled by 6 Large creatures)",
+			"items": [
+				{
+					"id": "NuseCFEwiUEnOekC",
+					"name": "Оружейные крепления",
+					"description": "<p>This vehicle has one weapon mount. At purchase, the weapon mount is initially empty. Installing or uninstalling a weapon into a mount requires 1 day, a successful @Check[crafting|dc:24] check, and an appropriate weapon. This weapon mount can be equipped with a Large or smaller ranged siege weapon.</p>"
+				},
+				{
+					"id": "FlEcs2bcRzhehZlg",
+					"name": "Контрмеры",
+					"description": "<p>A creature that Strikes a war wagon with a non-reach melee weapon or unarmed attack takes @Damage[3d8[piercing]] damage (@Check[reflex|dc:24|basic] save).</p>"
+				}
+			]
+		},
+		"Yellow-Sailed Schooner": {
+			"name": "Yellow-Sailed Schooner",
+			"descriptionHazard": "<p>Hailing from Okeno, this schooner usually keeps its allegiance a secret until it gets within boarding range and unfurls its saffron-colored sails.</p>",
+			"crew": "1 pilot, 10 crew",
+			"piloting": "Мореходные знания (КС 26), Дипломатия (КС 28) или Запугивание (КС 28)",
+			"speedVehicle": "плавания 30 футов (ветряная)",
+			"items": [
+				{
+					"id": "RKn80qxQAZejapHj",
+					"name": "Unfurl Yellow Sails",
+					"description": "<p>With the pull of a rope, the pilot or one of the crew unfurls the yellow sails that Okeno freebooters are so infamous for. Each enemy creature within a @Template[type:emanation|distance:100] who can see the sails must succeed at a @Check[will|dc:26] save or become @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 1} (or @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Frightened 2} on a critical failure). Regardless of the save's results, the creature is temporarily immune to Unfurl Yellow Sails for 24 hours.</p>"
+				}
+			]
+		}
+	}
+}

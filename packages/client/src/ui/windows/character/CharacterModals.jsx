@@ -614,7 +614,9 @@ export function SpellcastingSetupModal({ onSave, onClose }) {
                 img: null,
                 system: {
                   prepared: values.prepared,
-                  mode: values.mode,
+                  // Step 6.3.1: Focus sets carry `mode: "focus"` so the sheet
+                  // and Foundry imports agree that ranks/slots do not apply.
+                  mode: values.prepared === "focus" ? "focus" : values.mode,
                   tradition: values.tradition,
                   ability: values.ability,
                   proficiency: { value: 1 },
@@ -665,6 +667,12 @@ export function SpellcastingSetupModal({ onSave, onClose }) {
           <select
             className="ui-input"
             value={values.mode}
+            disabled={values.prepared === "focus"}
+            title={
+              values.prepared === "focus"
+                ? "Набор фокусировки использует общий пул фокуса, а не мастерство атаки/DC"
+                : undefined
+            }
             onChange={(event) =>
               setValues((current) => ({ ...current, mode: event.target.value }))
             }

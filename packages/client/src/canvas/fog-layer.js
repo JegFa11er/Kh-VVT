@@ -33,6 +33,9 @@ export const FOG_SAVE_DEBOUNCE_MS = 2000;
 const DEFAULT_FOG_WIDTH = 2400;
 const DEFAULT_FOG_HEIGHT = 1600;
 
+/** Reserved server key for a pre-5.4 flat scene texture. */
+const FOG_SCENE_FALLBACK_KEY = "__scene__";
+
 function isValidPolygon(polygon) {
   return Array.isArray(polygon) && polygon.length >= 3;
 }
@@ -177,6 +180,32 @@ export class FogLayer extends Container {
     this._lastRevealSignature = "";
     this._persistTimer = null;
     this._loadGeneration = 0;
+
+    // ---------------------------------------------------- per-actor fog (5.4)
+    /**
+     * Explored textures keyed by actor id (`actorId`, or the token id for an
+     * unlinked combatant token). Stored as PNG data URLs so selecting another
+     * token can restore its history without another server round-trip.
+     *
+     * @type {Map<string,string>}
+     */
+    this.fogByActor = new Map();
+    /** Legacy scene-wide texture used before per-actor exploration existed. */
+    this.sceneFogFallback = null;
+    /** Actor/token whose texture is currently drawn into `fogTexture`. */
+    this.activeActorId = null;
+    /** Actor/token the layer is switching to (may still be loading). */
+    this._targetActorId = null;
+    /** Actor that owns unsaved strokes in `fogTexture`. */
+    this._dirtyActorId = null;
+    /**
+     * A LOS polygon that arrived before the actor's texture finished loading.
+     * It is stamped as soon as `setActiveActor()` completes the swap.
+     */
+    this._pendingVision = null;
+    /** Serializes actor texture swaps; each swap may flush the previous save. */
+    this._actorSwitch = Promise.resolve();
+    this._actorLoadGeneration = 0;
   }
 
   // ------------------------------------------------------------ scene state
@@ -189,7 +218,189 @@ export class FogLayer extends Container {
     this._cancelPersistTimer();
     this._lastRevealSignature = "";
     this.currentPolygon = null;
+    this._pendingVision = null;
+    this.activeActorId = null;
+    this._targetActorId = null;
+    this._dirtyActorId = null;
+    this._actorLoadGeneration += 1;
+    this._actorSwitch = Promise.resolve();
     this._renderLosMask();
+  }
+
+  // -------------------------------------------------------- viewer visibility
+
+  /**
+   * Show/hide the whole fog layer. A GM browsing the scene without a selected
+   * token sees the map unobstructed; players keep the fog on at all times and
+   * a GM emulating a token's vision turns it back on.
+   *
+   * @param {boolean} visible
+   */
+  setVisible(visible) {
+    this.visible = Boolean(visible);
+    return this.visible;
+  }
+
+  /** True when the layer currently participates in rendering. */
+  get fogVisible() {
+    return this.visible !== false;
+  }
+
+  // ------------------------------------------------------ per-actor textures
+
+  /**
+   * Normalize a scene's persisted fog payload. The server used to store one
+   * flat PNG per scene; newer sessions store `{ [actorId]: dataUrl }`.
+   *
+   * @param {string|Record<string,string>|null|undefined} collection
+   */
+  loadSceneFog(collection) {
+    this._actorLoadGeneration += 1;
+    this._actorSwitch = Promise.resolve();
+    this.fogByActor = new Map();
+    this.sceneFogFallback = null;
+
+    if (typeof collection === "string" && collection.trim() !== "") {
+      this.sceneFogFallback = collection;
+    } else if (
+      collection !== null &&
+      typeof collection === "object" &&
+      !Array.isArray(collection)
+    ) {
+      for (const [actorId, dataUrl] of Object.entries(collection)) {
+        if (
+          typeof actorId === "string" &&
+          actorId !== "" &&
+          typeof dataUrl === "string" &&
+          dataUrl.trim() !== ""
+        ) {
+          if (actorId === FOG_SCENE_FALLBACK_KEY) {
+            this.sceneFogFallback = dataUrl;
+          } else {
+            this.fogByActor.set(actorId, dataUrl);
+          }
+        }
+      }
+    }
+
+    this.activeActorId = null;
+    this._targetActorId = null;
+    this._dirtyActorId = null;
+    this._pendingVision = null;
+    this.clearLocal();
+  }
+
+  /** Resolve the persisted texture that belongs to one actor/token. */
+  _fogForActor(actorId) {
+    if (typeof actorId === "string" && actorId !== "") {
+      return this.fogByActor.get(actorId) || this.sceneFogFallback;
+    }
+    return this.sceneFogFallback;
+  }
+
+  /**
+   * Switch the drawn exploration texture to the selected token's actor.
+   *
+   * Pending strokes of the previous actor are flushed first; the swap itself
+   * is serialized so fast token switching cannot overwrite a newer texture
+   * with an older one.
+   *
+   * @param {string|null} actorId
+   * @returns {Promise<boolean>} whether the active texture changed
+   */
+  setActiveActor(actorId) {
+    const next =
+      typeof actorId === "string" && actorId !== "" ? actorId : null;
+    // No selection: keep the last texture in the render target. The layer is
+    // simply hidden for the GM, and players keep their explored history.
+    if (next === null) {
+      return Promise.resolve(false);
+    }
+    // Already switching to (or showing) this actor: let the in-flight swap
+    // finish; `updateVision` parks the polygon until the texture is ready.
+    if (next === this._targetActorId) {
+      return this._actorSwitch;
+    }
+    this._targetActorId = next;
+
+    const generation = ++this._actorLoadGeneration;
+    this._actorSwitch = this._actorSwitch
+      .catch(function () {})
+      .then(async () => {
+        // Flush the outgoing actor before its texture is replaced.
+        if (this._dirtyActorId !== null) {
+          await this._persist(this.sceneId, this._dirtyActorId);
+        }
+        if (generation !== this._actorLoadGeneration) {
+          return false;
+        }
+
+        this._lastRevealSignature = "";
+        this.currentPolygon = null;
+        this._renderLosMask();
+        this._cancelPersistTimer();
+
+        const encoded = this._fogForActor(next);
+        if (encoded) {
+          await this.loadEncoded(encoded);
+        } else {
+          this.clearLocal();
+        }
+
+        if (generation !== this._actorLoadGeneration) {
+          return false;
+        }
+        // The texture is in place: it now belongs to this actor.
+        this.activeActorId = next;
+        this._dirtyActorId = null;
+        const pending = this._pendingVision;
+        if (pending && pending.actorId === next) {
+          this._pendingVision = null;
+          this.updateVision(pending.polygon, next);
+        }
+        return true;
+      });
+    return this._actorSwitch;
+  }
+
+  /**
+   * Apply a `room:fog-update` for one actor. The active texture reloads in
+   * place; other actors are only refreshed in memory.
+   *
+   * @param {string|null} actorId `null` for a legacy scene-wide texture
+   * @param {string|null} dataUrl
+   */
+  applyRemoteFog(actorId, dataUrl) {
+    const key = typeof actorId === "string" && actorId !== "" ? actorId : null;
+    const encoded =
+      typeof dataUrl === "string" && dataUrl.trim() !== "" ? dataUrl : null;
+    if (key === null) {
+      this.sceneFogFallback = encoded;
+      if (
+        this.activeActorId === null ||
+        !this.fogByActor.has(this.activeActorId)
+      ) {
+        this.loadEncoded(encoded);
+      }
+      return;
+    }
+    if (encoded) {
+      this.fogByActor.set(key, encoded);
+    } else {
+      this.fogByActor.delete(key);
+    }
+    if (key === this.activeActorId) {
+      this.loadEncoded(encoded);
+    }
+  }
+
+  /** Wipe every actor's exploration for the current scene (fog reset). */
+  clearSceneFog() {
+    this.fogByActor.clear();
+    this.sceneFogFallback = null;
+    this._dirtyActorId = null;
+    this._pendingVision = null;
+    this.clearLocal();
   }
 
   /**
@@ -202,6 +413,7 @@ export class FogLayer extends Container {
   async loadEncoded(dataUrl) {
     this._cancelPersistTimer();
     this._lastRevealSignature = "";
+    this._dirtyActorId = null;
     const generation = ++this._loadGeneration;
 
     if (typeof dataUrl !== "string" || dataUrl.trim() === "") {
@@ -250,6 +462,7 @@ export class FogLayer extends Container {
     this._loadGeneration += 1;
     this._cancelPersistTimer();
     this._lastRevealSignature = "";
+    this._dirtyActorId = null;
     this.app.renderer.render({
       container: this.emptyGraphics,
       target: this.fogTexture,
@@ -298,7 +511,7 @@ export class FogLayer extends Container {
    * `room:reset-fog`, which clears the server copy and every other client.
    */
   reset(options = {}) {
-    this.clearLocal();
+    this.clearSceneFog();
     const notify = options.notify !== false;
     if (notify && typeof this.onFogReset === "function") {
       this.onFogReset(this.sceneId);
@@ -350,14 +563,42 @@ export class FogLayer extends Container {
       target: this.fogTexture,
       clear: false,
     });
+    this._dirtyActorId = this.activeActorId;
     this._syncHistoryTexture();
     this._schedulePersist();
     return true;
   }
 
-  /** Convenience helper used by `VisionLayer.refresh()`. */
-  updateVision(polygon) {
+  /**
+   * Convenience helper used by `VisionLayer.refresh()`.
+   *
+   * When the selected token changed, the new actor's texture may still be
+   * loading; the polygon is parked and replayed after the swap so the first
+   * frame of the new token is already explored instead of black.
+   *
+   * @param {Array<{x:number,y:number}>|null} polygon
+   * @param {string|null} [actorId]
+   */
+  updateVision(polygon, actorId = undefined) {
+    const key =
+      typeof actorId === "string" && actorId !== ""
+        ? actorId
+        : actorId === null
+          ? null
+          : this.activeActorId;
     const valid = isValidPolygon(polygon);
+    const switching =
+      this._targetActorId !== null &&
+      this._targetActorId !== this.activeActorId;
+    if (switching || (key && key !== this.activeActorId)) {
+      this._pendingVision = {
+        actorId: key || this._targetActorId,
+        polygon: valid ? polygon : null,
+      };
+      this.setCurrentVision(null);
+      return false;
+    }
+    this._pendingVision = null;
     this.setCurrentVision(valid ? polygon : null);
     if (valid) {
       this.revealPolygon(polygon);
@@ -391,25 +632,37 @@ export class FogLayer extends Container {
       clearTimeout(this._persistTimer);
     }
     const sceneId = this.sceneId;
+    const actorId = this.activeActorId;
     this._persistTimer = setTimeout(() => {
       this._persistTimer = null;
-      this._persist(sceneId);
+      this._persist(sceneId, actorId);
     }, FOG_SAVE_DEBOUNCE_MS);
   }
 
-  async _persist(sceneId) {
+  async _persist(sceneId, actorId = this.activeActorId) {
     if (typeof this.onFogChanged !== "function" || !this.app.renderer) {
-      return;
+      if (this._dirtyActorId === actorId) {
+        this._dirtyActorId = null;
+      }
+      return null;
     }
     try {
       const dataUrl = await this.app.renderer.extract.base64(this.fogTexture);
       // The user may have switched scenes while the PNG was being encoded.
       if (sceneId !== this.sceneId) {
-        return;
+        return null;
       }
-      this.onFogChanged(dataUrl, sceneId);
+      if (typeof actorId === "string" && actorId !== "") {
+        this.fogByActor.set(actorId, dataUrl);
+        if (this._dirtyActorId === actorId) {
+          this._dirtyActorId = null;
+        }
+      }
+      this.onFogChanged(dataUrl, sceneId, actorId || null);
+      return dataUrl;
     } catch (error) {
       console.warn("[pf2e] fog of war encoding failed", error);
+      return null;
     }
   }
 

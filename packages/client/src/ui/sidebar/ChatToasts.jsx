@@ -34,18 +34,16 @@ function messageExcerpt(message) {
  * the sidebar is collapsed. Every toast removes itself after exactly 7 s.
  */
 export default function ChatToasts({ active, collapsed, onOpenChat }) {
-  const { networkClient, myUserId } = useStore();
+  const { networkClient } = useStore();
   const [toasts, setToasts] = useState([]);
   const seenIdsRef = useRef(null);
   const activeRef = useRef(active);
   const collapsedRef = useRef(collapsed);
-  const myUserIdRef = useRef(myUserId);
   const timersRef = useRef(new Map());
   const sequenceRef = useRef(0);
 
   activeRef.current = active;
   collapsedRef.current = collapsed;
-  myUserIdRef.current = myUserId;
 
   useEffect(() => {
     if (!networkClient || typeof networkClient.onChatUpdate !== "function") {
@@ -85,10 +83,6 @@ export default function ChatToasts({ active, collapsed, onOpenChat }) {
       }
 
       const created = fresh
-        .filter((message) => {
-          const authorId = message.author && message.author.id;
-          return !authorId || authorId !== myUserIdRef.current;
-        })
         .slice(-MAX_VISIBLE_TOASTS)
         .map((message) => {
           sequenceRef.current += 1;

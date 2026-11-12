@@ -1,0 +1,344 @@
+{
+	"label": "Эффекты кампании",
+	"folders": {
+		"Blood Lords": "Кровавые лорды [BL]",
+		"Curtain Call": "Завершающий аккорд [CC]",
+		"Extinction Curse": "Проклятие вымирания [EC]",
+		"Fists of the Ruby Phoenix": "Кулаки рубинового феникса [FotRP]",
+		"Kingmaker": "Кингмейкер [K]",
+		"Malevolence": "Злоба [M]",
+		"Myth-Speaker": "Говорящие с мифами [MS]",
+		"Outlaws of Alkenstar": "Изгои Алкенстара [OoA]",
+		"Pathfinder GM Core": "Pathfinder GM Core",
+		"Pathfinder Player Core": "Pathfinder Player Core",
+		"Pathfinder Society": "Сообщество Pathfinder",
+		"Prey for Death": "Смертельная добыча [PfD]",
+		"Revenge of the Runelords": "Месть рунных владык [RotR]",
+		"Season of Ghosts": "Сезон привидений [SoG]",
+		"Seven Dooms for Sandpoint": "Семь несчастий Сандпоинта [SDfS]",
+		"Sky King's Tomb": "Гробница небесного короля [SKT]",
+		"Spore War": "Война спор [SW]"
+	},
+	"mapping": {
+		"badge": {
+			"path": "system.badge.labels",
+			"converter": "carefulMerge"
+		}
+	},
+	"entries": {
+		"Effect: Attitude": {
+			"name": "Эффект: Отношение",
+			"description": "<p>См. @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.CtFrwkS2yJ64080e]</p><p>Используйте этот эффект, чтобы отслеживать отношение значимых НИП, увеличивая или уменьшая значение счётчика по необходимости.</p>",
+			"badge": {
+				"0": "Враждебный",
+				"1": "Недружественный",
+				"2": "Безразличный",
+				"3": "Дружественный",
+				"4": "Любезный"
+			}
+		},
+		"Aura: Righteous Call": {
+			"name": "Аура: Праведный зов",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.EbF9U21iMu0JkTzG]</p><p>\"Удары\" ваших союзников в радиусе 30 футов от вас получают признак @Trait[Holy]{святой}.</p>"
+		},
+		"Effect: Righteous Call": {
+			"name": "Эффект: Праведный зов",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.EbF9U21iMu0JkTzG]</p><p>Ваши \"Удары\" получают признак @Trait[Holy]{святой}.</p>"
+		},
+		"Effect: Wind Barrier": {
+			"name": "Эффект: Ветряная преграда",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.UEBVXi4VSQf70ggQ]</p><p>Вы получаете бонус обстоятельства +2 к КБ против атак дальнего боя. На 13-м уровне, этот бонус увеличивается до +3.</p>"
+		},
+		"Effect: Reflection of Life (Fast Healing)": {
+			"name": "Эффект: Отражение жизни [Быстрое исцеление]",
+			"description": "<p>Вы получаете @UUID[Compendium.pf2e.bestiary-ability-glossary-srd.Item.fJSNOw4zHGbIm4bZ]{Быстрое исцеление 3} на 1 минуту. Количество Быстрого исцеления начинается с 3 и увеличивается на 1 за каждые 2 уровня после 5-го.</p>"
+		},
+		"Resonant Reflection: Reflection of Life": {
+			"name": "Резонансное отражение: Отражение жизни",
+			"description": "<p>Вы восстанавливаете удвоенное количество ОЗ во время отдыха (это означает, что вы восстанавливаете удвоенный модификатор Телосложения, умноженный на ваш уровень). Исцеление, которое вы получаете от Долгого отдыха, также удваивается. Кроме того, вы можете сфокусировать эту исцеляющую энергию, чтобы еще больше ускорить естественные процессы заживления вашего тела.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 2] вообразить</p><p><strong>Частота:</strong> Раз в день</p><p><strong>Эффект:</strong> Вы получаете @UUID[Compendium.pf2e.bestiary-ability-glossary-srd.Item.fJSNOw4zHGbIm4bZ]{Быстрое исцеление 3} на 1 минуту. Это количество быстрого исцеления увеличивается на 1 за каждые 2 уровня после 5-го.</p><p>@UUID[Compendium.pf2e.campaign-effects.Item.DOxl0FDd21VMDOMP]</p>"
+		},
+		"Resonant Reflection: Reflection of Light": {
+			"name": "Резонансное отражение: Отражение света",
+			"description": "<p>Ваши глаза наполнены внутренним светом, невидимым снаружи, но дающим вам ночное зрение и способность различать цвета в темноте. Вы также можете сфокусировать этот внутренний свет, чтобы он проявился в виде яркого луча энергии из ваших глаз.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 2] вообразить</p><p><strong>Частота:</strong> Раз в день</p><p><strong>Эффект:</strong> Вы сотворяете @UUID[Compendium.pf2e.spells-srd.Item.DyiD239dNS7RIxZE] как врождённое сакральное заклинание, усиленное до половины вашего уровня, округлённой вверх.</p>"
+		},
+		"Resonant Reflection: Reflection of Stone": {
+			"name": "Резонансное отражение: Отражение камня",
+			"description": "<p>Ваше тело наполнено стойкостью и долговечностью камня. Вы защищены от воздействия сильного холода и сильной жары. Кроме того, вы также можете сфокусировать эту прочность, чтобы получить дополнительный эффект.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 2] вообразить</p><p><strong>Частота:</strong> Раз в день</p><p><strong>Эффект:</strong> Вы сотворяете @UUID[Compendium.pf2e.spells-srd.Item.2BV2yYPfVJ5zirZt] как врождённое сакральное заклинание, усиленное до половины вашего уровня, округлённой вверх.</p>"
+		},
+		"Resonant Reflection: Reflection of Water": {
+			"name": "Резонансное отражение: Отражение воды",
+			"description": "<p>Ваше тело наполняется эссенцией воды и адаптируется к её присутствию. Вы получаете Скорость плавания 10 футов и можете дышать под водой. Кроме того, вы также можете сосредоточить это сродство, чтобы получить дополнительный эффект.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 2] вообразить</p><p><strong>Частота:</strong> Раз в день</p><p><strong>Эффект:</strong> Вы сотворяете @UUID[Compendium.pf2e.spells-srd.Item.zfn5RqAdF63neqpP] как врождённое сакральное заклинание 5-го ранга. Площадь воды, которую вы контролируете, увеличивается на 10 футов в длину и ширину за каждые 2 уровня после 10-го.</p>"
+		},
+		"Resonant Reflection: Reflection of Storm": {
+			"name": "Резонансное отражение: Отражение бури",
+			"description": "<p>Ваше тело привыкло к разрушениям, причиняемым природными силами. Вы получаете сопротивление электрическому урону, равное вашему уровню. Во время полета вы не относитесь к ветру как к @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местности}, или особо сложной местности, и ветер не может перемещать вас, если вы этого сами не захотите. Вы получаете бонус состояния +1 к спасброскам против природной магии. Кроме того, вы можете поглотить эту оживляющую энергию в свое тело, чтобы получить следующий эффект.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 2] вообразить</p><p><strong>Частота:</strong> Раз в день</p><p><strong>Эффект:</strong> Вы сотворяете @UUID[Compendium.pf2e.spells-srd.Item.4MOew29Z1oCX8O28] (только на себя) как врождённое сакральное заклинание 8-го ранга, и восстанавливаете 1 Очко Фокусировки.</p>"
+		},
+		"Effect: Boar Form": {
+			"name": "Эффект: Форма кабана",
+			"description": "<p>Полиморфированный персонаж превращается в Большое животное. Каждый полимофированный персонаж получает следующие статистики и умения, независимо от выбранной формы.</p><ul><li>КБ = 36.</li><li>30 временных ОЗ.</li><li>Сумеречное зрение и нюх (неточный) 30 футов.</li><li>Одну или несколько безоружных атак ближнего боя, характерных для боевой формы, которые являются единственными атаками, которые вы можете использовать (вы обучены им). Вы можете использовать свой модификатор безоружных атак, если он выше.</li><li>Модификатор Атлетики +26 или ваш, если он лучше.</li><li><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.LVSGvlzI1rGWtGJA]:</strong> @Glyph[Action 1] (@Trait[Auditory]{слуховой}, @Trait[Visual]{визуальный}) Вы ревёте или иным образом демонстрируете звериную силу. Вы автоматически добиваетесь успеха, чтобы сплотить толпу в свою команду.</li><li><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.oUP8jylH97ZbRvfw]:</strong> @Glyph[Action 1] Потянув за цепи, вы перемещаете согласного закованного союзника на расстояние до 10 футов в место, находящееся в вашей досягаемости.</li></ul><hr /><p><strong>Скорость:</strong> 40 футов</p><p><strong>Ближний бой:</strong> @Glyph[Action 1] бивень +25, <strong>Урон:</strong> 3d10+16 колющий.</p><p><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.71ypBixnbV4bE5Hv]:</strong> @Glyph[Action 2] Вы \"Перемещаетесь\", а затем совершаете \"Удар\" бивнем в конце своего движения. Если вы удаляетесь на расстояние более 15 футов от своих скованных союзников, то тянете их за собой в ближайшее свободное пространство в 15 футах позади вас. Существо, по которому вы попали, должно преуспеть в спасброске @Check[reflex|dc:35]{Рефлекса}, иначе упадёт @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p>"
+		},
+		"Effect: Tiger Form": {
+			"name": "Эффект: Форма тигра",
+			"description": "<p>Полиморфированный персонаж превращается в Большое животное. Каждый полимофированный персонаж получает следующие статистики и умения, независимо от выбранной формы.</p><ul><li>КБ = 36.</li><li>30 временных ОЗ.</li><li>Сумеречное зрение и нюх (неточный) 30 футов.</li><li>Одну или несколько безоружных атак ближнего боя, характерных для боевой формы, которые являются единственными атаками, которые вы можете использовать (вы обучены им). Вы можете использовать свой модификатор безоружных атак, если он выше.</li><li>Модификатор Атлетики +26 или ваш, если он лучше.</li><li><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.LVSGvlzI1rGWtGJA]:</strong> @Glyph[Action 1] (@Trait[Auditory]{слуховой}, @Trait[Visual]{визуальный}) Вы ревёте или иным образом демонстрируете звериную силу. Вы автоматически добиваетесь успеха, чтобы сплотить толпу в свою команду.</li><li><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.oUP8jylH97ZbRvfw]:</strong> @Glyph[Action 1] Потянув за цепи, вы перемещаете согласного закованного союзника на расстояние до 10 футов в место, находящееся в вашей досягаемости.</li></ul><hr /><p><strong>Скорость:</strong> 30 футов</p><p><strong>Ближний бой:</strong> @Glyph[Action 1] челюсти +25, <strong>Урон:</strong> 3d6+16 рубящий + @UUID[Compendium.pf2e.bestiary-ability-glossary-srd.Item.Tkd8sH4pwFIPzqTr]</p><p><strong>Ближний бой:</strong> @Glyph[Action 1] коготь +25 (@Trait[Agile]{быстрое}), <strong>Урон:</strong> 2d8+16 рубящий</p><p><strong>@UUID[Compendium.pf2e.adventure-specific-actions.Item.GSLSCo0OWDUtET4e]:</strong> @Glyph[Action 1] Вы наносите \"Удар\" когтями по @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Схваченному} @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Сдерживаемому} вами существу. Если вы попадаете, вы как обычно наносите урон, и цель также падает @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p>"
+		},
+		"Effect: Burned Mouth and Throat (Linguistic)": {
+			"name": "Эффект: Обожжённый рот и горло (Языковой)",
+			"description": "<p>Обжигает рот и горло, давая штраф −1 к @Trait[Linguistic]{языковым} проверкам и КС на 1 час.</p>"
+		},
+		"Effect: Burned Mouth and Throat (No Singing or Yelling)": {
+			"name": "Эффект: Обожжённый рот и горло (Невозможно петь и кричать)",
+			"description": "<p>Пьющий не может кричать или петь в течение 8 часов.</p>"
+		},
+		"Effect: Burned Tongue (Linguistic)": {
+			"name": "Эффект: Обожжённый язык (Языковой)",
+			"description": "<p>Обжигает язык, давая штраф −1 к @Trait[Linguistic]{языковым} проверкам и КС на 1 минуту.</p>"
+		},
+		"Effect: Burned Tongue (No Singing or Yelling)": {
+			"name": "Эффект: Обожжённый язык (Невозможно петь и кричать)",
+			"description": "<p>Пьющий не может кричать или петь в течение 1 часа.</p>"
+		},
+		"Effect: Extreme stomach cramps": {
+			"name": "Эффект: Экстремальные спазмы желудка",
+			"description": "<p>Вы не можете добровольно принимать что-либо, даже другие напитки, в течение 8 часов.</p>"
+		},
+		"Effect: Heightened Awareness": {
+			"name": "Эффект: Повышенная осведомленность",
+			"description": "<p>Повышенная осведомленность, дающая бонус предмета +1 к проверкам Восприятия для @UUID[Compendium.pf2e.actionspf2e.Item.BlAOM2X92SI6HMtJ]{Поиска} на 8 часов.</p>"
+		},
+		"Effect: Immediate and Intense Headache": {
+			"name": "Эффект: Немедленная и интенсивная головная боль",
+			"description": "<p>Немедленная и сильная головная боль, вызывающая слабость 5 к ментальному урону в течение 8 часов.</p>"
+		},
+		"Effect: Improved reflexes": {
+			"name": "Эффект: Улучшенные рефлексы",
+			"description": "<p>Улучшенные рефлексы, дающие бонус предмета +1 к спасброскам Рефлекса на 8 часов.</p>"
+		},
+		"Effect: Keen insight": {
+			"name": "Эффект: Острая проницательность",
+			"description": "<p>Острая проницательность, дающая бонус предмета +1 к проверкам Восприятия, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.1xRFPTFtWtGJ9ELw] на 8 часов.</p>"
+		},
+		"Mixed Drink: Dancing Lights": {
+			"name": "Смешанный напиток: Свет",
+			"description": "<p>Вы можете сотворять @UUID[Compendium.pf2e.spells-srd.Item.WBmvzNDfpwka3qT4] как природные чары один раз в день.</p>"
+		},
+		"Mixed Drink: Guidance": {
+			"name": "Смешанный напиток: Наставление",
+			"description": "<p>Вы можете сотворять @UUID[Compendium.pf2e.spells-srd.Item.izcxFQFwf3woCnFs] как природные чары один раз в сутки.</p>"
+		},
+		"Mixed Drink: Luck": {
+			"name": "Смешанный напиток: Удача",
+			"description": "<p>Вы получаете немного удачи: один раз в течение следующих 8 часов, когда вы совершаете спасбросок или проверку навыка, вы можете бросить дважды и использовать лучший результат. Это эффект @Trait[Fortune]{удачи}.</p>"
+		},
+		"Mixed Drink: Prestidigitation": {
+			"name": "Смешанный напиток: Престидижитация",
+			"description": "<p>Вы можете сотворять @UUID[Compendium.pf2e.spells-srd.Item.Qw3fnUlaUbnn7ipC] как природные чары один раз в день.</p>"
+		},
+		"Geb's Blessing": {
+			"name": "Благословение Геба",
+			"description": "<p>Каждый персонаж получает сопротивление 20 двум из следующих типов урона на свой выбор: дробящий, жизненность, звук, кислота, колющий, огонь, пустота, рубящий, электричество или яд. Вы также получаете 40 ВОЗ на 24 часов. Наконец, каждый персонаж получает следующие две особые способности, каждую из которых можно использовать один раз.</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.MgSwLes5lp3TE1ZV]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.TM4pOPSM9r7XEM64]</p>"
+		},
+		"Effect: Little Ripple's Blessing": {
+			"name": "Эффект: Благословение Маленькой Рипли",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.31uM8IkenDZdeid6]</p><p>Вы получаете бонус состояния +1 к спасброскам Воли.</p>"
+		},
+		"Effect: Azata's Grace": {
+			"name": "Эффект: Милость азаты",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.p4CE62CG9S9RpU5F]</p><p>Вы получаете дополнительные 50 ОЗ, увеличивая как текущие, так и максимальные ОЗ, а также эффект дара реликвии \"Праведный зов\".</p>"
+		},
+		"Effect: Consecrated Altar to Ydersius": {
+			"name": "Эффект: Освящённый алтарь Идерсия",
+			"description": "<p>Существа, поклоняющиеся Идерсию, получают бонус состояния +1 к броскам атаки, проверкам навыков, спасброскам и проверкам Восприятия, а их \"Удар\" получают признак @Trait[Unholy]{нечестивый}.</p>"
+		},
+		"Effect: Call Upon the Ancients": {
+			"name": "Эффект: Призыв к древним",
+			"description": "<p>Вы получаете сопротивление 5 ко всему урону, наносимому Древотёсом.</p>"
+		},
+		"Effect: Call Upon the Sovyrian Stone": {
+			"name": "Эффект: Призыв к камням Совириана",
+			"description": "<p>Уменьшите КС врожденных природных заклинаний Древотёса и его способности \"Листопад\" до КС 46, КС его \"Ауры разложения\" снижается до КС 43, а его модификатор атаки заклинания до +38.</p>"
+		},
+		"Effect: Invoke the Witchbole's Spirit": {
+			"name": "Эффект: Призыв духа Ведьминого Шипа",
+			"description": "<p>ИП получают бонус обстоятельства +4 ко всем спасброскам против эффектов \"Обрушения Ведьмина Шипа\". И наоборот, Древотёс получает штраф обстоятельства −4 к своим спасброскам против тех же эффектов.</p>"
+		},
+		"Effect: Memories of Failure": {
+			"name": "Эффект: Воспоминания о неудачах",
+			"description": "<p>Вы получаете штраф -1 ко всем спасброскам против эффектов @Trait[Emotion]{эмоций}, помеченных существом.</p>"
+		},
+		"Effect: Recruit the Recent Dead": {
+			"name": "Эффект: Привлечение недавно умерших",
+			"description": "<p>Снизьте КБ Древотёса до 51, модификатор \"Удара\" черным топором до +44 и модификатор \"Удара\" челюстями до +42.</p>"
+		},
+		"Effect: Spore Feedback": {
+			"name": "Эффект: Обратная связь споры",
+			"description": "<p>Максимум ОЗ Древотёса снижается до 500, а его регенерация уменьшается до 30.</p>"
+		},
+		"Effect: Utter Treerazer's Name": {
+			"name": "Эффект: Произнести имя Древотёса",
+			"description": "<p>Снижает модификаторы спасбросков, проверок Восприятия и проверок навыка Древотёса на 3.</p>"
+		},
+		"Effect: Xenia Spirit Grand Feast": {
+			"name": "Эффект: Грандиозный пир Духа Ксении",
+			"description": "<p>Дух Ксении получает штраф -2 к своим модификаторам атак, Восприятия, КБ, КС и навыков.</p>"
+		},
+		"Effect: Favor of a Future Ally": {
+			"name": "Эффект: Благосклонность будущего союзника",
+			"description": "<p>Вы получаете штраф –3 к КБ и штраф –5 к броскам атак \"Ударов\".</p>"
+		},
+		"Effect: Favor of a Past Benefactor": {
+			"name": "Эффект: Благосклонность бывшего благодетеля",
+			"description": "<p>Вы получаете штраф –5 к КС и модификаторам атак заклинаний.</p>"
+		},
+		"Effect: Favor of a Present Foe": {
+			"name": "Эффект: Благосклонность нынешнего врага",
+			"description": "<p>Вы получаете штраф –4 к проверкам Восприятия, навыков и спасброскам.</p>"
+		},
+		"Effect: Favor of the Oliphaunt": {
+			"name": "Эффект: Благосклонность Олифанта",
+			"description": "<p>Ваши максимальные ОЗ снижаются на 110.</p>"
+		},
+		"Malevolence": {
+			"name": "Злоба",
+			"description": "<p>По мере того, как злоба начинает овладевать существами, их тела, разумы и души всё чаще посещает сверхъестественная сила, наводняющая Поместье Ксарвин. Злоба — особое состояние, которое может повлиять на персонажей, играющих в этом приключении. Состояние злобы всегда включает значение. Вы получаете штраф состояния, равный этому значению, ко всем спасброскам от эффектов, создаваемых @Trait[Haunt]{призраками}, а также от всех @Trait[Curse]{проклятий} и эффектов @Trait[Possession]{Одержимости}. Состояние злобы можно уменьшить путём @UUID[Compendium.pf2e.spells-srd.Item.SUKaxVZW2TlM8lu0].</p><p>Злоба никогда не может увеличиться выше значения 4. Если эффект увеличивает значение злобы существа выше 4, то вместо этого существо @UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманено 1} на 24 часа, поскольку злоба поглощает часть его случайных кратковременных воспоминаний. Существо со @Condition[Malevolence]{злобой 4} не покинет территорию Поместья Ксарвин добровольно.</p><p>Каждый раз, когда вы получаете полноценный ночной отдых в регионе, на который не влияет состояние злобы, значение вашей злобы уменьшается на 1.</p>"
+		},
+		"Effect: Crownhold Consecration": {
+			"name": "Эффект: Освящение Краунхолда",
+			"description": "<p>Последователи Горума получают бонус состояния +1 к броскам атаки, проверкам навыков, спасброскам и проверкам Восприятия.</p><p>Кроме того, из-за скрытного характера ИП, они получают штраф состояния −1 к броскам атаки, проверкам навыков, спасброскам и проверкам Восприятия.</p>"
+		},
+		"Persona Trait": {
+			"name": "Признак личности(*)",
+			"description": "<p>Знаменитости, в том числе и такие известные авантюристы, как ваши персонажи, не всегда представляют себя публике так, чтобы это точно отражало их сущность. В \"Завершающем Аккорде\" каждый ИП выберет себе признак личности. Независимо от личности, мотивов и целей вашего персонажа, общественное восприятие его легенды может быть совершенно иным в результате слухов, неверно истолкованных событий, причудливых фантазий или даже намеренных попыток персонажа придать себе другой облик.</p><p>Существует восемь признаков личности, которые вы можете выбрать для вашего ИП. Принятый вами признак не обязательно должен соответствовать реальной личности или роли персонажа, но если вы выберите не тот, который вам нужен, будьте готовы к тому, что встреченные НИП сделают несколько любопытных предположений о вашем персонаже! Обратите внимание, что хотя каждый признак личности имеет положительный и отрицательный аспект, оба эти элемента являются сугубо описательными и не оказывают механического влияния на способности персонажа. Рассматривайте их как инструменты ролевой игры, которые вы можете использовать, чтобы направлять действия вашего персонажа во время кампании. Однако эти признаки влияют на ход приключений: в некоторых частях \"Завершающего аккорда\" персонажи с определенными признаками личности будут особенно хорошо приспособлены к решению определенных задач и получат разовые бонусы, которые помогут им справиться с заданием. Ваш Мастер владеет всей этой информацией и будет сообщать партии, когда признаки личности вступят в игру.</p><p>Восемь признаков личности это:</p><p><strong>Воин:</strong> Общественность считает вас \"силачом\" труппы, человеком, который превосходен в драке, но при этом иногда считая вас жестоким, неотесанным или даже задиристым.</p><p><strong>Джокер:</strong> Общественность воспринимает вас как источник причуд, необычных идей и комизма в труппе, но эта репутация обоюдоострый меч, поскольку некоторые считают вас обузой или ненадёжным.</p><p><strong>Лидер:</strong> Общественность воспринимает вас как лидера труппы, но некоторые, возможно, считают вас слишком наглым или даже напыщенным.</p><p><strong>Кокет:</strong> Общественность воспринимает вас как самого романтичного из труппы, и вы можете казаться им соблазнителем или пустым притворщиком, который довольствуется своей внешностью и не приносит никакой пользы партии.</p><p><strong>Негодяй:</strong> Общественность убеждена, что вы \"плохой мальчик/плохая девочка\" труппы, делающий неприятные, но необходимые вещи, но иногда о вас думают как о преступнике или потенциальном предателе партии.</p><p><strong>Неудачник:</strong> Общественность воспринимает вас как \"не в своей тарелке\" — того, кто случайно попал в труппу и всё же сумел одержать победу, но иногда о вас думают как о слабом звене или неудачнике.</p><p><strong>Учёный:</strong> Общественность считает вас решателем проблем и мозгом труппы, хотя некоторые также воспринимают вас как высокомерного или неспособного к физическим задачам.</p><p><strong>Хранитель:</strong> Общественность воспринимает вас как целителя и защитника труппы, но некоторые могут посчитать вас слишком мягкосердечным и кротким, чтобы быть \"настоящим героем\".</p>"
+		},
+		"Effect: Forgive Foe": {
+			"name": "Эффект: Простить врага",
+			"description": "<p>Предоставляется элементом @UUID[Compendium.pf2e.adventure-specific-actions.Item.764EVGVADrDSbdqu]</p><p>Цель получает штраф состояния −2 ко всем атакам, КС эффектов и КС Воли против дополнительных проверок <em>\"Простить врага\"</em>, до конца вашего следующего хода.</p>"
+		},
+		"Effect: Hope or Despair (Critical Success)": {
+			"name": "Эффект: Надежда или Отчаяние [Критический успех]",
+			"description": "<p>Шелин видит в этом существе шанс вернуть святыне славу, и вместо того, чтобы наполнить их отчаянием, призрак наполняет их надеждой. Помимо желания победить зло, наводнившее святилище, у существа есть желание восстановить святыню. Точные подробности о природе зла, наводнившего святилище, не очевидны, кроме как для того, чтобы предупредить персонажа о том, что в стенах святилища определенно есть что-то ужасное. Существу не обязательно действовать в соответствии с этими побуждениями, но пока оно преследует любую цель, оно получает бонус состояния +1 ко всем проверкам, оставаясь в области святилища. Мастер определяет, засчитывается ли проверка для достижения этой цели (по крайней мере засчитываются все боевые проверки, сделанные против врагов в остальной части приключения).</p>"
+		},
+		"Effect: Hope or Despair (Failure or Critical Failure)": {
+			"name": "Эффект: Надежда или Отчаяние [Провал или Критический провал]",
+			"description": "<p><strong>Провал:</strong> Чувства печали и отчаяния наполняют разум существа. В течение следующего часа существо получает штраф −1 ко всем спасброскам от ментальных эффектов; этот штраф увеличивается до −2, против эффектов эмоций. Этот эффект имеет признак @Trait[Curse]{проклятие}.</p><p><strong>Критический провал:</strong> Как провал, но эффекты сохраняются, пока зеленая карга Тулвак контролирует святилище.</p>"
+		},
+		"Effect: Stoop": {
+			"name": "Эффект: Нагибаться",
+			"description": "<p>Средние существа вынуждены нагибаться и неловко поправлять замах своего оружия — в результате эти существа получают штраф обстоятельства −1 к броскам атаки и становятся @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжи 1}.</p>"
+		},
+		"Effect: Blessed Coins": {
+			"name": "Эффект: Благословленные монеты",
+			"description": "<p>Вы получаете бонус предмета +1 к проверкам навыков, которые вы пытаетесь совершить используя божественные навыки.</p>"
+		},
+		"Effect: Spirit Power (Flight)": {
+			"name": "Эффект: Духовная сила [Полёт]",
+			"description": "<p>Вы получаете Скорость полёта, равную вашей Скорости или 30 футам, в зависимости от того, что больше.</p>"
+		},
+		"Effect: Spirit Power (Passion)": {
+			"name": "Эффект: Духовная сила [Страсть]",
+			"description": "<p>Ваше тело охватывает огонь выбранного вами цвета, излучающий яркий свет в радиусе 40 футов (и тусклый свет ещё на 40 футов). Ваши \"Удары\" ближнего боя наносят дополнительные 1d6 урона огнём, вы получаете сопротивление 10 огню и реакцию @UUID[Compendium.pf2e.adventure-specific-actions.Item.kfmEGGs8DbIL9JuF].</p>"
+		},
+		"Effect: Spirit Powers": {
+			"name": "Эффект: Духовная сила",
+			"description": "<p>Когда ИП @UUID[Compendium.pf2e.spells-srd.Item.8Lk9K3tRnV68MQPW]{Трансмигрируют} в мир живых в Акте 3, они проявляются существами, застрявшими где-то между жизнью и нежизнью. Находясь в этом состоянии, ИП функционируют в основном нормально, но выглядят как полутвёрдые эктоплазменные версии самих себя. Они не совсем прозрачны, но их твёрдые тела как бы колышутся и мерцают по краям, придавая им жуткий, тревожный вид. В таком состоянии они остаются живыми существами, но получают некоторые из следующих способностей, схожих с теми, что присущи нежити. Как живые существа, больше похожие на фантомов, они остаются восприимчивыми к урону пустотой и исцеляются эффектами @Trait[Vitality]{жизненности}.</p><p><strong>Зрение нежити:</strong> Они получают сумеречное зрение, или ночное зрение, если их родословная уже даёт им сумеречное зрение.</p><p><strong>Выживание в трансмиграции:</strong> ИП в этом состоянии никогда не получают состояние @Condition[Wounded]{ранен}, но вместо этого становятся подвержены деградации души после восстановления от состояния @Condition[Dying]{при смерти} (см. ниже). Если ИП умирает во время трансмиграции, он пробуждается живым в пейзаже разума Ивобережья и получает состояние @UUID[Compendium.pf2e.conditionitems.Item.3uh1r86TzbQvosxv]{Обречён 1}.</p><p><strong>Защита в трансмиграции:</strong> Они получают бонус обстоятельства +2 к спасброскам (или любой другой защите) против болезней, ядов, сна и любых эффектов, накладывающих состояние @UUID[Compendium.pf2e.conditionitems.Item.6uEgoh53GbXuHpTF].</p><p><strong>Духовные силы:</strong> Находясь в этом состоянии, ИП также могут взаимодействовать с живым миром с помощью своих новообретённых духовных способностей. Когда ИП проявляют свои трансмигрировавшие тела в живом мире, каждый из них получает две малых духовных силы и одну крупную духовную силу из перечисленных далее. Каждый раз, когда ИП совершают ежедневные приготовления, они могут заново выбрать выбранную духовную силу. Когда духовная сила требует спасброска, используйте больший из КС класса или КС заклинаний ИП. Любые духовные силы, требующие бросков атаки, используют этот КС минус 10. Для определения эффектов любых проверок противодействия, используйте собственный уровень ИП.</p><p><strong>Деградация души:</strong> Поначалу ИП, скорее всего, будут наслаждаться обретенными духовными способностями. Однако, когда трансмигрировавший ИП приближается к смерти, он рискует полностью потерять свою призрачную сущность. Каждый раз, когда умирающий трансмигрировавший ИП обычно получает состояние @Condition[Wounded]{ранен}, он вместо этого подвергается деградации души и должен совершить спасбросок, чтобы противостоять увеличению стадии этого проклятия.</p><h3>Малые духовные силы</h3><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.ekiKKfsBDFEeVmun]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.fsxCcyWpag5iuWOU]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.YdG3UwVBia5AyLjO]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.w4t0ElpqNQRFCaPJ]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.VMpc8QWEZxSH8Mr4]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.g6iKvH7Y3InQtZ8K]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.w1nzN61S6NfkDH7Y]</p><h3>Крупные духовные силы</h3><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.UnQ8oHYc0dBJHZv9]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.pHXGTgjwWY3OBRF2]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.sjLNgLFyDvTt6VVV]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.DVILYNQVB2hx9Chl]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.0HChyDaXdpXN11q4]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.3yYlHV7GBrafsDwE]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.KbQXDTBi5MKtHbpU]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.SnIvcCNASDzgevQK]</p><p>@UUID[Compendium.pf2e.adventure-specific-actions.Item.KtqDsKBuOmCkbDcR]</p>",
+			"gm": "<h2>Деградация души (Проклятие 7)</h2><section class=\"traits\"><p>@Trait[Rare]{редкий}</p><p>@Trait[Curse]{проклятие}</p><p>@Trait[Magical]{магический}</p></section><p>Самоощущение персонажа поглощается призрачными желаниями, в итоге превращая его в бессмысленную оболочку. Деградация души не увеличивает и не уменьшает свою стадию с течением времени. Вместо этого, каждый раз, когда трансмигрировавший ИП оправляется от состояния @Condition[Dying]{при смерти}, он должен совершить новый спасбросок от этого проклятия. Определённые события или эффекты, с которыми ИП могут столкнуться в Главе 10, также могут заставить их делать спасбросок против деградации души. Как только эффекты ритуала трансмиграции заканчиваются для ИП, они немедленно и полностью восстанавливаются от деградации души.</p><p><strong>Спасбросок:</strong> @Check[will|dc:23|traits:curse,magical]</p><p><strong>Стадия 1:</strong> слабость 5 духовному урону</p><p><strong>Стадия 2:</strong> слабость 10 духовному урону</p><p><strong>Стадия 3:</strong> слабость 10 духовному урону, и каждый раз, когда ИП критически проваливает бросок атаки или проверку навыка, он @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлён 1}, поскольку его разум одержим этой неудачей</p><p><strong>Стадия 4:</strong> как стадия 3</p><p><strong>Стадия 5:</strong> как стадия 3</p><p><strong>Стадия 6:</strong> ИП превращается в бездумного @Trait[Haunt]{призрака}. Пока проклятие не будет снято или не закончится срок действия ритуала трансмиграции, он повторяет короткий цикл действий и больше не находится под контролем игрока (неограниченная продолжительность).</p>"
+		},
+		"Effect: Bickering Family": {
+			"name": "Эффект: Ссорящаяся семья",
+			"description": "<p>Вы получаете бонус состояния +1 к своим спасброскам.</p>"
+		},
+		"Effect: Seasonal Boon (Outskirt Dweller)": {
+			"name": "Эффект: Дар сезона [Обитатель окраин]",
+			"description": "<p>Вы получаете бонус состояния к вашим броскам инициативы, равный количеству сезонов, прошедших с начала \"Сезона привидений\" (+1 во время первого приключения и вплоть до +4 во время четвёртого и последнего приключения).</p>"
+		},
+		"Effect: Combat Mentor": {
+			"name": "Effect: Combat Mentor",
+			"description": "<p>Granted by Combat Mentor</p><p>Your Level Bump modifier to attack rolls and spell attack rolls increases to 2.</p>"
+		},
+		"Effect: Exotic Edge": {
+			"name": "Effect: Exotic Edge",
+			"description": "<p>Granted by Exotic Edge</p><p>You gain a +1 circumstance bonus to either all of your attack rolls or all of your skill checks.</p>"
+		},
+		"Effect: Heroic Aegis": {
+			"name": "Effect: Heroic Aegis",
+			"description": "<p>Granted by Heroic Aegis</p><p>Вы получаете бонус состояния +2 к КБ и спасброскам.</p>"
+		},
+		"Effect: Heroic Hustle": {
+			"name": "Effect: Heroic Hustle",
+			"description": "<p>Granted by Heroic Hustle</p><p>Вы получаете бонус состояния +10 футов к Скорости.</p>"
+		},
+		"Effect: Heroic Inspiration": {
+			"name": "Effect: Heroic Inspiration",
+			"description": "<p>Granted by Heroic Inspiration</p><p>You gain a +1 circumstance bonus to checks of the same type the origin succeeded against.</p>"
+		},
+		"Effect: Magical Mentor": {
+			"name": "Effect: Magical Mentor",
+			"description": "<p>Granted by Magical Mentor</p><p>Your Level Bump modifier bonus to your spell DC that is the same tradition of the mentor increases to 2.</p>"
+		},
+		"Effect: Practiced Medic": {
+			"name": "Effect: Practiced Medic",
+			"description": "<p>Granted by Practiced Medic</p><p>You can improve a Medicine check's degree of success by one step to Administer First Aid, Treat Disease, Treat Poison, or Treat Wounds.</p>"
+		},
+		"Effect: Protective Mentor": {
+			"name": "Effect: Protective Mentor",
+			"description": "<p>Granted by Protective Mentor</p><p>Your maximum Hit Points increases in addition to the bonus provided by the Level Bump.</p>"
+		},
+		"Effect: Rugged Mentor": {
+			"name": "Effect: Rugged Mentor",
+			"description": "<p>Granted by Rugged Mentor</p><p>Your Level Bump modifier to saving throws increases to 2.</p>"
+		},
+		"Effect: Skillful Mentor": {
+			"name": "Effect: Skillful Mentor",
+			"description": "<p>Granted by Skillful Mentor</p><p>Your Level Bump modifier to skill checks increases to 2.</p>"
+		},
+		"Effect: Worldly Mentor": {
+			"name": "Effect: Worldly Mentor",
+			"description": "<p>Granted by Worldly Mentor</p><p>Your Level Bump bonus modifier to perception checks increases by 2.</p>"
+		},
+		"Effect: Pompous Rage": {
+			"name": "Effect: Pompous Rage",
+			"description": "<p>Foroxicks takes a –2 circumstance penalty to his jaws attack, but each hit deals additional piercing damage.</p>"
+		},
+		"Effect: Technological Defence": {
+			"name": "Effect: Technological Defence",
+			"description": "<p>Granted by Technological Defence.</p><p>You gain a +1 circumstance bonus to a saving throw against a technological weapon or effect.</p>"
+		},
+		"Effect: Nexian Researcher": {
+			"name": "Effect: Nexian Researcher",
+			"description": "<p>Granted by S1-00 - Nexian Researcher</p><p>If you are Untrained in Pathfinder Society Lore, you can add your level to your Intelligence modifier when determining your bonus. If you are at least Trained in Pathfinder Society Lore, you gain a +2 circumstance bonus to this check instead.</p>"
+		},
+		"Effect: Tarnbreaker Champions": {
+			"name": "Effect: Tarnbreaker Champions",
+			"description": "<p>Granted by Tarnbreaker Champions</p><p>you gain a +1 circumstance bonus on all Diplomacy checks to @UUID[Compendium.pf2e.actionspf2e.Item.DCb62iCBrJXy0Ik6]{Make a Request} while playing in an adventure that takes place primarily in the Lands of the Linnorm Kings.</p>"
+		},
+		"Effect: Light in the Dark": {
+			"name": "Effect: Light in the Dark",
+			"description": "<p>Granted by S1-18 - Light in the Dark</p><p>You gain a +1 circumstance bonus to Diplomacy checks to @UUID[Compendium.pf2e.actionspf2e.Item.DCb62iCBrJXy0Ik6]{Request Assistance} or @UUID[Compendium.pf2e.actionspf2e.Item.OX4fy22hQgUHDr0q] while adventuring in Razmiran.</p>"
+		},
+		"Effect: Grand Finale": {
+			"name": "Effect: Grand Finale",
+			"description": "<p>Granted by Grand Finale</p><p>You gain a +2 circumstance bonus to Performance checks, 20 temporary Hit Points, and a +1 circumstance bonus to Fortitude saves.</p>"
+		},
+		"Effect: Chthonic Mucus (1-2)": {
+			"name": "Эффект: Хтоническая слизь [1–2]",
+			"description": "<p>Существо получает штраф состояния −5 футов ко своей Скорости на 1 раунд.</p>",
+			"rules": {
+				"0": {
+					"label": "Эффект: Хтоническая слизь"
+				}
+			}
+		},
+		"Effect: Chthonic Mucus": {
+			"name": "Эффект: Хтоническая слизь",
+			"description": "<p>Существо получает штраф состояния −5 футов ко своей Скорости. Этот штраф заканчивается с завершением продолжительного духовного урона.</p>",
+			"rules": {
+				"0": {
+					"label": "Эффект: Хтоническая слизь"
+				}
+			}
+		},
+		"Effect: Resist Corruption": {
+			"name": "Эффект: Сопротивление скверне",
+			"description": "<p>Предоставляется даром @UUID[Compendium.pf2e.pathfinder-society-boons.Item.rFgWvC1UADsavY5J]</p><p>Вы получаете сопротивление нечестивому урону, равное вашему уровню репутации во фракции Печать Бдительности.</p>"
+		}
+	}
+}

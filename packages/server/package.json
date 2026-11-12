@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "build:data": "node scripts/build-compendiums.js",
-    "test": "node tests/action-pipeline.test.js && node tests/users-sync.test.js && node tests/chat.test.js && node tests/directories.test.js && node tests/persistence.test.js && node tests/scenes.test.js && node tests/actors.test.js && node tests/actor-pipeline.test.js && node tests/tokens.test.js && node tests/fog.test.js"
+    "test": "node tests/action-pipeline.test.js && node tests/users-sync.test.js && node tests/chat.test.js && node tests/directories.test.js && node tests/persistence.test.js && node tests/catalog-filters.test.js && node tests/scenes.test.js && node tests/actors.test.js && node tests/actor-pipeline.test.js && node tests/tokens.test.js && node tests/fog.test.js && node tests/ownership.test.js && node tests/world-transfer.test.js"
   },
   "dependencies": {
     "@pf2e/core": "1.0.0",

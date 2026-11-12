@@ -450,6 +450,71 @@ test("WebSocket pipeline broadcasts room:state-update after a successful action"
 
 // ------------------------------------------------------------------- runner
 
+test("character-sheet initiative creates the encounter and registers the actor", function () {
+  const session = new EncounterSession({ id: "sheet-initiative" });
+  session.addMember({ id: "gm-1", role: "gm" });
+  session.addMember({ id: "player-1", role: "player" });
+  session.addMember({ id: "player-2", role: "player" });
+
+  const actor = session.createDirectoryEntry("actors", {
+    name: "Амелия",
+    actorType: "character",
+    system: {
+      details: { level: { value: 1 } },
+      abilities: {
+        str: { mod: 0 },
+        dex: { mod: 3 },
+        con: { mod: 1 },
+        int: { mod: 0 },
+        wis: { mod: 2 },
+        cha: { mod: 0 },
+      },
+      perception: { rank: 0 },
+      saves: {
+        fortitude: { rank: 0 },
+        reflex: { rank: 0 },
+        will: { rank: 0 },
+      },
+      proficiency: { value: 0 },
+      proficiencies: {
+        attacks: { simple: 0, martial: 0, advanced: 0, unarmed: 0 },
+        defenses: { unarmored: 0, light: 0, medium: 0, heavy: 0 },
+        spellcasting: { rank: 0 },
+      },
+      attributes: { hp: { value: 18, max: 18, temp: 0 } },
+      inventory: { items: [] },
+      strikes: [],
+    },
+  });
+  session.updateProfile("player-1", { characterId: actor.id });
+
+  const result = session.dispatchAction("player", "player-1", {
+    action: "roll-initiative",
+    payload: { actorId: actor.id, secret: false },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(session.status, "running");
+  const combatant = result.state.combatants.find(function (entry) {
+    return entry.actorId === actor.id;
+  });
+  assert.ok(combatant, "the actor is registered as a combatant");
+  assert.equal(typeof combatant.initiative, "number");
+  // Wisdom +2, untrained Perception at level 1 -> d20 + 2.
+  assert.ok(combatant.initiative >= 3 && combatant.initiative <= 22);
+  assert.equal(combatant.initiativeModifier, 2);
+
+  // Another player cannot roll initiative for this character.
+  const denied = session.dispatchAction("player", "player-2", {
+    action: "roll-initiative",
+    payload: { actorId: actor.id },
+  });
+  assert.equal(denied.ok, false);
+  assert.equal(denied.reason, "permission-denied");
+});
+
+// ------------------------------------------------------------------- runner
+
 async function main() {
   let failures = 0;
   for (const entry of tests) {

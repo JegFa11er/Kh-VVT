@@ -1,0 +1,516 @@
+{
+	"label": "Темный архив",
+	"mapping": {
+		"name": {
+			"path": "name",
+			"converter": "actorNameConverter"
+		},
+		"description": "system.details.publicNotes",
+		"language": "system.traits.languages.custom",
+		"descriptionHazard": "system.details.description",
+		"disable": "system.details.disable",
+		"reset": "system.details.reset",
+		"routine": "system.details.routine",
+		"stealth": "system.attributes.stealth.details",
+		"hp": "system.attributes.hp.details",
+		"items": {
+			"path": "items",
+			"converter": "actorItemCollectionConverter"
+		},
+		"CdescriptionGM": "system.details.privateNotes",
+		"senses": "system.perception.details",
+		"allSaves": "system.attributes.allSaves.value",
+		"di": "system.traits.di.custom"
+	},
+	"entries": {
+		"Amalgamite": {
+			"items": [
+				{
+					"id": "NCoWkgKyY8nUdbrO",
+					"name": "Врождённые оккультные заклинания"
+				},
+				{
+					"id": "REbcJzGp6sT7jOuZ",
+					"name": "Конечность"
+				},
+				{
+					"id": "6Jhrih75LDb7Tovl",
+					"name": "Warping Ray"
+				},
+				{
+					"id": "rU17t3NM7TJ3u03o",
+					"name": "Регенерация 10 (отключается от колющего)"
+				},
+				{
+					"id": "rGx3BT8mbRKRUpA2",
+					"name": "Destabilizing Field",
+					"description": "<p>40 feet. A creature that begins its turn within the area feels its body begin to stretch and must succeed at a @Check[fortitude|dc:33] save or become destabilized. A destabilized creature emits a 10-foot destabilizing field aura and becomes @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Sickened 1}. The destabilization ends when the creature is no longer sickened. A creature that succeeds at its saving throw against the aura is temporarily immune to all destabilizing fields for 1 minute.</p>"
+				},
+				{
+					"id": "bpvnWZi8sukcfy9H",
+					"name": "Displace",
+					"description": "<p><strong>Триггер:</strong> The amalgamite is hit by a Strike</p><hr /><p><strong>Эффект:</strong> The amalgamite Relocates or Transposes themself with another creature. If the amalgamite successfully changes location, they and any Transposed creature take half damage from the triggering Strike.</p>"
+				},
+				{
+					"id": "4oz5vNIBQ0PmHw6p",
+					"name": "Relocate",
+					"description": "<p>The amalgamite teleports into an unoccupied space they can see within 50 feet.</p>"
+				},
+				{
+					"id": "XBz2toYQ5LlpBAkp",
+					"name": "Транспозиция",
+					"description": "<p>The amalgamite teleports up to two destabilized creatures within 50 feet that they can see. They can either move a single creature to an unoccupied space or swap the positions of two creatures of the same size. If the amalgamite swaps two creatures, they can choose their self as one target. An unwilling creature can attempt a @Check[will|dc:33] save. If either target succeeds at this saving throw, both are unaffected.</p>"
+				},
+				{
+					"id": "xFzHJGL72aPpRLgB",
+					"name": "Lore (Any One Subcategory)"
+				}
+			]
+		},
+		"Bounding Hounds": {
+			"name": "Преследующие гончие",
+			"descriptionHazard": "<p>Три фантомные гончие преследуют нарушителей, нанося урон всем, через кого они проходят.</p>",
+			"disable": "<p>@Check[nature|dc:36|name:Успокоить гончую]{Природа} (эксперт) успокоить каждую гончую, или @Check[occultism|dc:38|name:Изгнать гончую]{Оккультим} (мастер) изгнать каждую гончую</p>",
+			"reset": "<p>1 час</p>",
+			"routine": "<p>(9 действий) За каждую выведенную из строя гончую, ловушка лишается 3 действий в раунде. Каждая гончая использует 3 действия, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.Bcxarzksqt9ezrs6]{Переместиться} на 40 футов за существ в комнате, во время этого движения проходя сквозь материальных существ, если это возможно. Каждое существо, через которое гончая проходит во время своего передвижения должно преуспеть в спасброске @Check[reflex|dc:37|traits:damaging-effect]{Рефлекса}, иначе получит @Damage[(2d8+7)[void]]. Существо может получить урона от каждой гончей только 1 раз за раунд, независимо от того, сколько раз гончая проходит через его пространство.</p>",
+			"hp": "60 у каждой гончей",
+			"items": [
+				{
+					"id": "lY8P3VlUAyOoBnVJ",
+					"name": "Вой",
+					"description": "<p><strong>Триггер:</strong> Существо попадает в область</p><hr /><p><strong>Эффект:</strong> Гончие проявляются и громко лают, нанося всем существам в радиусе 30 футов от гончих @Damage[(3d10 + 16)[sonic]] (простой спасбросок @Check[fortitude|dc:33|basic]{Стойкости}). При провале существо также @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугано 2}. Затем ловушка бросает инициативу.</p>"
+				}
+			]
+		},
+		"Call of the Void": {
+			"name": "Зов пустоты(*)",
+			"descriptionHazard": "<p>Сверхъестественное желание прыгнуть в неизвестность охватывает каждого, кто приближается к выступу.</p>",
+			"disable": "<p>@Check[occultism|dc:34|name:Снять магическое внушение]{Оккультизм} или @Check[arcana|dc:36|name:Снять магическое внушение]{Аркана}, чтобы снять магическое внушение с текущего острова и с любой из красных веревок, непосредственно прикрепленных к нему, затемни веревку по цвету. Эхо также автоматически отключает опасность на любом острове, на котором он находится, и с любой из красных веревок, непосредственно прикрепленных к нему, когда он \"Восстанавливается из мысли\" на этом острове.</p>",
+			"reset": "<p>Зов пустоты остаётся, пока существует Эхо, но активируется только после того, как Эхо бросит инициативу. Опасность перезаряжается каждый день.</p>",
+			"routine": "<p>(1 действие) Призыв обращен ко всем существам, находящимся рядом с уступом или на одной из красных веревок, и взывает к их разуму. Существо, уже упавшее в этом раунде, невосприимчиво.</p>",
+			"stealth": "<p>(эксперт) заметить легкое тянущее ощущение</p>",
+			"items": [
+				{
+					"id": "eA8cwxuJWpDq8jgk",
+					"name": "Прыжок в неизвестность",
+					"description": "<p><strong>Триггер:</strong> Существо входит в квадрат, примыкающий к выступу острова или ступает на одну из красных веревок</p><hr /><p><strong>Эффект:</strong> Зов пустоты взывает к разуму незваных гостей, побуждая их спрыгнуть с выступа. Существо должно преуспеть в спасброске @Check[will|dc:34]{Воле} или проверке @Check[acrobatics|dc:32|traits:action:balance]{Акробатики}, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.M76ycLAqHoAgbcej]{Балансировать} или упасть с выступа. Если существо срывается вниз, оно падает на 100 футов, петляет по замкнутому пространству пейзажа разума и приземляется на остров с которого упало, получая обычный урон от падения (обычно @Damage[50[bludgeoning]]). После чего зов пустоты бросает инициативу.</p>"
+				}
+			]
+		},
+		"Clone Mirrors": {
+			"name": "Клонирующие зеркала",
+			"descriptionHazard": "<p>Два противоположных зеркала порождают бесконечную череду иллюзорных двойников существ в зале.</p>",
+			"disable": "<p>@Check[thievery|dc:28|name:Сместить зеркала|traits:action:disable-a-device]{Воровство} (эксперт) сместить каждое зеркало, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] (3-й ранг, КС противодействия 25) противодействовать каждому зеркалу</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 день.</p>",
+			"routine": "<p>(2 действия) Ловушка теряет 1 действие за каждое отключенное зеркало. Каждое зеркало использует 1 действие для <em>\"Порождения\"</em> @UUID[Compendium.pf2e.pathfinder-dark-archive.Actor.ICdVjs6JEs0YAefl]{Отражения} существа, отражённого в этом зеркале. Эта опасность может единовременно иметь максимум 4 порождённых отражения.</p>",
+			"hp": "на зеркало",
+			"items": [
+				{
+					"id": "M6pVTXxAJ26CuNx5",
+					"name": "Порождение отражения",
+					"description": "<p><strong>Триггер:</strong> Существо отражено в зеркале</p><hr /><p><strong>Эффект:</strong> Зеркало создаёт @UUID[Compendium.pf2e.pathfinder-dark-archive.Actor.ICdVjs6JEs0YAefl]{Отражение} спровоцировавшего существа, и оно @UUID[Compendium.pf2e.actionspf2e.Item.UHpkTuCtyaPqiCAB]{Шагает} из зеркала в зал. Затем ловушка бросает инициативу.</p>"
+				}
+			]
+		},
+		"Cocoon of Lucid Potential": {
+			"name": "Кокон ясного потенциала(*)",
+			"language": "(не может говорить ни на одном языке)",
+			"items": [
+				{
+					"id": "EC0YgI9NRxD1ISHc",
+					"name": "Спонтанные оккультные заклинания"
+				},
+				{
+					"id": "jHHE5GG2biaCiVYC",
+					"name": "Крик экстрасенса"
+				},
+				{
+					"id": "H5No3yLHugKzgNQr",
+					"name": "Закрепленная в шелке",
+					"description": "<p>Кокон не способен двигаться, разве что слегка извиваться на месте. У него нет Скорости и он не может двигаться или быть перемещенным, даже с помощью таких средств, как @Trait[Teleportation]{телепортация}, поскольку нить Ткача привязывает его к месту физически и астрально. Кокон сотворяет любые заклинания экстрасенсорно, заменяя словесные и жестовые компоненты выражением чистой необузданной воли и убирая признак @Trait[Manipulate]{воздействие} из действия @UUID[Compendium.pf2e.actionspf2e.Item.aBQ8ajvEBByv45yz].</p>"
+				},
+				{
+					"id": "HHFw3W3cOgIJv8xE",
+					"name": "Отдавая себя",
+					"description": "<p><strong>Триггер:</strong> Ткач снижен до 0 ОЗ</p><hr /><p><strong>Эффект:</strong> Жизненная сила кокона связана с жизненной силой Ткача. Он теряет [[/r 30]] ОЗ, восстанавливая @Damage[15[healing]] ОЗ Ткачу. Он может использовать эту способность, даже если иначе не смог бы действовать.</p>"
+				},
+				{
+					"id": "Hc9RMNJy8VQgbgt8",
+					"name": "Где-то там",
+					"description": "<p>Индивидуальность Киллии все еще находится в коконе, но пытается сопротивляться ассимиляции. Если ИП преуспевает в проверке @Check[diplomacy|dc:32]{Дипломатии}, кокон получает @Damage[5d6[mental]] и будет @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлено 1} пока сознание Киллии борется с Ткачом. Кокон может быть затронут таким образом не более одного раза за ход.</p>"
+				},
+				{
+					"id": "pqQB2JJ1Z8S2K9ay",
+					"name": "Из той же сущности",
+					"description": "<p>Кокон и Такч имеют одну и ту же сущность. Его заклинания не действуют на Ткача, если они могут причинить вред, и Ткач может игнорировать любые эффекты активных заклинаний кокона, если пожелает (например @UUID[Compendium.pf2e.spells-srd.Item.tSosbMsftXcRaQgT]).</p>"
+				}
+			]
+		},
+		"Confounding Portal": {
+			"name": "Сбивающий с толку проход",
+			"descriptionHazard": "<p>Крошечные руны, вырезанные вокруг дверной рамы или на стенах, незаметно сбивают существ с толку, заставляя их кружить по комнате или коридору, через который они пытаются выйти или пройти.</p>",
+			"disable": "<p>@Check[thievery|dc:17|name:Соскрести руны|traits:action:disable-a-device]{Воровство} соскрести руны, или @Check[arcana|dc:16|name:Уничтожить руны]{Аркана} уничтожить руны</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 раунд.</p>",
+			"items": [
+				{
+					"id": "K7zv6GnWMFnvcN2z",
+					"name": "Запутывающее перенаправление",
+					"description": "<p><strong>Триггер:</strong> Существо проходит через испещренный рунами проход или коридор;</p><hr /><p><strong>Эффект:</strong> Существо сбито с толку иллюзиями и направлено обратно в комнату из которой оно пыталось выйти, через другой дверной проем или обратно к началу коридора. Для спровоцировавшего существа, это ничем не отличается от прохождения через дверной проем или коридор, а посторонние наблюдатели также сбиты с толку. Существо, совершившее успешный спасбросок @Check[will|dc:19]{Воли} сопротивляется этой иллюзии и выходит из комнаты или идет дальше по коридору, не сбиваясь с пути.</p>"
+				}
+			]
+		},
+		"Constricting Hall": {
+			"name": "Сжимающийся зал",
+			"descriptionHazard": "<p>Когда существо достигает середины зала, его 4 стены становятся текучими и эластичными.</p>",
+			"disable": "<p>@Check[thievery|dc:28|name:Стабилизировать стену|traits:action:disable-a-device]{Воровство} (обучен) стабилизировать каждую стену, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] (4-й ранг, противодействие КС 26) противодействовать каждой стене</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 час.</p>",
+			"routine": "<p>(4 действия) За каждую отключенную стену, эта ловушка лишается по 1 действию на раунд. Каждая стена использует 1 действие, чтобы быстро ударить, туда-сюда, нанося \"Удар\" стеной по одному существу в зале. При попадании цель еще сбивается @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}. Стены распределяют атаки между существами в зале как можно более равномерно, и эти \"Удары\" не применяют штраф множественных атак.</p>",
+			"items": [
+				{
+					"id": "Q0howoIf0TfR9YuR",
+					"name": "Потерять форму",
+					"description": "<p><strong>Триггер:</strong> Существо достигает середины зала;</p><hr /><p><strong>Эффект:</strong> Стены зала теряют свою жесткость, становясь текучими и эластичными. Зал становится @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}, и каждое существо в зале должно преуспеть в спасброске @Check[reflex|dc:26]{Рефлекса}, иначе упадёт @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}. Затем ловушка бросает инициативу.</p>"
+				},
+				{
+					"id": "URApeqv0vXz0Usnr",
+					"name": "Стена"
+				}
+			]
+		},
+		"Disorienting Illusions": {
+			"name": "Дезориентирующие иллюзии",
+			"descriptionHazard": "<p>Иллюзии обволакивают эту комнату, заставляя ее казаться искаженной и постоянно меняющейся, при этом комната и все ее содержимое выглядят наклонными, неровными и находящимися в движении.</p>",
+			"disable": "<p>@Check[crafting|dc:17|name:Рассчитать габариты комнаты]{Ремесло} (обучен) рассчитать габариты комнаты несмотря на иллюзии, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.E4Q7EiSG18sIvFwg]{Противодействовать} иллюзиям (1-й ранг, КС 17)</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 минуту.</p>",
+			"items": [
+				{
+					"id": "ZJEa0ERwBrbsozjF",
+					"name": "Дезориентировать",
+					"description": "<p><strong>Триггер:</strong> Существо попадает в комнату;</p><hr /><p><strong>Эффект:</strong> Иллюзии заставляют внешний вид комнаты и объектов внутри нее постоянно искривляться, смещаться, изгибаться и искажаться в течение 1 минуты. Каждое существо, находящееся в комнате во время искажения, должно совершить проверку @Check[perception|dc:17|action:seek]{Восприятия}.</p><hr /><p><strong>Критический успех:</strong> Существо не верит в иллюзии и невредимо.</p><p><strong>Успех:</strong> Существо не верит в иллюзии, но все еще видит их. Оно считает комнату @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}.</p><p><strong>Провал:</strong> Существо одурачено иллюзиями. Оно считает комнату @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью} и испытывает @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Тошноту 1}. Оно не может снизить свою @Condition[Sickened]{тошноту} ниже 1, пока остается в комнате.</p><p><strong>Критический провал:</strong> Как провал, но каждый раз, когда существо предпринимает действие @Trait[Move]{движения}, оно должно преуспеть в @Check[flat|dc:5]{Чистой проверке} или потеряет данное действие, а при критическом провале еще падает @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p>"
+				}
+			]
+		},
+		"Distortion Mirror": {
+			"name": "Искажающее зеркало",
+			"descriptionHazard": "<p>Кривые зеркала искажают отражение смотрящего, болезненно изменяя его тело, чтобы оно соответствовало тому, что появляется в отраженном изображении.</p>",
+			"disable": "<p>@Check[thievery|dc:38|name:Испортить зеркало|traits:action:disable-a-device]{Воровство} (мастер) испортить зеркальное покрытие, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] (7-й ранг, противодействие КС 36) рассеять зеркало или противодействовать трансформации</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 день.</p>",
+			"stealth": "<p>0 чтобы заметить зеркало</p>",
+			"items": [
+				{
+					"id": "rKdbdgqCvS4u8s4L",
+					"name": "Болезненная трансформация",
+					"description": "<p><strong>Триггер:</strong> Существо отражено в зеркале</p><hr /><p><strong>Эффект:</strong> Тело спровоцировавшего существа болезненно сжимается, растягивается и искажается, чтобы соответствовать его отражению. Существо получает @Damage[(6d10 + 30)[force]] и должно совершить спасбросок @Check[fortitude|dc:39|traits:damaging-effect]{Стойкости}.</p><hr /><p><strong>Критический успех:</strong> Цель невредима.</p><p><strong>Успех:</strong> Цель получает половину урона, а также @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжа 1} и @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблена 1} на 1 раунд.</p><p><strong>Провал:</strong> Цель получает полный урон, а также @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжа 2} и @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблена 2} на 4 раунда.</p><p><strong>Критический провал:</strong> Цель получает двойной урон, а также @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжа 2} и @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблена 2} на 1 минуту. Пока существо @Condition[Clumsy]{неуклюжее} или @Condition[Enfeebled]{ослабленное}, оно также получает штраф состояния −10 футов к своим Скоростям.</p><p>Когда эффекты этой ловушки заканчиваются, трансформация спровоцировавшего существа завершается, и его тело возвращается в естественную форму.</p>"
+				}
+			]
+		},
+		"Entrapping Chair": {
+			"name": "Захватывающее кресло",
+			"descriptionHazard": "<p>Кресло на скрытых рельсах движется вперед, сбивая существо на свое сиденье и удерживая его зажимами подлокотников.</p>",
+			"disable": "<p>@Check[thievery|dc:23|name:Испортить рельсы|traits:action:disable-a-device]{Воровство} (эксперт) испортить рельсы</p>",
+			"reset": "<p>Если кресло не занято, ловушка сбрасывается автоматически в течение 2 раундов.</p>",
+			"stealth": "<p>(0 чтобы заметить кресло)</p>",
+			"items": [
+				{
+					"id": "V4xSx1Z7pl5RTlY8",
+					"name": "Присаживайтесь!",
+					"description": "<p><strong>Триггер:</strong> Существо наступает на рельсы</p><hr /><p><strong>Эффект:</strong> Кресло устремляется вперед по рельсам и врезается в спровоцировавшее существо, нанося @Damage[(3d8 + 15)[bludgeoning]]. Существо, преуспевшее в спасброске @Check[reflex|dc:22|traits:damaging-effect]{Рефлекса}, не получает урона и уходит с пути кресла в случайный соседний квадрат, не содержащий рельс. Существо, провалившее спасбросок, падает на сиденье кресла и немедленно захватывается подлокотниками, становясь @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei]{Схваченным} (при критическом провале — @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM]{Сдерживаемым}) ([[/act escape dc=26]]).</p>"
+				}
+			]
+		},
+		"Exhaling Portal": {
+			"name": "Выдыхающий проход",
+			"descriptionHazard": "<p>Магические руны, вырезанные на дверной раме, при открытии двери соединяют ее с <a href=https://clck.ru/sXkkK>Планом Воздуха</a>, сдувая существ в соединительный коридор.</p>",
+			"disable": "<p>@Check[thievery|dc:30|name:Соскрести руны|traits:action:disable-a-device]{Воровство} (эксперт) дважды, чтобы соскрести руны, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] (5-й ранг, противодействие КС 30) противодействовать планарным рунам; @Check[athletics|dc:32|name:Shut the Door] захлопнуть дверь если она открыта (использование Атлетики лишь останавливает ловушку, но не отключает ее полностью)</p>",
+			"reset": "<p>Ловушка сбрасывается, когда дверь закрывается.</p>",
+			"routine": "<p>(1 действие) Ловушка использует 1 действие, чтобы дуть в зал мощным ветром. Каждое существо в зале должно совершить спасбросок @Check[fortitude|dc:32]{Стойкости} с теми же результатами, что и у \"Порыва воздуха\". Если это <a href=https://clck.ru/afcTn>принудительное передвижение</a> заставит существо столкнуться с твердым объектом или упасть с лестницы или из окна, то данное существо получает дополнительные @Damage[(2d10+11)[bludgeoning]] (или @Damage[20[bludgeoning]] от падения).</p>",
+			"items": [
+				{
+					"id": "0l35fQJcnzJb7vMi",
+					"name": "Порыв воздуха",
+					"description": "<p><strong>Триггер:</strong> Существо открывает дверь;</p><hr /><p><strong>Эффект:</strong> Пока дверь остается открытой, в зале бушуют мощные ветры. Чтобы двинуться к двери, существо должно преуспеть в проверке @Check[athletics|dc:32]{Атлетики}. При провале существо отталкивается на 5 футов назад и падает @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p><p>Кроме того, спровоцировавшее существо обдается мощным порывом ветра и должно совершить спасбросок @Check[fortitude|dc:32]{Стойкости}. Затем ловушка бросает инициативу.</p><hr /><p><strong>Критический успех:</strong> Существо невредимо.</p><p><strong>Успех:</strong> Существо отталкивается назад на 5 футов.</p><p><strong>Провал:</strong> Существо отталкивается назад на 10 футов.</p><p><strong>Критический провал:</strong> Существо отталкивается назад на 10 футов и сбито @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}.</p>"
+				}
+			]
+		},
+		"False Floor": {
+			"name": "Ложный пол",
+			"descriptionHazard": "<p>Пол в этой комнате - иллюзия, скрывающая яму высотой 40-футовую, с настоящим полом внизу. Кроме того, область под полом магически заглушена - ни один звук не слышен внутри нее и не покидает это пространство.</p>",
+			"disable": "<p>Успешная проверка @Check[perception|defense:stealth]{Восприятия} против Скрытности КС 21 (включая проверку на нахождение ловушки) чтобы <a href=https://clck.ru/32mgyC>не поверить</a> в иллюзорный пол, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] чтобы развеять иллюзорный пол (2-й уровень, противодействие КС 18); @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG] чтобы развеять магическую тишину (2-й ранг, противодействие КС 20)</p>",
+			"reset": "<p>Автоматически</p>",
+			"stealth": "<p>((обучен; или 0 если иллюзорный пол магически рассеян)</p>",
+			"items": [
+				{
+					"id": "0bSHLXIeRbwxpKtv",
+					"name": "Упасть",
+					"description": "<p><strong>Триггер:</strong> Существо проходит по иллюзорному полу;</p><hr /><p><strong>Эффект:</strong> Спровоцировавшее существо проваливается сквозь иллюзорный пол и получает урон от падения (обычно @Damage[20[bludgeoning]]). Это существо может использовать реакцию \"Схватиться за уступ\", чтобы избежать падения. КС, чтобы @UUID[Compendium.pf2e.actionspf2e.Item.pprgrYQ1QnIDGZiy]{Карабкаться} по стенам ([[/act climb dc=20]]{КС 20}) или @UUID[Compendium.pf2e.actionspf2e.Item.3yoajuKjwHZ9ApUY]{Схватиться за уступ} ([[/act grab-an-edge dc=20]]{КС 20}).</p>"
+				}
+			]
+		},
+		"False Step Floor": {
+			"name": "Фальшивый пол",
+			"descriptionHazard": "<p>Каждый раз, когда существо входит в комнату, оно проскальзывает сквозь пол, кувыркается в межпространственной пустоте и падает обратно в комнату через потолок, приземляясь на пол.</p>",
+			"disable": "<p>@Check[thievery|dc:28|name:Нарушить магическую энерги|traits:action:disable-a-device]{Воровство} (обучен) нарушить магическую энергию, или @Check[arcana|dc:27|name:Перенастроить магическую энергию]{Аркана} (обучен)/@Check[occultism|dc:27|name:Перенастроить магическую энергию]{Оккультизм} (обучен) перенастроить магическую энергию</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 раунд.</p>",
+			"items": [
+				{
+					"id": "WYeWa4hUK5Lu9dLb",
+					"name": "Неверный шаг",
+					"description": "<p><strong>Триггер:</strong> Существо попадает в комнату и наступает на пол;</p><p><strong>Эффект:</strong> Существо проскальзывает через пол; оно кувыркается в межпространственной пустоте, а затем падает обратно в комнату через потолок и приземляется на пол. Спровоцировавшее существо получает @Damage[40[bludgeoning]] <a href=https://clck.ru/h3Xq5>от падения</a>. Чтобы избежать падения, это существо может попытаться @UUID[Compendium.pf2e.actionspf2e.Item.3yoajuKjwHZ9ApUY]{Схватиться за уступ} ([[/act grab-an-edge dc=24]]{КС 24}).</p>"
+				}
+			]
+		},
+		"K. H. W.'s Echo": {
+			"name": "K. H. W.'s Echo",
+			"hp": "destabilized form",
+			"items": [
+				{
+					"id": "6LPHouUKdhwChveQ",
+					"name": "Шэнбяо"
+				},
+				{
+					"id": "hwQM6l4pirYi7vuV",
+					"name": "Шэнбяо"
+				},
+				{
+					"id": "g86YWdXagoWqk0OQ",
+					"name": "Destabilized Form",
+					"description": "<p>When the Echo has fewer than 140 Hit Points, his form destabilizes, large chunks disintegrating from his face, limbs, and torso. White moths constantly stream from the missing spaces, creating a @Template[emanation|distance:10] that deals @Damage[6d6[mental]|options:area-damage] damage with a @Check[will|dc:34|basic|options:area-effect].</p><p>As long as the aura persists, he can dissolve into moths and re-form at another location within 15 feet as a free action at the beginning of each of his turns; this has the occult, conjuration, and teleportation traits.</p>"
+				},
+				{
+					"id": "9AePbujsZky8xUjK",
+					"name": "Astral Spindel Implement",
+					"description": "<p>The Echo carries a drop spindle that constantly spins red astral thread, which is both his thaumaturgic implement and weapon. If his <em>rope dart</em> is lost or broken, he can re-form it with an Interact action. If he critically succeeds at a <em>rope dart</em> Strike, overwhelming thoughts and figments flow down the thread into the target's mind. The target becomes @UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ] for 1 round.</p>"
+				},
+				{
+					"id": "PSN0OsnaXCyM9qu3",
+					"name": "Astral Thread Control",
+					"description": "<p><strong>Частота:</strong> Раз в раунд</p><p><strong>Требования:</strong> The Echo's previous action was a successful thrown rope dart Strike</p><hr /><p><strong>Эффект:</strong> The Echo flicks his wrist and makes a follow-up thrown rope dart Strike at a different target within 30 feet of the first target, using the same multiple attack penalty as his previous Strike. Regardless of whether his attack hits, he then retrieves the weapon.</p>"
+				},
+				{
+					"id": "gjGhslPt9ZQSI0yX",
+					"name": "Contingency Oathday-Nine-Rova",
+					"description": "<p><strong>Частота:</strong> Раз в день</p><p><strong>Триггер:</strong> The Echo's turn begins and he's stunned, slowed, @UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ], @UUID[Compendium.pf2e.conditionitems.Item.9qGBRpbX9NEwtAAr], @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe], @UUID[Compendium.pf2e.conditionitems.Item.kWc1fhmv9LBiTuei], @UUID[Compendium.pf2e.conditionitems.Item.6uEgoh53GbXuHpTF], @UUID[Compendium.pf2e.conditionitems.Item.VcDeM8A5oI6VqhbM], or otherwise can't act</p><hr /><p><strong>Эффект:</strong> The Echo has set up numerous contingencies in the event he's compromised. Talismans on his body shatter, counteracting the triggering effect. The Echo can use this free action even if he can't act.</p>"
+				},
+				{
+					"id": "crjSzGgHUw6zPIVX",
+					"name": "Reconstitute from Thought",
+					"description": "<p><strong>Требования:</strong> The Echo is standing on one of the eight large islands of the map, and the island hasn't darkened</p><hr /><p><strong>Эффект:</strong> The Echo throws his rope dart into the island and uses it to absorb mental essence from the mindscape, repairing himself. He regains @Damage[45[healing]] Hit Points and the island turns a desaturated gray for 1 day, preventing future absorption and disabling the @UUID[Compendium.pf2e.pathfinder-dark-archive.Actor.0AdtolhMWrPlzVZY] hazard on that island.</p>"
+				},
+				{
+					"id": "vt810lsvoNHLaCNF",
+					"name": "Spindle's Web",
+					"description": "<p>The Echo's spindle revolves faster and faster until it's a blur, lashing red threads in every direction. The threads deal @Damage[7d6[slashing],7d6[mental]|options:area-damage]{7d6 slashing damage and 7d6 mental damage} to all creatures in a @Template[emanation|distance:30], with a @Check[reflex|dc:34|basic|options:area-effect]. If a creature fails its save, the threads awaken the mindscape anchor within it, affecting it differently based on which anchor that creature used to gain access to the center of the mindscape. (If there is a PC who didn't absorb a mindscape anchor, for instance because there are more than four PCs in the party, then use the anchor of the PC closest to them.)</p><p>The Echo then can't use Spindle's Web for [[/gmr 1d4 #Recharge Spindle's Web]]{1d4 rounds}.</p><ul><li><strong>Фонарь:</strong> The lantern outlines the creature with searing @UUID[Compendium.pf2e.spells-srd.Item.0qaqksrGGDj74HXE] that deals @Damage[2d6[persistent,fire]] damage.</li><li><strong>Зеркало:</strong> The mirror reflects the creature to another location, teleporting them to a clear space within 25 feet of their current location.</li><li><strong>Чаша:</strong> The chalice drains life force, granting the Echo temporary HP equal to half the damage dealt.</li><li><strong>Фолиант:</strong> The tome floods the creature's mind with information; the target is @UUID[Compendium.pf2e.conditionitems.Item.xYTAsEpcJE1Ccni3]{Slowed 1} for 1 round.</li></ul>"
+				},
+				{
+					"id": "VdAYDEzY4gulPTVL",
+					"name": "Эзотерические знания"
+				}
+			]
+		},
+		"Mirror Door": {
+			"name": "Зеркальная дверь",
+			"descriptionHazard": "<p>Отражение стены показывает фантомную дверь там, где ее нет. С этой дверью можно взаимодействовать только смотря через отражение в зеркале.</p>",
+			"disable": "<p>@Check[thievery|dc:18|name:Open the Door|traits:action:disable-a-device] открыть дверь смотря через отражение</p>",
+			"reset": "<p>Ловушка сбрасывается, когда дверь закрывается.</p>",
+			"items": [
+				{
+					"id": "dXHZxCKOYXB0IsAL",
+					"name": "Появление",
+					"description": "<p><strong>Триггер:</strong> Существо рассматривает стену через отражение в зеркале;</p><hr /><p><strong>Эффект:</strong> В отражении стены в зеркале появляется дверь. Спровоцировавшее существо может открыть эту дверь и взаимодействовать с ней только пока оно видит дверь через зеркало, и только совершив успешную проверку @Check[thievery|dc:18|name:Disable the Trap|traits:action:disable-a-device]{Воровства}, чтобы отключить ловушку.</p>"
+				}
+			]
+		},
+		"Mother Mitera": {
+			"name": "Mother Mitera",
+			"hp": "crystal vitality link",
+			"items": [
+				{
+					"id": "nvyRpGOfcTh5qgcI",
+					"name": "Подготовленные природные заклинания"
+				},
+				{
+					"id": "cOno50AugBRsfxaZ",
+					"name": "Церемониальная мантия",
+					"description": "<p>Красивая одежда подходит для знатного или королевского рода, изготавливается из дорогих тканей, драгоценных металлов и расшита замысловатыми узорами.</p>"
+				},
+				{
+					"id": "SzPTvuxOEAOJsUZN",
+					"name": "Crystal Flower Crown"
+				},
+				{
+					"id": "IWLtNJgGKZE4sql1",
+					"name": "Кинжал"
+				},
+				{
+					"id": "wOS1PPw34UfnTuPS",
+					"name": "Кинжал"
+				},
+				{
+					"id": "GTidGY6vXi9cj9yz",
+					"name": "Crystal Vitality Link",
+					"description": "<p>The power of the island links Mitera's vitality to her followers. As long as any of the three quartz formations are intact, whenever Mitera takes damage, any of her followers within 10 miles lose the same amount of HP.</p>"
+				},
+				{
+					"id": "5n8EB4Rkx3GH7H9F",
+					"name": "Ascension is Near",
+					"description": "<p><strong>Частота:</strong> Once per ascension ritual</p><hr /><p><strong>Эффект:</strong> Mitera activates the moonflower link with her followers. Any followers within @Template[emanation|distance:30]{30 feet} who failed their saving throw against the moonflower tea become @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Sickened 1}. Anyone who critically failed and did not receive an antidote explodes (this is about half of Mitera's congregation if the PCs didn't successfully administer the antidote). If anyone's body explodes, Mitera gains 30 temporary HP and is @UUID[Compendium.pf2e.conditionitems.Item.nlCjDvLMf2EkV2dl] for 3 rounds; she can use this additional action each round only for Strike and Stride actions.</p>"
+				},
+				{
+					"id": "spFa0equ7phkEcc9",
+					"name": "Ludovica Lore"
+				}
+			]
+		},
+		"Quartz-Spawned Shadow": {
+			"name": "Quartz-Spawned Shadow",
+			"description": "<p>The mysterious undead known as shadows lurk in dark places and feed on those who stray too far from the light. Those who parley with shadows, typically by keeping them at bay with a glowing weapon, may learn great secrets, for they are ideal spies.</p>",
+			"items": [
+				{
+					"id": "20wHQZMjGAPl30DH",
+					"name": "Ночное зрение"
+				}
+			]
+		},
+		"Reflected Desires": {
+			"name": "Отраженные желания",
+			"descriptionHazard": "<p>Это зеркало отражает глубочайшие желания смотрящего.</p>",
+			"disable": "<p>@Check[thievery|dc:18|name:Накрыть зеркало|traits:action:disable-a-device]{Воровство} (обучен) накрыть зеркало не смотря в него, или @Check[occultism|dc:17|name:Возвести ментальные преграды]{Оккультизм} (обучен) возвести ментальные преграды</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 раунд.</p>",
+			"stealth": "<p>(0, чтобы заметить зеркало)</p>",
+			"items": [
+				{
+					"id": "1MnFDLD3UqAsLnmn",
+					"name": "Искушать",
+					"description": "<p><strong>Триггер:</strong> Существо смотрит в зеркало;</p><hr /><p><strong>Эффект:</strong> Спровоцировавшее существо видит в отражении зеркала себя, наслаждающегося своими самыми сокровенными желаниями, и должно преуспеть в спасброске @Check[will|dc:20]{Воли}, иначе станет @UUID[Compendium.pf2e.conditionitems.Item.AdPVz7rbaVSRxHFg]{Заворожено}. Это @Condition[Fascinated]{заворожение} заканчивается автоматически, когда зеркало разбито или накрыто.</p>"
+				}
+			]
+		},
+		"Reflection": {
+			"name": "Отражение",
+			"items": [
+				{
+					"id": "TpYNcJKE1v9ktu1H",
+					"name": "Отраженное оружие"
+				},
+				{
+					"id": "qTHgALlk6FGnqd7W",
+					"name": "Рутина отражения",
+					"description": "<p>Каждое отражение имеет 2 действия, которые оно использует для совершения @UUID[Compendium.pf2e.actionspf2e.Item.UHpkTuCtyaPqiCAB]{Шаг}, @UUID[Compendium.pf2e.actionspf2e.Item.Bcxarzksqt9ezrs6]{Перемещение} или @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR]{Удар} (в любой комбинации). Отражения могут действовать в ход в который были созданы.</p>"
+				}
+			]
+		},
+		"Shrinking Hall": {
+			"name": "Сжимающийся зал",
+			"descriptionHazard": "<p>Этот зал сконструирован так, что он сжимается, когда по нему проходят существа, делая невозможным доступ к двери в конце коридора.</p>",
+			"disable": "<p>@Check[thievery|dc:21|name:Заклинить секционный механизм|traits:action:disable-a-device]{Воровство} (обучен) заклинить секционный механизм пола</p>",
+			"reset": "<p>Через 10 минут после того, как на пол зала не будет давить вес, ловушка сбрасывается, возвращая залу его первоначальный размер.</p>",
+			"items": [
+				{
+					"id": "jGLOByWSFpkvum9N",
+					"name": "Сжатие",
+					"description": "<p><strong>Триггер:</strong> На пол коридора помещается вес @Unit[Pound|100]{100 фунтов} или более</p><hr /><p><strong>Эффект:</strong> Последние 40 футов стен в зале наклоняются внутрь, заставляя зал в дальнем конце сжиматься и сокращаться до @Unit[Inch|6]{6 дюймов} по высоте и ширине, и полностью блокируя доступ к его выходной двери для всего, кроме @UUID[Compendium.pf2e.actionspf2e.Item.kMcV8e5EZUxa6evt]{Протискивающегося} Крошечного существа.</p>"
+				}
+			]
+		},
+		"Shrouded Assailant": {
+			"name": "Нападающий в саване",
+			"descriptionHazard": "<p>Дух выходит из прикрытого зеркала, срывает ткань и окутывается ею, открывая зеркало. Окутанная фигура нападает на живых, пока ткань не сорвана, что изгоняет бесформенного духа.</p>",
+			"disable": "<p>@Check[thievery|dc:43|name:Украсть ткань духа|traits:action:disable-a-device]{Воровство} (мастер) украсть ткань до появления духа, или @Check[athletics|dc:47|name:Сорвать ткань с духа]{Атлетика} сорвать ткань с духа после появления</p>",
+			"reset": "<p>Призрак может быть сброшен, если зеркало накрыто тканью или саваном.</p>",
+			"routine": "<p>(3 действия) Дух использует 3 действия на @UUID[Compendium.pf2e.actionspf2e.Item.UHpkTuCtyaPqiCAB]{Шаг}, @UUID[Compendium.pf2e.actionspf2e.Item.cS9nfDRGD83bNU1p]{Лететь} 60 футов или @UUID[Compendium.pf2e.actionspf2e.Item.VjxZFuUXrCU94MWR]{Удар}, в любом порядке. При успешном \"Ударе\" цель духа @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугана 1}, а при критическом успехе @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугана 2}.</p>",
+			"hp": "дух",
+			"items": [
+				{
+					"id": "ljtEKeEjWZpLfCLL",
+					"name": "Надеть саваном",
+					"description": "<p><strong>Триггер:</strong> Существо попадает в область;</p><hr /><p><strong>Эффект:</strong> Дух выходит из зеркала, надевая ткань как саван и раскрывая зеркало. Спровоцировавшее существо должно преуспеть в спасброске @Check[will|dc:38]{Воли}, иначе станет @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугано 3}. Затем призрак бросает инициативу.</p>"
+				},
+				{
+					"id": "HOnJVrqXXtc3EGEu",
+					"name": "Скрытое касание"
+				}
+			]
+		},
+		"Shuffling Hall": {
+			"name": "Переставляющийся зал",
+			"descriptionHazard": "<p>По зеркальному залу расположенны 4 нажимные плиты, поворачивающиеся вертикально, когда на них наступают, отправляя существо, находящееся на нажимной плите, в соседнюю непримечательную комнату, одновременно с этим заменяя нажимную плиту и стены в зале. Каждая нажимная плита выбрасывает существ в другую комнату.</p>",
+			"disable": "<p>@Check[thievery|dc:12|name:Деактивировать нажимную плиту|traits:action:disable-a-device]{Воровство} деактивировать 1 нажимную плиту</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 раунд.</p>",
+			"items": [
+				{
+					"id": "mLNLTTi0YhxCWKWq",
+					"name": "Переворот",
+					"description": "<p><strong>Триггер:</strong> Существо наступает на нажимную плиту;</p><hr /><p><strong>Эффект:</strong> Пол и примыкающая стена поворачиваются вверх и вниз на центральной оси, перекидывая срабатывающее существо в соседнюю непримечательную комнату и одновременно заменяя данную нажимную плиту и стену другим их набором на той же оси. Спровоцировавшее существо вталкивается в прилегающую комнату, получает @Damage[1d8[bludgeoning]] и падает @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}. Существо, преуспевшее в спасброске @Check[reflex|dc:19|traits:damaging-effect]{Рефлекса}, не получает урона и откатывается в сторону от ловушки, возвращаясь в пространство, где оно находилось до того, как наступило на нажимную плиту.</p>"
+				}
+			]
+		},
+		"Sigil of Deepest Fears": {
+			"name": "Сигил глубочайших страхов",
+			"descriptionHazard": "<p>Арканный сигил заставляет существ столкнуться со своим сильнейшим страхом.</p>",
+			"disable": "<p>@Check[thievery|dc:43|name:Истощить мощь сигила|traits:action:disable-a-device]{Воровство} (мастер) безвредно истощить мощь сигила, или @UUID[Compendium.pf2e.spells-srd.Item.9HpwDN4MYQJnW0LG]{Рассеять магию} (9-й уровень, противодействие КС 42) @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.E4Q7EiSG18sIvFwg]{Противодействовать} сигилу</p>",
+			"reset": "<p>Ловушка сбрасывается через 1 день.</p>",
+			"stealth": "<p>(мастер)</p>",
+			"items": [
+				{
+					"id": "mF3Y5psHWHrkB81u",
+					"name": "Столкнуть со страхом",
+					"description": "<p><strong>Триггер:</strong> Существо двигается в радиусе 10 футов от сигила;</p><hr /><p><strong>Эффект:</strong> Все существа в радиусе 120 футов от сигила подвергаются заклинанию @UUID[Compendium.pf2e.spells-srd.Item.qDjeG6dxT4aEEC6J] (спасбросок @Check[will|dc:40|traits:damaging-effect]{Воли}).</p>"
+				}
+			]
+		},
+		"Spirit Window": {
+			"name": "Окно духов",
+			"descriptionHazard": "<p>Духи, запертые в одержимом привидениями окне, вредят тем, кто касается этого окна.</p>",
+			"disable": "<p>@Check[occultism|dc:48|name:Освободить духов]{Оккультизм} (легенда) освободить духов из окна, или @Check[religion|dc:48|name:Изгнать духов]{Религия} (легенда) изгнать духов</p>",
+			"reset": "<p>1 раунд</p>",
+			"items": [
+				{
+					"id": "2WfGqYcBTEQfIJje",
+					"name": "Вытягивание души",
+					"description": "<p><strong>Триггер:</strong> Существо касается окна;</p><hr /><p><strong>Эффект:</strong> Спровоцировавшее существо получает @Damage[(8d10+44)[void]] (простой спасбросок @Check[will|dc:42|basic]{Воли}) так как окно пытается украсть их душу. Если этот урон убьет цель, ее душа захвачена внутри окна с эффектами @UUID[Compendium.pf2e.spells-srd.Item.GYmXvS9NJ7QwfWGg].</p>"
+				}
+			]
+		},
+		"Thalassophobia Pool": {
+			"name": "Thalassophobia Pool",
+			"descriptionHazard": "<p>The pool sucks in creatures that fall into it, making them sink into its endless depths.</p>",
+			"disable": "<p>@Check[diplomacy|dc:32|name:Calm the Pool] (master) to quell the fear and calm the pool or @Check[intimidation|dc:35|name:Scare the Pool] to give the pool something worse to fear; three successes required.</p>",
+			"reset": "<p>The trap resets once there are no moving creatures in it.</p>",
+			"routine": "<p>(3 actions) Water from the chalice increases the depth of the water by 10 feet for each action. Each time this happens, creatures in the pool are pushed 10 feet down and take @Damage[1d6[bludgeoning]] damage. As the pool has no bottom, creatures in it can fall down indefinitely; they must @UUID[Compendium.pf2e.actionspf2e.Item.c8TGiZ48ygoSPofx] up to avoid drowning, but the water is especially choppy, so the Athletics DC is @Check[athletics|dc:25|traits:action:swim]. The pool never overflows. Each successful check to Disable reduces the pool's actions by 1, and once the pool is completely Disabled, the water becomes still and the Athletics DC to Swim becomes @Check[athletics|dc:10|traits:action:swim].</p>",
+			"stealth": "<p>(обучен)</p>",
+			"items": [
+				{
+					"id": "GReYolkvohIlgdbM",
+					"name": "Ливень",
+					"description": "<p><strong>Триггер:</strong> A creature falls into the pool</p><hr /><p><strong>Эффект:</strong> More water pours forth from the chalice. Creatures in the pool become @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Clumsy 1}, and they can't decrease their clumsy condition so long as they remain in the pool. The trap then rolls initiative.</p>"
+				}
+			]
+		},
+		"The Morrowkin": {
+			"name": "The Morrowkin"
+		},
+		"The Weaver in Dreams": {
+			"name": "The Weaver in Dreams"
+		},
+		"Verdure's Moonflower": {
+			"name": "Verdure's Moonflower",
+			"description": "<p>These enormous plants have thick, knotted trunks festooned with fanged blossoms. A gaping mouth sits at the top of the trunk, capable of swallowing most creatures smaller than the moonflower whole. Moonflowers can move slowly on their powerful roots or use them to attack, but usually they dig them deeply into the surrounding ground and remain stationary to await prey.</p><p>Though moonflowers can't speak in the conventional sense, they communicate telepathically with other moonflowers. Explorers who encounter a single moonflower can thus be assured that any other moonflowers in the vicinity will be prepared for them. Those who manage to intercept a moonflower's telepathic communications are assaulted by visions of dreadful, primeval jungles ruled over by titanic plant life. Whether this is some vision of the past or a dream of the future shared by all moonflowers is unknown.</p><p>Moonflowers are alien life-forms from a long-dead planet, but their proliferation throughout the galaxy has been ensured through the machinations of the Dominion of the Black, a sinister, alien organization from the dark places between the stars.</p>",
+			"language": "Telepathy 1 mile (Other Moonflowers Only)",
+			"hp": "быстрое исцеление 10",
+			"items": [
+				{
+					"id": "SDF2zWv6zGkmcQH9",
+					"name": "Укус"
+				},
+				{
+					"id": "kjaeBRLTBCSOl9cS",
+					"name": "Проглотить целиком"
+				},
+				{
+					"id": "0D7DkzCzV4iv9Q0r",
+					"name": "Захват"
+				}
+			]
+		}
+	}
+}

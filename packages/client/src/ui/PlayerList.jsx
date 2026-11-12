@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useTranslation } from "./i18n.js";
 import PlayerConfigModal from "./PlayerConfigModal.jsx";
 import { useStore } from "./StoreContext.jsx";
 
-const ROLE_LABELS = {
-  gm: "Ведущий",
-  player: "Игрок",
+const ROLE_LABEL_KEYS = {
+  gm: ["PF2E.Platform.Players.RoleGm", "Game Master"],
+  player: ["PF2E.Platform.Players.RolePlayer", "Player"],
 };
 
-function roleLabel(role) {
-  return ROLE_LABELS[role] || ROLE_LABELS.player;
+function roleLabel(role, t) {
+  const entry = ROLE_LABEL_KEYS[role] || ROLE_LABEL_KEYS.player;
+  return t(entry[0], entry[1]);
 }
 
 /**
@@ -21,6 +23,7 @@ function roleLabel(role) {
  */
 export default function PlayerList() {
   const { users, myUserId } = useStore();
+  const { t } = useTranslation();
   const [menu, setMenu] = useState(null);
   const [configUserId, setConfigUserId] = useState(null);
   const menuRef = useRef(null);
@@ -82,11 +85,18 @@ export default function PlayerList() {
 
   return (
     <>
-      <aside className="player-list" aria-label="Подключённые игроки">
-        <div className="player-list__header">Игроки</div>
+      <aside
+        className="player-list"
+        aria-label={t("PF2E.Platform.Players.Aria", "Connected players")}
+      >
+        <div className="player-list__header">
+          {t("PF2E.Platform.Players.Title", "Players")}
+        </div>
 
         {users.length === 0 ? (
-          <div className="player-list__empty">Ожидание подключения…</div>
+          <div className="player-list__empty">
+            {t("PF2E.Platform.Players.Waiting", "Waiting for players…")}
+          </div>
         ) : (
           <ul className="player-list__items">
             {users.map((user) => (
@@ -100,8 +110,12 @@ export default function PlayerList() {
                   title={
                     user.name +
                     " — " +
-                    roleLabel(user.role) +
-                    ". Правый клик: настройка участника"
+                    roleLabel(user.role, t) +
+                    ". " +
+                    t(
+                      "PF2E.Platform.Players.ConfigureHint",
+                      "Right-click: configure participant",
+                    )
                   }
                   onContextMenu={(event) => openContextMenu(event, user)}
                 >
@@ -112,7 +126,7 @@ export default function PlayerList() {
                   />
                   <span className="player-list__name">{user.name}</span>
                   <span className="player-list__role">
-                    [{roleLabel(user.role)}]
+                    [{roleLabel(user.role, t)}]
                   </span>
                 </button>
               </li>
@@ -138,7 +152,7 @@ export default function PlayerList() {
             <span className="context-menu__icon" aria-hidden="true">
               👤
             </span>
-            Настройка участника
+            {t("PF2E.Platform.Players.Configure", "Configure participant")}
           </button>
         </div>
       ) : null}

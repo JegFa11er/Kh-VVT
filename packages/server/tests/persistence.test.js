@@ -94,6 +94,76 @@ test("mutations without a configured dataFile do not touch the disk", async func
   assert.equal(session.getDirectories().scenes.entries.length, 1);
 });
 
+// ---------------------------------------------------------- world export/import
+
+test("exportWorld/importWorld replaces the campaign and validates root keys", function () {
+  const source = new EncounterSession({ id: "export-source" });
+  source.createProfile({ name: "GM Source", role: "gm" });
+  source.createDirectoryEntry("actors", { name: "Imported Hero" });
+  source.createDirectoryEntry("scenes", { name: "Imported Scene" });
+
+  const world = source.exportWorld();
+  assert.ok(Array.isArray(world.users));
+  assert.ok(world.directories && world.directories.actors);
+
+  const target = new EncounterSession({ id: "import-target" });
+  target.createDirectoryEntry("actors", { name: "Old Hero" });
+
+  const result = target.importWorld(world);
+  assert.equal(result.ok, true);
+  assert.equal(target.getDirectories().actors.entries.length, 1);
+  assert.equal(target.getDirectories().actors.entries[0].name, "Imported Hero");
+  assert.equal(target.getDirectories().scenes.entries[0].name, "Imported Scene");
+  assert.equal(target.getProfiles()[0].name, "GM Source");
+
+  assert.equal(target.importWorld({ directories: {} }).reason, "missing-root-keys");
+  assert.equal(
+    target.importWorld({ users: [], directories: [] }).reason,
+    "invalid-directories",
+  );
+});
+
+test("catalog service reads en/ru indexes and full files by lang", async function () {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "pf2e-catalog-"));
+  try {
+    const english = [
+      { id: "fireball", name: "Fireball", type: "spell", level: 3 },
+    ];
+    const russian = [
+      { id: "fireball", name: "Огненный шар", type: "spell", level: 3 },
+    ];
+    await fs.writeFile(
+      path.join(directory, "spells.en.index.json"),
+      JSON.stringify(english),
+      "utf8",
+    );
+    await fs.writeFile(
+      path.join(directory, "spells.ru.index.json"),
+      JSON.stringify(russian),
+      "utf8",
+    );
+    await fs.writeFile(
+      path.join(directory, "spells.en.json"),
+      JSON.stringify([{ ...english[0], description: "English text" }]),
+      "utf8",
+    );
+    await fs.writeFile(
+      path.join(directory, "spells.ru.json"),
+      JSON.stringify([{ ...russian[0], description: "Русский текст" }]),
+      "utf8",
+    );
+
+    const service = new CatalogService({ directory: directory });
+    assert.equal(service.getIndex("spells", {}, "en")[0].name, "Fireball");
+    assert.equal(service.getIndex("spells", {}, "ru")[0].name, "Огненный шар");
+    assert.equal(service.getItem("spells", "fireball", "ru").description, "Русский текст");
+    assert.equal(service.getCategory("spells", "ru").lang, "ru");
+    assert.equal(service.listCategories("en")[0].file, "spells.en.json");
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
 // ------------------------------------------------------------------ sorting
 
 test("compendium results sort by level first, then alphabetically", function () {

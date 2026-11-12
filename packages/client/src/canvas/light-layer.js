@@ -1,5 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 
+import { promptText } from "../ui/overlays/dialog-service.js";
+
 import { computePolygon } from "./math.js";
 
 const DARKNESS_ALPHA = {
@@ -77,6 +79,11 @@ export class LightLayer extends Container {
     this._sequence = 0;
     this.darknessLevel = "light";
     this.gmVision = false;
+    /**
+     * True when the viewer should see the scene without any darkness overlay
+     * (a GM browsing the map while no token is selected).
+     */
+    this.revealAll = false;
     // The bulb marker is an editing affordance: it is only visible while the
     // Lighting category is open (Step 4.8 canvas polish).
     this.activeCategory = "token";
@@ -127,6 +134,12 @@ export class LightLayer extends Container {
   }
 
   _applyDarkness() {
+    // GM browsing with no selected token: no darkness at all.
+    if (this.revealAll) {
+      this.darknessContainer.visible = false;
+      return;
+    }
+    this.darknessContainer.visible = true;
     const base = DARKNESS_ALPHA[this.darknessLevel] || 0;
     // The GM can see the map through the overlay; players keep full darkness.
     this.darknessContainer.alpha = this.gmVision ? base * 0.35 : base;
@@ -142,6 +155,15 @@ export class LightLayer extends Container {
 
   setGmVision(enabled) {
     this.gmVision = Boolean(enabled);
+    this._applyDarkness();
+  }
+
+  /**
+   * Completely hide the darkness overlay (GM without a selected token).
+   * Unlike `setGmVision` this is a hard visibility switch, not a dim factor.
+   */
+  setRevealAll(enabled) {
+    this.revealAll = Boolean(enabled);
     this._applyDarkness();
   }
 
@@ -504,16 +526,18 @@ export class LightLayer extends Container {
   }
 
   /** Double-click on a bulb edits bright/dim radii (in feet). */
-  handleDoubleClick(worldPoint) {
+  async handleDoubleClick(worldPoint) {
     const source = this.sourceAt(worldPoint);
     if (!source) {
       return false;
     }
 
-    const brightRaw = window.prompt(
-      "Радиус яркого света (футы):",
-      String(Number(source.brightFeet.toFixed(2))),
-    );
+    const brightRaw = await promptText({
+      title: "Свет",
+      message: "Радиус яркого света (футы):",
+      defaultValue: String(Number(source.brightFeet.toFixed(2))),
+      inputType: "number",
+    });
     if (brightRaw === null) {
       return true;
     }
@@ -522,10 +546,12 @@ export class LightLayer extends Container {
       return true;
     }
 
-    const dimRaw = window.prompt(
-      "Радиус тусклого света (футы):",
-      String(Number(source.dimFeet.toFixed(2))),
-    );
+    const dimRaw = await promptText({
+      title: "Свет",
+      message: "Радиус тусклого света (футы):",
+      defaultValue: String(Number(source.dimFeet.toFixed(2))),
+      inputType: "number",
+    });
     if (dimRaw === null) {
       return true;
     }

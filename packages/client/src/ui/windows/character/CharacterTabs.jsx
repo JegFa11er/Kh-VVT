@@ -17,11 +17,14 @@ import {
   abilityMod,
   clampRank,
   encumbranceState,
+  focusSpellPointCost,
+  isFocusSpellcastingEntry,
   itemCanHoldHands,
   itemGroupId,
   iwrLabel,
   isPhysicalItemType,
   languageLabel,
+  maxSpellRankForLevel,
   nextEntryId,
   normalizePhysicalItem,
   parseBulkValue,
@@ -29,12 +32,23 @@ import {
   signed,
   skillModifier,
   spellcastingStats,
+  strikeMapLabel,
   totalBulk,
 } from "./character-data.js";
 import {
   EntryEditorModal,
   SpellcastingSetupModal,
 } from "./CharacterModals.jsx";
+import ItemSheetModal from "./ItemSheetModal.jsx";
+import RichTextEditor from "../../RichTextEditor.jsx";
+import SpellPreparationModal from "./SpellPreparationModal.jsx";
+import {
+  acceptsPreparedSpellDrag,
+  readPreparedSpellDrag,
+  setPreparedSpellDragData,
+} from "./spell-drag.js";
+import { useTranslation } from "../../i18n.js";
+import { confirmAction } from "../../overlays/dialog-service.js";
 import { setMacroDragData } from "../../hotbar-macros.js";
 
 const PLACEHOLDER_IMAGE = "/assets/ui/item-placeholder.svg";
@@ -64,7 +78,13 @@ export function CommitInput({ value, onCommit, type = "text", ...props }) {
       onChange={(event) => setDraft(event.target.value)}
       onBlur={() => {
         if (String(value ?? "") !== draft) {
-          onCommit(draft);
+          const committed = onCommit(draft);
+          // A commit handler may clamp/normalise the input (for example the
+          // current-HP field caps at maximum HP). Mirror the resolved value so
+          // the field never keeps showing an out-of-range draft.
+          if (committed !== undefined && committed !== null) {
+            setDraft(String(committed));
+          }
         }
       }}
       onKeyDown={(event) => {
@@ -106,18 +126,27 @@ export function RankBadge({ rank }) {
   );
 }
 
-function RankSelect({ rank, onChange, disabled }) {
-  const value = clampRank(rank);
+function RankSelect({ rank, onChange, disabled, minRank = 0 }) {
+  const floor = clampRank(minRank);
+  const value = Math.max(clampRank(rank), floor);
   return (
     <select
       className={"pf2e-rank-select pf2e-rank-select--" + (RANKS[value]?.short || "u").toLowerCase()}
       value={value}
       disabled={disabled}
-      title={RANKS[value]?.title}
-      onChange={(event) => onChange(Number(event.target.value))}
+      title={
+        floor > 0
+          ? RANKS[value]?.title + " · минимум: " + RANKS[floor]?.label
+          : RANKS[value]?.title
+      }
+      onChange={(event) => onChange(Math.max(Number(event.target.value), floor))}
     >
       {RANKS.map((entry) => (
-        <option key={entry.value} value={entry.value}>
+        <option
+          key={entry.value}
+          value={entry.value}
+          disabled={entry.value < floor}
+        >
           {entry.short} — {entry.label}
         </option>
       ))}
@@ -272,6 +301,113 @@ function featChatText(feat) {
     .join("\n");
 }
 
+/** Inline description shown directly below a feat/item/spell row. */
+function InlineDescription({ text, className = "" }) {
+  const content = plainDescription(text);
+  return (
+    <p className={"pf2e-inline-description " + className}>
+      {content || "Описание отсутствует."}
+    </p>
+  );
+}
+
+/**
+ * Step 5.7: one shared feat row for class features, slots and loose feats.
+ * Clicking the name expands the description; the pencil opens ItemSheetModal;
+ * the speech bubble shares the feat in chat.
+ */
+function FeatCard({
+  feat,
+  expanded = false,
+  onToggle,
+  onShare,
+  onOpenSheet,
+  onRemove,
+  editable = false,
+}) {
+  const traits = splitTraits(feat.traits);
+  return (
+    <li
+      className={
+        "pf2e-feat pf2e-feat--card" + (expanded ? " pf2e-feat--expanded" : "")
+      }
+    >
+      <button
+        type="button"
+        className="pf2e-feat__img"
+        title="Отправить описание черты в чат"
+        onClick={onShare}
+      >
+        {feat.img ? (
+          <img src={feat.img} alt="" loading="lazy" />
+        ) : (
+          <span aria-hidden="true">🏅</span>
+        )}
+      </button>
+      <span className="pf2e-feat__level">ур. {feat.level || 1}</span>
+      <button
+        type="button"
+        className="pf2e-feat__name pf2e-feat__name--button"
+        title="Показать или скрыть описание"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        {feat.name}
+      </button>
+      {traits.length > 0 ? (
+        <span className="pf2e-feat__traits">
+          {traits.slice(0, 4).join(", ")}
+        </span>
+      ) : null}
+      <div className="pf2e-item-controls">
+        <button
+          type="button"
+          className="pf2e-icon-button"
+          title="Поделиться описанием в чате"
+          onClick={onShare}
+        >
+          💬
+        </button>
+        {typeof onOpenSheet === "function" ? (
+          <button
+            type="button"
+            className="pf2e-icon-button"
+            title="Изменить (карточка предмета)"
+            onClick={() => onOpenSheet(feat)}
+          >
+            ✎
+          </button>
+        ) : null}
+        {editable && typeof onRemove === "function" ? (
+          <button
+            type="button"
+            className="pf2e-icon-button pf2e-icon-button--danger"
+            title="Удалить"
+            onClick={() => onRemove(feat)}
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+      {expanded ? <InlineDescription text={feat.description} /> : null}
+    </li>
+  );
+}
+
+/** Step 5.7: the four player-selectable feat-slot groups, in sheet order. */
+const FEAT_SLOT_SECTIONS = [
+  { type: "ancestry", label: "Способности родословной", icon: "🧬" },
+  { type: "class", label: "Способности класса", icon: "⚔️" },
+  { type: "skill", label: "Способности навыков", icon: "✋" },
+  { type: "general", label: "Общие способности", icon: "🌟" },
+];
+
+const EXTRA_FEAT_SECTIONS = [
+  { id: "heritage", label: "Наследие", icon: "🌿" },
+  { id: "bonus", label: "Бонусные способности", icon: "🎁" },
+];
+
+
 // --------------------------------------------------------------- Character
 
 export function CharacterTab({
@@ -424,25 +560,6 @@ export function CharacterTab({
         </div>
       </div>
 
-      <SectionHeader title="Сведения" />
-      <div className="pf2e-detail-grid">
-        {[
-          ["gender", "Пол / местоимения"],
-          ["age", "Возраст"],
-          ["ethnicity", "Этническая принадлежность"],
-          ["nationality", "Национальность"],
-        ].map(([key, label]) => (
-          <label className="pf2e-field" key={key}>
-            <span>{label}</span>
-            <CommitInput
-              value={system.details?.[key]?.value || ""}
-              disabled={!editable}
-              onCommit={(value) => patchDetails(key, value)}
-            />
-          </label>
-        ))}
-      </div>
-
       <div className="pf2e-two-column">
         <div className="pf2e-panel">
           <SectionHeader
@@ -541,15 +658,214 @@ export function CharacterTab({
 
 // ------------------------------------------------------------------ Combat
 
+const BASE_ACTION_NAMES = new Set(
+  [
+    "Trip",
+    "Shove",
+    "Grapple",
+    "Disarm",
+    "Reposition",
+    "Escape",
+    "Step",
+    "Stride",
+    "Stand",
+    "Take Cover",
+    "Seek",
+    "Sense Motive",
+    "Aid",
+    "Delay",
+    "Ready",
+    "Raise a Shield",
+    "Demoralize",
+    "Create a Diversion",
+    "Feint",
+    "Hide",
+    "Sneak",
+    "Tumble Through",
+    "Recall Knowledge",
+    "Treat Wounds",
+    "Опрокинуть",
+    "Толкнуть",
+    "Схватить",
+    "Обезоружить",
+    "Переместить",
+    "Вырваться",
+    "Шаг",
+    "Шагнуть",
+    "Встать",
+    "Укрыться",
+    "Искать",
+    "Почувствовать мотив",
+    "Помочь",
+    "Отложить",
+    "Приготовиться",
+    "Поднять щит",
+    "Деморализовать",
+    "Создать отвлечение",
+    "Финт",
+    "Скрыться",
+    "Красться",
+    "Кувыркнуться",
+    "Вспомнить знания",
+    "Обработать раны",
+  ].map((name) => name.toLowerCase()),
+);
+
+/**
+ * Step 5.5: the former Actions tab is collapsed into Combat. Only actions that
+ * come from feats/class features are listed; the generic base action library
+ * (Trip, Shove, ...) is intentionally hidden for now.
+ */
+function isBaseAction(action) {
+  if (!action) {
+    return true;
+  }
+  if (action.base === true || action.source === "core") {
+    return true;
+  }
+  if (String(action.id || "").startsWith("base-action-")) {
+    return true;
+  }
+  return BASE_ACTION_NAMES.has(String(action.name || "").trim().toLowerCase());
+}
+
+function featureActions(system) {
+  const result = [];
+  for (const section of ["encounter", "exploration", "downtime"]) {
+    for (const action of system.actions?.[section] || []) {
+      if (!isBaseAction(action)) {
+        result.push({ ...action, section });
+      }
+    }
+  }
+  return result;
+}
+
 /**
  * Foundry's strike row: one d20 attack button per multiple-attack-penalty step
  * plus a damage button. Agility changes the MAP to -4/-8, everything else uses
  * the standard -5/-10.
  */
-export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
+export function CombatTab({
+  system,
+  actor,
+  items,
+  editable,
+  updateSystem,
+  onRoll,
+  onItemsChange,
+}) {
+  const { t } = useTranslation();
   const [editor, setEditor] = useState(null);
+  const [actionEditor, setActionEditor] = useState(null);
   const strikes = system.strikes || [];
+  // Step 6.7: toggleable RollOptions collected during actor preparation.
+  const toggles = Array.isArray(system.toggles) ? system.toggles : [];
   const actorId = actor && actor.id ? actor.id : null;
+  const heldShield =
+    (Array.isArray(items) ? items : []).find(
+      (item) => item && item.type === "shield" && item.carried === "held",
+    ) || null;
+  const raiseShieldAction = heldShield
+    ? {
+        id: "base-action-raise-a-shield",
+        name: "Поднять щит",
+        cost: "1",
+        traits: "манипуляция",
+        base: true,
+        description:
+          (heldShield.raised
+            ? "Щит поднят: " + (heldShield.name || "щит") + " даёт бонус к КБ."
+            : "Поднимите " +
+              (heldShield.name || "щит") +
+              ", чтобы получить его бонус к КБ до начала вашего следующего хода."),
+      }
+    : null;
+  const actions = raiseShieldAction
+    ? [raiseShieldAction, ...featureActions(system)]
+    : featureActions(system);
+
+  const toggleShieldRaised = () => {
+    if (!heldShield || typeof onItemsChange !== "function") {
+      return;
+    }
+    onItemsChange(
+      (Array.isArray(items) ? items : []).map((item) =>
+        item.id === heldShield.id ? { ...item, raised: !item.raised } : item,
+      ),
+    );
+  };
+
+  /**
+   * Persist the toggle state in `system.flags.pf2e.rollOptions` (Foundry's
+   * `all` domain) and re-derive the actor immediately. The resulting
+   * `room:update-actor` payload contains the recomputed AC, saves and strikes.
+   */
+  const setRollOption = (toggle, enabled) => {
+    updateSystem((current) => {
+      const flags =
+        current.flags && typeof current.flags === "object" ? current.flags : {};
+      const pf2e =
+        flags.pf2e && typeof flags.pf2e === "object" ? flags.pf2e : {};
+      const rollOptions =
+        pf2e.rollOptions && typeof pf2e.rollOptions === "object"
+          ? pf2e.rollOptions
+          : {};
+      const all =
+        rollOptions.all && typeof rollOptions.all === "object"
+          ? rollOptions.all
+          : {};
+      return {
+        ...current,
+        flags: {
+          ...flags,
+          pf2e: {
+            ...pf2e,
+            rollOptions: {
+              ...rollOptions,
+              all: { ...all, [toggle.option]: enabled },
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const toggleLabel = (toggle) => {
+    const raw = String(toggle.label || toggle.itemName || toggle.option || "");
+    if (raw.startsWith("PF2E.")) {
+      return t(raw, toggle.itemName || toggle.option);
+    }
+    return raw || toggle.option;
+  };
+
+  const saveAction = (action) => {
+    updateSystem((current) => {
+      const next = {};
+      for (const entry of ACTION_SECTIONS) {
+        next[entry.id] = (current.actions?.[entry.id] || []).filter(
+          (existing) => existing.id !== action.id,
+        );
+      }
+      const target = next[action.section] ? action.section : "encounter";
+      next[target] = [...next[target], action];
+      return { ...current, actions: next };
+    });
+  };
+
+  const removeAction = (action) => {
+    updateSystem((current) => ({
+      ...current,
+      actions: Object.fromEntries(
+        ACTION_SECTIONS.map((entry) => [
+          entry.id,
+          (current.actions?.[entry.id] || []).filter(
+            (existing) => existing.id !== action.id,
+          ),
+        ]),
+      ),
+    }));
+  };
 
   /** Step 4.9: the hotbar replays the same `/r` chat text as this button. */
   const strikeMacro = (strike, modifier, suffix) => ({
@@ -577,14 +893,17 @@ export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
   });
 
   const saveStrike = (strike) => {
+    // A manually edited attack value becomes the new base: the preparation
+    // pipeline re-applies active FlatModifier attack rules on top of it.
+    const draft = { ...strike, baseAttack: undefined };
     updateSystem((current) => {
       const list = Array.isArray(current.strikes) ? current.strikes : [];
-      const exists = list.some((entry) => entry.id === strike.id);
+      const exists = list.some((entry) => entry.id === draft.id);
       return {
         ...current,
         strikes: exists
-          ? list.map((entry) => (entry.id === strike.id ? strike : entry))
-          : [...list, strike],
+          ? list.map((entry) => (entry.id === draft.id ? draft : entry))
+          : [...list, draft],
       };
     });
   };
@@ -690,28 +1009,31 @@ export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
                     onClick={() => rollAttack(strike, strike.attack, "")}
                     {...hotbarMacroProps(strikeMacro(strike, strike.attack, ""))}
                   >
-                    <span className="pf2e-strike-button__label">Атака</span>
-                    <span className="pf2e-strike-button__value">{signed(strike.attack)}</span>
+                    <span className="pf2e-strike-button__value">
+                      {signed(strike.attack)}
+                    </span>
                   </button>
                   <button
                     type="button"
-                    className="pf2e-strike-button"
-                    title={"Второй удар: " + signed(attackMap)}
+                    className="pf2e-strike-button pf2e-strike-button--map"
+                    title={"Второй удар: " + strikeMapLabel(attackMap, map)}
                     onClick={() => rollAttack(strike, attackMap, "(2-й)")}
                     {...hotbarMacroProps(strikeMacro(strike, attackMap, "(2-й)"))}
                   >
-                    <span className="pf2e-strike-button__label">{map}</span>
-                    <span className="pf2e-strike-button__value">{signed(attackMap)}</span>
+                    <span className="pf2e-strike-button__value">
+                      {strikeMapLabel(attackMap, map)}
+                    </span>
                   </button>
                   <button
                     type="button"
-                    className="pf2e-strike-button"
-                    title={"Третий удар: " + signed(attackMap2)}
+                    className="pf2e-strike-button pf2e-strike-button--map"
+                    title={"Третий удар: " + strikeMapLabel(attackMap2, map2)}
                     onClick={() => rollAttack(strike, attackMap2, "(3-й)")}
                     {...hotbarMacroProps(strikeMacro(strike, attackMap2, "(3-й)"))}
                   >
-                    <span className="pf2e-strike-button__label">{map2}</span>
-                    <span className="pf2e-strike-button__value">{signed(attackMap2)}</span>
+                    <span className="pf2e-strike-button__value">
+                      {strikeMapLabel(attackMap2, map2)}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -720,6 +1042,14 @@ export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
                     onClick={() =>
                       onRoll(
                         "/r " + (strike.damage || "1d6") + " " + strike.name + " — урон",
+                        false,
+                        "public",
+                        {
+                          type: "attack-card",
+                          name: strike.name,
+                          damageFormula: strike.damage || "1d6",
+                          description: strike.name + " — урон",
+                        },
                       )
                     }
                     {...hotbarMacroProps(damageMacro(strike))}
@@ -753,6 +1083,141 @@ export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
           })
         )}
       </ol>
+
+      <SectionHeader
+        title="Действия и особенности"
+        hint="От черт и классовых особенностей"
+        actions={
+          editable ? (
+            <button
+              type="button"
+              className="pf2e-small-button"
+              onClick={() => setActionEditor({ section: "encounter" })}
+            >
+              + Добавить действие
+            </button>
+          ) : null
+        }
+      />
+      <ol className="pf2e-actions-list">
+        {actions.length === 0 ? (
+          <p className="pf2e-empty">
+            Действий от черт и особенностей пока нет.
+          </p>
+        ) : (
+          actions.map((action) => (
+            <li className="pf2e-action" key={action.section + ":" + action.id}>
+              <span className="pf2e-action__glyph">{costGlyph(action.cost)}</span>
+              <div className="pf2e-action__body">
+                <div className="pf2e-action__name">
+                  {action.name}
+                  {action.id === "base-action-raise-a-shield" && heldShield?.raised ? (
+                    <span className="pf2e-tag pf2e-tag--secondary">поднят</span>
+                  ) : null}
+                </div>
+                {action.traits ? (
+                  <div className="pf2e-action__traits">
+                    {splitTraits(action.traits).map((trait) => (
+                      <span className="pf2e-tag pf2e-tag--trait" key={trait}>
+                        {trait}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                {action.description ? (
+                  <p className="pf2e-action__description">{action.description}</p>
+                ) : null}
+              </div>
+              <div className="pf2e-item-controls">
+                <button
+                  type="button"
+                  className="pf2e-icon-button"
+                  title="Отправить в чат"
+                  onClick={() => onRoll(action.name, true)}
+                  {...hotbarMacroProps({
+                    type: "action",
+                    actorId,
+                    actionId: action.id,
+                    name: action.name,
+                    icon: null,
+                    text: action.name,
+                    plain: true,
+                  })}
+                >
+                  💬
+                </button>
+                {action.id === "base-action-raise-a-shield" ? (
+                  <button
+                    type="button"
+                    className={
+                      "pf2e-small-button" + (heldShield?.raised ? " is-active" : "")
+                    }
+                    title={
+                      heldShield?.raised
+                        ? "Опустить щит"
+                        : "Поднять щит (бонус к КБ)"
+                    }
+                    disabled={!editable}
+                    onClick={toggleShieldRaised}
+                  >
+                    {heldShield?.raised ? "Опустить" : "Поднять"}
+                  </button>
+                ) : editable ? (
+                  <>
+                    <button
+                      type="button"
+                      className="pf2e-icon-button"
+                      title="Изменить"
+                      onClick={() => setActionEditor(action)}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="pf2e-icon-button pf2e-icon-button--danger"
+                      title="Удалить"
+                      onClick={() => removeAction(action)}
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            </li>
+          ))
+        )}
+      </ol>
+
+      <SectionHeader
+        title="Переключатели"
+        hint="Опции правил (RollOption)"
+      />
+      {toggles.length === 0 ? (
+        <p className="pf2e-empty">
+          У этого персонажа нет включаемых эффектов.
+        </p>
+      ) : (
+        <ul className="pf2e-toggle-list">
+          {toggles.map((toggle) => (
+            <li className="pf2e-toggle" key={toggle.id}>
+              <label className="pf2e-toggle__label">
+                <input
+                  type="checkbox"
+                  checked={toggle.enabled === true}
+                  disabled={!editable}
+                  onChange={(event) =>
+                    setRollOption(toggle, event.target.checked)
+                  }
+                />
+                <span className="pf2e-toggle__name">{toggleLabel(toggle)}</span>
+              </label>
+              <span className="pf2e-toggle__source">
+                {toggle.itemName || toggle.option}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <SectionHeader title="Оружие" hint="В руках / надето / в рюкзаке" />
       <ul className="pf2e-simple-list">
@@ -792,6 +1257,16 @@ export function CombatTab({ system, actor, editable, updateSystem, onRoll }) {
           onClose={() => setEditor(null)}
         />
       ) : null}
+
+      {actionEditor ? (
+        <EntryEditorModal
+          kind="action"
+          title={actionEditor.id ? "Изменить действие" : "Новое действие"}
+          initial={actionEditor}
+          onSave={saveAction}
+          onClose={() => setActionEditor(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -824,6 +1299,8 @@ export function InventoryTab({
   onItemsChange,
 }) {
   const [editor, setEditor] = useState(null);
+  const [expandedId, setExpandedId] = useState("");
+  const [sheetItem, setSheetItem] = useState(null);
   const allItems = Array.isArray(items) ? items : [];
   const physicalItems = allItems.filter((item) => isPhysicalItemType(item.type));
   const coins = system.inventory?.coins || {};
@@ -909,6 +1386,8 @@ export function InventoryTab({
         carried === "held"
           ? Math.max(1, Math.trunc(Number(item.handsHeld) || 1))
           : 0,
+      // A shield can only stay raised while it remains in hand.
+      ...(item.type === "shield" && carried !== "held" ? { raised: false } : {}),
     });
   };
 
@@ -999,14 +1478,24 @@ export function InventoryTab({
                           )}
                         </span>
                         <div className="pf2e-inventory-item__body">
-                          <div className="pf2e-inventory-item__name">
+                          <button
+                            type="button"
+                            className="pf2e-inventory-item__name pf2e-item-name--button"
+                            title="Показать или скрыть описание"
+                            aria-expanded={expandedId === item.id}
+                            onClick={() =>
+                              setExpandedId((current) =>
+                                current === item.id ? "" : item.id,
+                              )
+                            }
+                          >
                             {item.name}
                             {Number(item.level) > 0 ? (
                               <span className="pf2e-inventory-item__level">
                                 ур. {item.level}
                               </span>
                             ) : null}
-                          </div>
+                          </button>
                           <div className="pf2e-inventory-item__meta">
                             <span>{bulkLabel(item.bulk)} масса</span>
                             <span>×{item.quantity}</span>
@@ -1026,6 +1515,9 @@ export function InventoryTab({
                                 ))}
                             </div>
                           ) : null}
+                          {expandedId === item.id ? (
+                            <InlineDescription text={item.description} />
+                          ) : null}
                         </div>
                         <div className="pf2e-inventory-item__controls">
                           <select
@@ -1042,6 +1534,17 @@ export function InventoryTab({
                               </option>
                             ))}
                           </select>
+                          {item.type === "shield" && item.carried === "held" ? (
+                            <label className="pf2e-raised-toggle" title="Поднят ли щит">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(item.raised)}
+                                disabled={!editable}
+                                onChange={() => toggleItem(item, "raised")}
+                              />
+                              <span>Поднят</span>
+                            </label>
+                          ) : null}
                           {showHands ? (
                             <select
                               className="pf2e-input pf2e-hands-select"
@@ -1068,8 +1571,8 @@ export function InventoryTab({
                               <button
                                 type="button"
                                 className="pf2e-icon-button"
-                                title="Изменить"
-                                onClick={() => setEditor({ ...item, bulk: String(item.bulk) })}
+                                title="Изменить (карточка предмета)"
+                                onClick={() => setSheetItem(item)}
                               >
                                 ✎
                               </button>
@@ -1116,6 +1619,15 @@ export function InventoryTab({
           {bulk} / {encumbrance.limit} (макс. {encumbrance.max})
         </span>
       </div>
+
+      {sheetItem ? (
+        <ItemSheetModal
+          item={sheetItem}
+          canEdit={editable}
+          onEdit={(entry) => setEditor({ ...entry, bulk: String(entry.bulk) })}
+          onClose={() => setSheetItem(null)}
+        />
+      ) : null}
 
       {editor ? (
         <EntryEditorModal
@@ -1356,6 +1868,162 @@ function spellChatText(spell, stats) {
     .join("\n");
 }
 
+function numericSpellRank(rank) {
+  if (rank === "cantrip") {
+    return 0;
+  }
+  const value = Number(rank);
+  return Number.isFinite(value) ? Math.max(0, Math.min(10, Math.trunc(value))) : 0;
+}
+
+/** Flat sheet traits plus the canonical Foundry `system.traits.value` list. */
+function spellTraitSet(spell) {
+  const traits = new Set(
+    splitTraits(spell && spell.traits).map((trait) => trait.toLowerCase()),
+  );
+  const nested = spell && spell.system && spell.system.traits
+    ? spell.system.traits.value
+    : null;
+  for (const trait of Array.isArray(nested) ? nested : []) {
+    if (typeof trait === "string" && trait.trim() !== "") {
+      traits.add(trait.trim().toLowerCase());
+    }
+  }
+  return traits;
+}
+
+/**
+ * Step 6.3: focus spells use the global Focus pool instead of spell slots.
+ * Focus cantrips are castable at will and never spend a point.
+ */
+function isFocusSpell(spell) {
+  if (!spell || spellRankOf(spell) === 0) {
+    return false;
+  }
+  const traits = spellTraitSet(spell);
+  return traits.has("focus") && !traits.has("cantrip");
+}
+
+
+function spellSlotKey(rank) {
+  return "slot" + numericSpellRank(rank);
+}
+
+function normalizePreparedEntry(entry) {
+  if (entry === null || entry === undefined) {
+    return null;
+  }
+  if (typeof entry === "string") {
+    return entry === "" ? null : { id: entry, expended: false };
+  }
+  if (typeof entry !== "object") {
+    return null;
+  }
+  const id = typeof entry.id === "string" ? entry.id : "";
+  return id === "" ? null : { id, expended: Boolean(entry.expended) };
+}
+
+function normalizeSpellSlot(rank, slot) {
+  const source = slot && typeof slot === "object" ? slot : {};
+  const preparedSource = Array.isArray(source.prepared) ? source.prepared : [];
+  return {
+    rank: numericSpellRank(rank),
+    value: Math.max(0, Math.trunc(Number(source.value) || 0)),
+    max: Math.max(0, Math.trunc(Number(source.max) || 0)),
+    prepared: preparedSource.map(normalizePreparedEntry),
+  };
+}
+
+/**
+ * Step 5.6: read the canonical object form
+ * `system.slots.slot<N>.prepared[index] = { id, expended }` and stay compatible
+ * with the legacy array form (`[{ rank, value, max }]`).
+ */
+function readSpellSlots(entry) {
+  const sc = entry && entry.system ? entry.system : {};
+  const raw = sc.slots;
+  const result = [];
+  if (Array.isArray(raw)) {
+    for (const slot of raw) {
+      if (!slot || typeof slot !== "object") {
+        continue;
+      }
+      const rank = numericSpellRank(
+        slot.rank !== undefined ? slot.rank : 0,
+      );
+      // Step 6.3: cantrips (rank 0) never consume spell slots.
+      if (rank === 0) {
+        continue;
+      }
+      result.push(normalizeSpellSlot(rank, slot));
+    }
+  } else if (raw && typeof raw === "object") {
+    for (const [key, slot] of Object.entries(raw)) {
+      if (!slot || typeof slot !== "object") {
+        continue;
+      }
+      const rank = numericSpellRank(
+        slot.rank !== undefined ? slot.rank : String(key).replace(/^slot/i, ""),
+      );
+      if (rank === 0) {
+        continue;
+      }
+      result.push(normalizeSpellSlot(rank, slot));
+    }
+  }
+  return result.sort((a, b) => a.rank - b.rank);
+}
+
+/** Persist slots in the Foundry-style object form keyed by `slot<N>`. */
+function writeSpellSlots(entry, slots) {
+  const map = {};
+  for (const slot of slots) {
+    map[spellSlotKey(slot.rank)] = {
+      rank: String(slot.rank),
+      value: slot.value,
+      max: slot.max,
+      prepared: (slot.prepared || []).map((entry) =>
+        entry ? { id: entry.id, expended: Boolean(entry.expended) } : null,
+      ),
+    };
+  }
+  return {
+    ...entry,
+    system: { ...(entry.system || {}), slots: map },
+  };
+}
+
+/** Interactive chat payload for a spell card (Step 5.6). */
+function spellCardPayload(spell, stats) {
+  const system = spell && spell.system ? spell.system : {};
+  const saveType = String(
+    system.defense && system.defense.save ? system.defense.save.statistic : "",
+  ).toLowerCase();
+  const damageParts = Object.values(system.damage || {})
+    .filter(
+      (node) =>
+        node && typeof node.formula === "string" && node.formula.trim() !== "",
+    )
+    .map((node) => node.formula.trim() + (node.type ? " " + iwrLabel(node.type) : ""));
+  return {
+    type: "spell-card",
+    spellId: spell.id,
+    name: spell.name,
+    dc: Number(spell.spellDC ?? stats.spellDC) || 0,
+    saveType: ["fortitude", "reflex", "will"].includes(saveType) ? saveType : null,
+    damageFormula: damageParts.join(" + ") || null,
+    description: plainDescription(spell.description).slice(0, 2000),
+  };
+}
+
+function spellAttackFormula(spell, stats) {
+  const attack =
+    spell.spellAttack !== null && spell.spellAttack !== undefined
+      ? spell.spellAttack
+      : stats.spellAttack;
+  return "/r 1d20" + signed(attack) + " " + spell.name + " — атака заклинанием";
+}
+
 function SpellcastingEntryCard({
   entry,
   system,
@@ -1369,44 +2037,439 @@ function SpellcastingEntryCard({
   onRoll,
   onDropSpell,
   onDeleteSpell,
+  onFocusSpend,
 }) {
   const stats = spellcastingStats(system, entry);
-  const sc = entry.system || {};
-  const slots = Array.isArray(sc.slots) ? sc.slots : [];
+  // Step 6.3.1: Focus sets use a single flat list and the shared Focus pool.
+  const isFocusEntry = isFocusSpellcastingEntry(entry);
   const [rankDraft, setRankDraft] = useState("1");
+  const [expanded, setExpanded] = useState(() => ({}));
+  const [sheetItem, setSheetItem] = useState(null);
+  const [prepOpen, setPrepOpen] = useState(false);
+  const slots = useMemo(() => readSpellSlots(entry), [entry]);
+  const focus = system.resources?.focus || { value: 0, max: 0, cap: 3 };
+  const focusAvailable = Math.max(0, Number(focus.value) || 0);
+  const isPrepared = stats.type === "prepared";
+  const isSpontaneous = stats.type === "spontaneous";
+  // Step 5.9: a caster unlocks one new spell rank every two levels.
+  const level = Math.max(
+    1,
+    Math.trunc(Number(system.details?.level?.value) || 1),
+  );
+  const maxRank = maxSpellRankForLevel(level);
+
+  const spellsByRank = useMemo(() => groupSpellsByRank(spells), [spells]);
+  const spellById = useMemo(
+    () => new Map(spells.map((spell) => [spell.id, spell])),
+    [spells],
+  );
+  const rankList = useMemo(() => {
+    const ranks = new Set(slots.map((slot) => slot.rank));
+    for (const [rank] of spellsByRank) {
+      ranks.add(rank);
+    }
+    // Prepared casters see a header for every rank their level unlocks, so the
+    // slot-count input is always available even before a spell is added.
+    if (isPrepared) {
+      for (let rank = 1; rank <= maxRank; rank += 1) {
+        ranks.add(rank);
+      }
+    }
+    return [...ranks].sort((a, b) => a - b);
+  }, [slots, spellsByRank, isPrepared, maxRank]);
 
   const patchSlots = (nextSlots) => {
-    onUpdate({
-      ...entry,
-      system: { ...sc, slots: nextSlots },
-    });
-  };
-
-  const addRank = () => {
-    if (slots.some((slot) => String(slot.rank) === String(rankDraft))) {
-      return;
+    if (typeof onUpdate === "function") {
+      onUpdate(writeSpellSlots(entry, nextSlots));
     }
-    patchSlots([
-      ...slots,
-      { rank: String(rankDraft), value: 1, max: 1 },
-    ]);
   };
 
-  const changeSlot = (rank, key, delta) => {
+  const patchSlot = (rank, patch) => {
     patchSlots(
       slots.map((slot) =>
-        String(slot.rank) === String(rank)
+        slot.rank === rank
           ? {
               ...slot,
-              [key]: Math.max(0, Number(slot[key] || 0) + delta),
+              ...(typeof patch === "function" ? patch(slot) : patch),
             }
           : slot,
       ),
     );
   };
 
+  /** Resize the `prepared[index]` array to exactly `count` empty slots. */
+  const resizePrepared = (prepared, count) => {
+    const next = (Array.isArray(prepared) ? prepared : []).slice(0, count);
+    while (next.length < count) {
+      next.push(null);
+    }
+    return next;
+  };
+
+  const addRank = () => {
+    const rank = numericSpellRank(rankDraft);
+    // Step 6.3: cantrips are free and never get a slot row.
+    if (
+      rank === 0 ||
+      rank > maxRank ||
+      slots.some((slot) => slot.rank === rank)
+    ) {
+      return;
+    }
+    patchSlots(
+      [
+        ...slots,
+        {
+          rank,
+          value: 1,
+          max: 1,
+          prepared: isPrepared ? [null] : [],
+        },
+      ].sort((a, b) => a.rank - b.rank),
+    );
+  };
+
+  /** Spontaneous current-slot input, clamped to the maximum. */
+  const setSlotValue = (rank, raw) => {
+    patchSlot(rank, (slot) => ({
+      value: Math.max(
+        0,
+        Math.min(Math.trunc(Number(raw) || 0), slot.max),
+      ),
+    }));
+  };
+
+  /** Spontaneous maximum-slot input. */
+  const setSlotMax = (rank, raw) => {
+    patchSlot(rank, (slot) => {
+      const max = Math.max(0, Math.min(99, Math.trunc(Number(raw) || 0)));
+      return {
+        max,
+        value: Math.min(slot.value, max),
+        prepared: isPrepared ? resizePrepared(slot.prepared, max) : slot.prepared,
+      };
+    });
+  };
+
+  /** Refresh arrow: refill every spent spontaneous slot. */
+  const refreshSlot = (rank) => {
+    patchSlot(rank, (slot) => ({ value: slot.max }));
+  };
+
+  /**
+   * Prepared rank header input. Typing `2` creates exactly two empty slots,
+   * `0` removes the rank from the entry.
+   */
+  const setRankSlotCount = (rank, raw) => {
+    // Cantrips have no slot count at all.
+    if (rank === 0) {
+      return;
+    }
+    const count = Math.max(0, Math.min(99, Math.trunc(Number(raw) || 0)));
+    if (count === 0) {
+      removeRank(rank);
+      return;
+    }
+    if (rank > maxRank) {
+      return;
+    }
+    const existing = slots.find((slot) => slot.rank === rank);
+    if (!existing) {
+      patchSlots(
+        [
+          ...slots,
+          {
+            rank,
+            value: count,
+            max: count,
+            prepared: resizePrepared([], count),
+          },
+        ].sort((a, b) => a.rank - b.rank),
+      );
+      return;
+    }
+    patchSlot(rank, {
+      max: count,
+      value: Math.min(existing.value, count),
+      prepared: resizePrepared(existing.prepared, count),
+    });
+  };
+
   const removeRank = (rank) => {
-    patchSlots(slots.filter((slot) => String(slot.rank) !== String(rank)));
+    patchSlots(slots.filter((slot) => slot.rank !== rank));
+  };
+
+  const toggleExpanded = (key) => {
+    setExpanded((current) => ({ ...current, [key]: !current[key] }));
+  };
+
+  const sendSpellCard = (spell) => {
+    if (typeof onRoll !== "function" || !spell) {
+      return;
+    }
+    onRoll(
+      spellChatText(spell, stats),
+      false,
+      "public",
+      spellCardPayload(spell, stats),
+    );
+  };
+
+  /** Spontaneous casting spends one ranked slot, or one Focus Point. */
+  const castSpontaneous = (spell) => {
+    const rank = spellRankOf(spell);
+    // Step 6.3: cantrips are infinite and focus spells use the global pool.
+    if (rank === 0) {
+      sendSpellCard(spell);
+      return;
+    }
+    if (isFocusSpell(spell)) {
+      if (focusAvailable <= 0) {
+        return;
+      }
+      sendSpellCard(spell);
+      if (typeof onFocusSpend === "function") {
+        onFocusSpend(1);
+      }
+      return;
+    }
+    const slot = slots.find((entrySlot) => entrySlot.rank === rank);
+    if (!slot || slot.value <= 0) {
+      return;
+    }
+    sendSpellCard(spell);
+    patchSlot(rank, { value: Math.max(0, slot.value - 1) });
+  };
+
+  /**
+   * Step 6.3.1: every spell inside a Focus set casts against the shared pool.
+   * Rank-0 cantrips stay free; a ranked spell needs (and spends) one point.
+   */
+  const castFocusEntrySpell = (spell) => {
+    const rank = spellRankOf(spell);
+    if (rank === 0) {
+      sendSpellCard(spell);
+      return;
+    }
+    if (focusAvailable <= 0) {
+      return;
+    }
+    sendSpellCard(spell);
+    if (typeof onFocusSpend === "function") {
+      onFocusSpend(focusSpellPointCost(rank));
+    }
+  };
+
+  /** Prepared casting marks the prepared slot as expended. */
+  const castPrepared = (rank, index) => {
+    const slot = slots.find((entrySlot) => entrySlot.rank === rank);
+    const prepared = slot && slot.prepared[index];
+    if (!prepared || prepared.expended) {
+      return;
+    }
+    const spell = spellById.get(prepared.id);
+    if (!spell) {
+      return;
+    }
+    // Step 6.3: focus spells spend a Focus Point and keep their prepared slot;
+    // cantrips never expend anything.
+    if (isFocusSpell(spell)) {
+      if (focusAvailable <= 0) {
+        return;
+      }
+      sendSpellCard(spell);
+      if (typeof onFocusSpend === "function") {
+        onFocusSpend(1);
+      }
+      return;
+    }
+    if (spellRankOf(spell) === 0) {
+      sendSpellCard(spell);
+      return;
+    }
+    sendSpellCard(spell);
+    patchSlot(rank, {
+      prepared: slot.prepared.map((entrySlot, entryIndex) =>
+        entryIndex === index ? { ...prepared, expended: true } : entrySlot,
+      ),
+    });
+  };
+
+  const unprepare = (rank, index) => {
+    const slot = slots.find((entrySlot) => entrySlot.rank === rank);
+    if (!slot) {
+      return;
+    }
+    patchSlot(rank, {
+      prepared: slot.prepared.map((entrySlot, entryIndex) =>
+        entryIndex === index ? null : entrySlot,
+      ),
+    });
+  };
+
+  const handlePreparedDrop = (rank, index) => (event) => {
+    const payload = readPreparedSpellDrag(event);
+    if (!payload) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (payload.entryId !== entry.id) {
+      return;
+    }
+    const spell = spellById.get(payload.spellId);
+    const slot = slots.find((entrySlot) => entrySlot.rank === rank);
+    if (!spell || !slot || spellRankOf(spell) !== rank) {
+      return;
+    }
+    const prepared = resizePrepared(slot.prepared, slot.max);
+    prepared[index] = { id: spell.id, expended: false };
+    patchSlot(rank, { prepared });
+  };
+
+  const renderSpellRow = (spell, rank) => {
+    const expandedKey = "book:" + spell.id;
+    const isExpanded = Boolean(expanded[expandedKey]);
+    const slot = slots.find((entrySlot) => entrySlot.rank === rank) || null;
+    const focusSpell = isFocusSpell(spell);
+    const cantrip = rank === 0;
+    // Step 6.3.1: inside a Focus set the shared pool gates every ranked spell;
+    // cantrips remain free and infinite.
+    const canCast = isFocusEntry
+      ? cantrip || focusAvailable > 0
+      : cantrip
+        ? true
+        : focusSpell
+          ? focusAvailable > 0
+          : isSpontaneous
+            ? Boolean(slot && slot.value > 0)
+            : true;
+    const showCastButton = isFocusEntry || cantrip || focusSpell || !isPrepared;
+    const castTitle = isFocusEntry
+      ? cantrip
+        ? "Сотворить заговор (не тратит фокус)"
+        : focusAvailable > 0
+          ? "Сотворить (тратит 1 очко фокуса)"
+          : "Нет очков фокуса"
+      : cantrip
+        ? "Сотворить заговор (не тратит ячейки)"
+        : focusSpell
+          ? focusAvailable > 0
+            ? "Сотворить (тратит 1 очко фокуса)"
+            : "Нет очков фокуса"
+          : canCast
+            ? "Сотворить заклинание"
+            : "Нет свободных ячеек этого круга";
+    const spellCardMacro = {
+      type: "spell",
+      actorId,
+      actionId: spell.id,
+      name: spell.name,
+      icon: spell.img || null,
+      text: spellChatText(spell, stats),
+    };
+    const spellAttackMacro = {
+      type: "spell",
+      actorId,
+      actionId: spell.id + ":attack",
+      name: spell.name + " (атака)",
+      icon: spell.img || null,
+      text: spellAttackFormula(spell, stats),
+    };
+    return (
+      <li
+        className={"pf2e-spell pf2e-spell--expandable" + (isPrepared && !isFocusEntry ? " pf2e-spell--draggable" : "")}
+        key={spell.id}
+        draggable={editable && isPrepared && !isFocusEntry}
+        onDragStart={
+          editable && isPrepared && !isFocusEntry
+            ? (event) =>
+                setPreparedSpellDragData(event, {
+                  spellId: spell.id,
+                  entryId: entry.id,
+                  rank,
+                  name: spell.name,
+                })
+            : undefined
+        }
+      >
+        <button
+          type="button"
+          className="pf2e-spell__img"
+          title="Отправить карточку заклинания в чат"
+          onClick={() => sendSpellCard(spell)}
+          {...hotbarMacroProps(spellCardMacro)}
+        >
+          {spell.img ? (
+            <img src={spell.img} alt="" loading="lazy" />
+          ) : (
+            <span aria-hidden="true">✦</span>
+          )}
+        </button>
+        <button
+          type="button"
+          className="pf2e-spell__name pf2e-spell__name--button"
+          title="Показать или скрыть описание"
+          onClick={() => toggleExpanded(expandedKey)}
+        >
+          {spell.name}
+        </button>
+        <span className="pf2e-spell__meta">
+          DC {spell.spellDC ?? stats.spellDC}
+        </span>
+        <button
+          type="button"
+          className="pf2e-roll-button pf2e-roll-button--small"
+          title="Бросок атаки заклинанием"
+          onClick={() => onRoll && onRoll(spellAttackFormula(spell, stats))}
+          {...hotbarMacroProps(spellAttackMacro)}
+        >
+          <span className="pf2e-d20">d20</span>
+        </button>
+        {showCastButton ? (
+          <button
+            type="button"
+            className="pf2e-small-button pf2e-spell-cast-button"
+            title={castTitle}
+            disabled={!canCast}
+            onClick={() =>
+              isFocusEntry ? castFocusEntrySpell(spell) : castSpontaneous(spell)
+            }
+          >
+            Сотворить
+          </button>
+        ) : (
+          <span className="pf2e-spell__meta">
+            {editable ? "→ в ячейку" : ""}
+          </span>
+        )}
+        {editable ? (
+          <>
+            <button
+              type="button"
+              className="pf2e-icon-button"
+              title="Изменить (карточка предмета)"
+              onClick={() => setSheetItem(spell)}
+            >
+              ✎
+            </button>
+            <button
+              type="button"
+              className="pf2e-icon-button pf2e-icon-button--danger"
+              title="Удалить заклинание"
+              onClick={() => onDeleteSpell && onDeleteSpell(spell)}
+            >
+              ✕
+            </button>
+          </>
+        ) : null}
+        {isExpanded ? (
+          <p className="pf2e-spell__description">
+            {plainDescription(spell.description) || "Описание отсутствует."}
+          </p>
+        ) : null}
+      </li>
+    );
   };
 
   return (
@@ -1449,7 +2512,14 @@ function SpellcastingEntryCard({
             <span className="pf2e-spellcasting-card__meta">
               {spellcastingTypeLabel(stats.type)} ·{" "}
               {spellcastingTraditionLabel(stats.tradition)} ·{" "}
-              {ABILITIES.find((ability) => ability.key === stats.ability)?.abbr || stats.ability}
+              {ABILITIES.find((ability) => ability.key === stats.ability)?.abbr ||
+                stats.ability}{" "}
+              ·{" "}
+              {isFocusEntry
+                ? "единый пул фокуса"
+                : isPrepared
+                  ? "по слотам"
+                  : "ячейки"}
             </span>
           </div>
         </div>
@@ -1459,9 +2529,25 @@ function SpellcastingEntryCard({
           </span>
           <span title="Класс сложности заклинаний">DC {stats.spellDC}</span>
           <span className="pf2e-spellcasting-card__mode">
-            {SPELLCASTING_MODES.find((mode) => mode.value === stats.mode)?.label || stats.mode}
+            {isFocusEntry
+              ? "Фокус"
+              : SPELLCASTING_MODES.find((mode) => mode.value === stats.mode)?.label ||
+                stats.mode}
           </span>
         </div>
+        {isPrepared && !isFocusEntry ? (
+          <button
+            type="button"
+            className="pf2e-small-button pf2e-spellcasting-card__prep-button"
+            title="Книга подготовки: перетащите заклинание в пустую ячейку"
+            onClick={(event) => {
+              event.stopPropagation();
+              setPrepOpen(true);
+            }}
+          >
+            📖 Подгот.
+          </button>
+        ) : null}
         {editable ? (
           <button
             type="button"
@@ -1474,49 +2560,50 @@ function SpellcastingEntryCard({
         ) : null}
       </header>
 
+      {isFocusEntry ? (
+        <div
+          className="pf2e-spellcasting-card__focus"
+          title="Заклинания этого набора тратят общий пул фокуса"
+        >
+          <span
+            className="pf2e-spellcasting-card__focus-icon"
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+          <strong>Фокус</strong>
+          <span className="pf2e-spellcasting-card__focus-value">
+            {focusAvailable} / {Math.max(0, Number(focus.max) || 0)}
+          </span>
+          <span className="pf2e-spellcasting-card__focus-hint">
+            Заклинания набора используют общий пул фокуса
+          </span>
+        </div>
+      ) : (
       <div className="pf2e-spellcasting-card__slots">
-        {slots.length === 0 ? (
-          <span className="pf2e-empty-inline">Ранги ячеек не добавлены.</span>
-        ) : (
-          slots
-            .slice()
-            .sort((a, b) => {
-              const rankA = a.rank === "cantrip" ? -1 : Number(a.rank);
-              const rankB = b.rank === "cantrip" ? -1 : Number(b.rank);
-              return rankA - rankB;
-            })
-            .map((slot) => (
-              <span className="pf2e-spell-slot" key={slot.rank}>
-                <span className="pf2e-spell-slot__rank">{spellRankLabel(slot.rank)}</span>
-                <span className="pf2e-spell-slot__value">
-                  {slot.value}/{slot.max}
-                </span>
-                {editable ? (
-                  <span className="pf2e-spell-slot__controls">
-                    <button
-                      type="button"
-                      className="pf2e-icon-button"
-                      title="Использовать ячейку"
-                      onClick={() => changeSlot(slot.rank, "value", -1)}
-                    >
-                      −
-                    </button>
-                    <button
-                      type="button"
-                      className="pf2e-icon-button"
-                      title="Восстановить ячейку"
-                      onClick={() => changeSlot(slot.rank, "value", 1)}
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      className="pf2e-icon-button"
-                      title="Добавить ячейку"
-                      onClick={() => changeSlot(slot.rank, "max", 1)}
-                    >
-                      ＋
-                    </button>
+        {slots.map((slot) => {
+          const overLevel = slot.rank > maxRank;
+          return (
+            <span
+              className={
+                "pf2e-spell-slot" + (overLevel ? " pf2e-spell-slot--locked" : "")
+              }
+              key={slot.rank}
+              title={
+                overLevel
+                  ? "Ранг выше максимального для уровня " + level
+                  : undefined
+              }
+            >
+              <span className="pf2e-spell-slot__rank">
+                {spellRankLabel(slot.rank)}
+              </span>
+              {isPrepared ? (
+                <>
+                  <span className="pf2e-spell-slot__value">
+                    {(slot.prepared || []).filter(Boolean).length}/{slot.max}
+                  </span>
+                  {editable ? (
                     <button
                       type="button"
                       className="pf2e-icon-button pf2e-icon-button--danger"
@@ -1525,11 +2612,67 @@ function SpellcastingEntryCard({
                     >
                       ×
                     </button>
-                  </span>
-                ) : null}
-              </span>
-            ))
-        )}
+                  ) : null}
+                </>
+              ) : editable ? (
+                <span className="pf2e-spell-slot__controls">
+                  <input
+                    className="pf2e-input pf2e-spell-slot__input"
+                    type="number"
+                    min="0"
+                    max={slot.max}
+                    value={slot.value}
+                    disabled={overLevel}
+                    title="Текущие ячейки"
+                    aria-label={"Текущие ячейки " + spellRankLabel(slot.rank)}
+                    onChange={(event) =>
+                      setSlotValue(slot.rank, event.target.value)
+                    }
+                  />
+                  <span className="pf2e-spell-slot__slash">/</span>
+                  <input
+                    className="pf2e-input pf2e-spell-slot__input"
+                    type="number"
+                    min="0"
+                    max="99"
+                    value={slot.max}
+                    disabled={overLevel}
+                    title="Максимум ячеек"
+                    aria-label={"Максимум ячеек " + spellRankLabel(slot.rank)}
+                    onChange={(event) =>
+                      setSlotMax(slot.rank, event.target.value)
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="pf2e-icon-button pf2e-spell-slot__refresh"
+                    title="Обновить: восстановить все ячейки"
+                    aria-label="Обновить ячейки"
+                    disabled={overLevel}
+                    onClick={() => refreshSlot(slot.rank)}
+                  >
+                    ↻
+                  </button>
+                  <button
+                    type="button"
+                    className="pf2e-icon-button pf2e-icon-button--danger"
+                    title="Убрать ранг"
+                    onClick={() => removeRank(slot.rank)}
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : (
+                <span className="pf2e-spell-slot__value">
+                  {slot.value}/{slot.max}
+                </span>
+              )}
+            </span>
+          );
+        })}
+        {slots.length === 0 ? (
+          <span className="pf2e-empty-inline">Ранги ячеек не добавлены.</span>
+        ) : null}
         {editable ? (
           <span className="pf2e-spell-slot-add">
             <select
@@ -1537,9 +2680,18 @@ function SpellcastingEntryCard({
               value={rankDraft}
               onChange={(event) => setRankDraft(event.target.value)}
             >
-              {SPELL_RANKS.map((rank) => (
-                <option key={rank.value} value={rank.value}>
+              {SPELL_RANKS.filter(
+                (rank) => numericSpellRank(rank.value) !== 0,
+              ).map((rank) => (
+                <option
+                  key={rank.value}
+                  value={rank.value}
+                  disabled={numericSpellRank(rank.value) > maxRank}
+                >
                   {rank.label}
+                  {numericSpellRank(rank.value) > maxRank
+                    ? " · недоступен (ур. " + level + ")"
+                    : ""}
                 </option>
               ))}
             </select>
@@ -1549,106 +2701,219 @@ function SpellcastingEntryCard({
           </span>
         ) : null}
       </div>
+      )}
 
-      <div className="pf2e-spellbook">
-        {spells.length === 0 ? (
+      <div
+        className={
+          "pf2e-spellbook" + (isFocusEntry ? " pf2e-spellbook--focus" : "")
+        }
+      >
+        {isFocusEntry ? (
+          spells.length === 0 ? (
+            <div className="pf2e-spellbook__dropzone">
+              Перетащите заклинания из компендиума в этот набор.
+            </div>
+          ) : (
+            <ol className="pf2e-spell-list pf2e-spell-list--flat">
+              {spells.map((spell) =>
+                renderSpellRow(spell, spellRankOf(spell)),
+              )}
+            </ol>
+          )
+        ) : rankList.length === 0 ? (
           <p className="pf2e-empty pf2e-empty--small">
             Перетащите заклинание из компендиума в этот набор.
           </p>
         ) : (
-          groupSpellsByRank(spells).map(([rank, rankSpells]) => (
-            <section className="pf2e-spell-rank" key={rank}>
-              <header>{spellRankLabel(rank)}</header>
-              <ol className="pf2e-spell-list">
-                {rankSpells.map((spell) => {
-                  const attack =
-                    spell.spellAttack !== null && spell.spellAttack !== undefined
-                      ? spell.spellAttack
-                      : stats.spellAttack;
-                  const spellCardMacro = {
-                    type: "spell",
-                    actorId,
-                    actionId: spell.id,
-                    name: spell.name,
-                    icon: spell.img || null,
-                    text: spellChatText(spell, stats),
-                  };
-                  const spellAttackMacro = {
-                    type: "spell",
-                    actorId,
-                    actionId: spell.id + ":attack",
-                    name: spell.name + " (атака)",
-                    icon: spell.img || null,
-                    text:
-                      "/r 1d20" +
-                      signed(attack) +
-                      " " +
-                      spell.name +
-                      " — атака заклинанием",
-                  };
-                  return (
-                    <li className="pf2e-spell" key={spell.id}>
-                      <button
-                        type="button"
-                        className="pf2e-spell__img"
-                        title="Отправить карточку заклинания в чат"
-                        onClick={() => onRoll && onRoll(spellChatText(spell, stats), false)}
-                        {...hotbarMacroProps(spellCardMacro)}
-                      >
-                        {spell.img ? (
-                          <img src={spell.img} alt="" loading="lazy" />
-                        ) : (
-                          <span aria-hidden="true">✦</span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="pf2e-spell__name pf2e-spell__name--button"
-                        title="Отправить карточку заклинания в чат"
-                        onClick={() => onRoll && onRoll(spellChatText(spell, stats), false)}
-                        {...hotbarMacroProps(spellCardMacro)}
-                      >
-                        {spell.name}
-                      </button>
-                      <span className="pf2e-spell__meta">
-                        DC {spell.spellDC ?? stats.spellDC}
-                      </span>
-                      <button
-                        type="button"
-                        className="pf2e-roll-button pf2e-roll-button--small"
-                        title="Бросок атаки заклинанием"
-                        onClick={() =>
-                          onRoll &&
-                          onRoll(
-                            "/r 1d20" +
-                              signed(attack) +
-                              " " +
-                              spell.name +
-                              " — атака заклинанием",
-                          )
-                        }
-                        {...hotbarMacroProps(spellAttackMacro)}
-                      >
-                        <span className="pf2e-d20">d20</span>
-                      </button>
+          rankList.map((rank) => {
+            const slot = slots.find((entrySlot) => entrySlot.rank === rank) || null;
+            const rankSpells =
+              spellsByRank.find(([entryRank]) => entryRank === rank)?.[1] || [];
+            return (
+              <section className="pf2e-spell-rank" key={rank}>
+                <header className="pf2e-spell-rank__header">
+                  <span className="pf2e-spell-rank__label">
+                    {spellRankLabel(rank)}
+                  </span>
+                  {rank === 0 ? (
+                    <span className="pf2e-spell-rank__hint">
+                      Заговоры · без ячеек, неограниченно
+                    </span>
+                  ) : isPrepared ? (
+                    <label
+                      className="pf2e-spell-rank__slot-count"
+                      title={
+                        rank > maxRank
+                          ? "Ранг выше максимального для уровня " + level
+                          : "Количество ячеек этого ранга"
+                      }
+                    >
+                      <span>Слотов</span>
                       {editable ? (
-                        <button
-                          type="button"
-                          className="pf2e-icon-button pf2e-icon-button--danger"
-                          title="Удалить заклинание"
-                          onClick={() => onDeleteSpell && onDeleteSpell(spell)}
+                        <input
+                          className="pf2e-input pf2e-spell-rank__slot-input"
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={slot ? slot.max : 0}
+                          disabled={rank > maxRank}
+                          aria-label={
+                            "Количество ячеек · " + spellRankLabel(rank)
+                          }
+                          onChange={(event) =>
+                            setRankSlotCount(rank, event.target.value)
+                          }
+                        />
+                      ) : (
+                        <b>{slot ? slot.max : 0}</b>
+                      )}
+                    </label>
+                  ) : (
+                    <span className="pf2e-spell-rank__hint">
+                      {slot
+                        ? slot.value + " / " + slot.max + " ячеек"
+                        : "ячейки не заданы"}
+                    </span>
+                  )}
+                </header>
+                {isPrepared && rank !== 0 && slot ? (
+                  <ol className="pf2e-prepared-slots">
+                    {Array.from({ length: slot.max }).map((_, index) => {
+                      const prepared = slot.prepared[index] || null;
+                      const spell = prepared ? spellById.get(prepared.id) : null;
+                      const expandedKey =
+                        "slot:" + rank + ":" + index + ":" + (prepared ? prepared.id : "");
+                      const isExpanded = Boolean(expanded[expandedKey]);
+                      return (
+                        <li
+                          className={
+                            "pf2e-prepared-slot" +
+                            (spell
+                              ? " pf2e-prepared-slot--filled"
+                              : " pf2e-prepared-slot--empty") +
+                            (prepared && prepared.expended
+                              ? " pf2e-prepared-slot--expended"
+                              : "")
+                          }
+                          key={rank + ":" + index}
+                          onDragOver={
+                            editable
+                              ? (event) => {
+                                  if (acceptsPreparedSpellDrag(event)) {
+                                    event.preventDefault();
+                                    event.dataTransfer.dropEffect = "copy";
+                                  }
+                                }
+                              : undefined
+                          }
+                          onDrop={editable ? handlePreparedDrop(rank, index) : undefined}
                         >
-                          ✕
-                        </button>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          ))
+                          {spell ? (
+                            <>
+                              <button
+                                type="button"
+                                className="pf2e-spell__name pf2e-spell__name--button"
+                                title="Показать или скрыть описание"
+                                onClick={() => toggleExpanded(expandedKey)}
+                              >
+                                {spell.name}
+                              </button>
+                              <span className="pf2e-spell__meta">
+                                {prepared.expended ? "истрачено" : "подготовлено"}
+                              </span>
+                              <button
+                                type="button"
+                                className="pf2e-spell__img"
+                                title="Отправить карточку заклинания в чат"
+                                onClick={() => sendSpellCard(spell)}
+                              >
+                                {spell.img ? (
+                                  <img src={spell.img} alt="" loading="lazy" />
+                                ) : (
+                                  <span aria-hidden="true">✦</span>
+                                )}
+                              </button>
+                              {!prepared.expended ? (
+                                <button
+                                  type="button"
+                                  className="pf2e-small-button pf2e-spell-cast-button"
+                                  title="Сотворить подготовленное заклинание"
+                                  onClick={() => castPrepared(rank, index)}
+                                >
+                                  Сотворить
+                                </button>
+                              ) : null}
+                              {editable ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="pf2e-icon-button"
+                                    title="Изменить (карточка предмета)"
+                                    onClick={() => setSheetItem(spell)}
+                                  >
+                                    ✎
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="pf2e-icon-button pf2e-icon-button--danger"
+                                    title="Очистить ячейку"
+                                    aria-label="Очистить ячейку"
+                                    onClick={() => unprepare(rank, index)}
+                                  >
+                                    🗑
+                                  </button>
+                                </>
+                              ) : null}
+                              {isExpanded ? (
+                                <p className="pf2e-spell__description">
+                                  {plainDescription(spell.description) ||
+                                    "Описание отсутствует."}
+                                </p>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="pf2e-prepared-slot__hint">
+                              Пустая ячейка — перетащите сюда заклинание{" "}
+                              {spellRankLabel(rank).toLowerCase()}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : null}
+                {rankSpells.length > 0 ? (
+                  <ol className="pf2e-spell-list">
+                    {rankSpells.map((spell) => renderSpellRow(spell, rank))}
+                  </ol>
+                ) : isPrepared && slot ? null : (
+                  <p className="pf2e-empty pf2e-empty--small">
+                    Заклинаний этого круга нет.
+                  </p>
+                )}
+              </section>
+            );
+          })
         )}
       </div>
+
+      {prepOpen ? (
+        <SpellPreparationModal
+          entry={entry}
+          spells={spells}
+          maxRank={maxRank}
+          level={level}
+          editable={editable}
+          onClose={() => setPrepOpen(false)}
+        />
+      ) : null}
+
+      {sheetItem ? (
+        <ItemSheetModal
+          item={sheetItem}
+          onClose={() => setSheetItem(null)}
+        />
+      ) : null}
     </article>
   );
 }
@@ -1669,6 +2934,8 @@ export function SpellsTab({
   const [editor, setEditor] = useState(null);
   const [setupOpen, setSetupOpen] = useState(false);
   const [activeEntryId, setActiveEntryId] = useState("");
+  const [expandedId, setExpandedId] = useState("");
+  const [sheetItem, setSheetItem] = useState(null);
   const spells = system.spells || [];
   const allItems = Array.isArray(items) ? items : [];
   const spellcastingEntries = useMemo(
@@ -1714,6 +2981,80 @@ export function SpellsTab({
       return rankA - rankB;
     });
   }, [spells]);
+
+  // Step 6.3: global Focus pool. `prepareActorSystem` derives the maximum from
+  // the known non-cantrip focus spells unless `override` is enabled.
+  const focus = system.resources?.focus || {
+    value: 0,
+    max: 0,
+    cap: 3,
+    override: false,
+    known: 0,
+  };
+  const focusMax = Math.max(0, Math.min(3, Number(focus.max) || 0));
+  // Step 6.3.1: the purple Focus pool is only relevant for actors that actually
+  // have a Focus set or a non-zero derived/overridden maximum. Clean sheets stay
+  // free of the block entirely (no empty placeholder).
+  const hasFocusEntry = useMemo(
+    () => spellcastingEntries.some((entry) => isFocusSpellcastingEntry(entry)),
+    [spellcastingEntries],
+  );
+  const showFocusPool = hasFocusEntry || focusMax > 0;
+  const patchFocus = (patch) => {
+    if (typeof updateSystem !== "function") {
+      return;
+    }
+    updateSystem((current) => {
+      const previous = current.resources?.focus || {};
+      return {
+        ...current,
+        resources: {
+          ...(current.resources || {}),
+          focus: { ...previous, ...patch },
+        },
+      };
+    });
+  };
+  const setFocusValue = (raw) => {
+    const next = Math.max(
+      0,
+      Math.min(focusMax, Math.trunc(Number(raw) || 0)),
+    );
+    patchFocus({ value: next });
+    return next;
+  };
+  const setFocusMax = (raw) => {
+    const next = Math.max(0, Math.min(3, Math.trunc(Number(raw) || 0)));
+    patchFocus({
+      max: next,
+      override: true,
+      value: Math.min(Number(focus.value) || 0, next),
+    });
+    return next;
+  };
+  const useDerivedFocusMax = () => {
+    patchFocus({ override: false });
+  };
+  const spendFocus = (amount = 1) => {
+    if (typeof updateSystem !== "function") {
+      return;
+    }
+    updateSystem((current) => {
+      const previous = current.resources?.focus || {};
+      const next = Math.max(
+        0,
+        (Number(previous.value) || 0) - (Number(amount) || 0),
+      );
+      return {
+        ...current,
+        resources: {
+          ...(current.resources || {}),
+          focus: { ...previous, value: next },
+        },
+      };
+    });
+  };
+
 
   const saveSpell = (spell) => {
     updateSystem((current) => {
@@ -1789,6 +3130,61 @@ export function SpellsTab({
         на эту вкладку — оно привяжется к целевому набору.
       </p>
 
+      {showFocusPool ? (
+      <section className="pf2e-focus-pool" aria-label="Очки фокуса">
+        <div className="pf2e-focus-pool__heading">
+          <span className="pf2e-focus-pool__icon" aria-hidden="true">
+            ✦
+          </span>
+          <div>
+            <strong>Фокус-поинты</strong>
+            <span className="pf2e-focus-pool__hint">
+              {focus.override
+                ? "Ручной максимум"
+                : "Максимум = число изученных заклинаний фокусировки (не более 3)"}
+              {Number.isFinite(Number(focus.known))
+                ? " · изучено: " + Number(focus.known)
+                : ""}
+            </span>
+          </div>
+        </div>
+        <label className="pf2e-focus-pool__field">
+          <span>Текущие</span>
+          <CommitInput
+            type="number"
+            min="0"
+            max={focusMax}
+            value={focus.value || 0}
+            disabled={!editable}
+            onCommit={setFocusValue}
+          />
+        </label>
+        <span className="pf2e-focus-pool__slash">/</span>
+        <label className="pf2e-focus-pool__field">
+          <span>Максимум</span>
+          <CommitInput
+            type="number"
+            min="0"
+            max="3"
+            value={focusMax}
+            disabled={!editable}
+            title="Изменение максимума включает ручной режим (не более 3)"
+            onCommit={setFocusMax}
+          />
+        </label>
+        {editable && focus.override ? (
+          <button
+            type="button"
+            className="pf2e-small-button pf2e-focus-pool__auto"
+            title="Вернуть автоматический расчёт по заклинаниям фокусировки"
+            onClick={useDerivedFocusMax}
+          >
+            ↺ Авто
+          </button>
+        ) : null}
+      </section>
+      ) : null}
+
       {spellcastingEntries.length === 0 ? (
         <p className="pf2e-empty">
           Наборов заклинаний нет. Добавьте набор, чтобы рассчитать атаку и DC.
@@ -1813,6 +3209,7 @@ export function SpellsTab({
                 onCompendiumDrop(payload, { entryId })
               }
               onDeleteSpell={deleteSpellItem}
+              onFocusSpend={spendFocus}
             />
           ))}
         </div>
@@ -1858,7 +3255,21 @@ export function SpellsTab({
                   >
                     ✦
                   </button>
-                  <span className="pf2e-spell__name">{spell.name}</span>
+                  <button
+                    type="button"
+                    className="pf2e-spell__name pf2e-spell__name--button"
+                    title="Показать или скрыть описание"
+                    aria-expanded={expandedId === "manual:" + spell.id}
+                    onClick={() =>
+                      setExpandedId((current) =>
+                        current === "manual:" + spell.id
+                          ? ""
+                          : "manual:" + spell.id,
+                      )
+                    }
+                  >
+                    {spell.name}
+                  </button>
                   <span className="pf2e-spell__meta">
                     {TRADITIONS.find((entry) => entry.value === spell.tradition)?.label || spell.tradition}
                   </span>
@@ -1878,8 +3289,8 @@ export function SpellsTab({
                         <button
                           type="button"
                           className="pf2e-icon-button"
-                          title="Изменить"
-                          onClick={() => setEditor(spell)}
+                          title="Изменить (карточка предмета)"
+                          onClick={() => setSheetItem(spell)}
                         >
                           ✎
                         </button>
@@ -1894,12 +3305,24 @@ export function SpellsTab({
                       </>
                     ) : null}
                   </div>
+                  {expandedId === "manual:" + spell.id ? (
+                    <InlineDescription text={spell.description} />
+                  ) : null}
                 </li>
               ))}
             </ol>
           </section>
         ))
       )}
+
+      {sheetItem ? (
+        <ItemSheetModal
+          item={sheetItem}
+          canEdit={editable}
+          onEdit={(spell) => setEditor(spell)}
+          onClose={() => setSheetItem(null)}
+        />
+      ) : null}
 
       {editor ? (
         <EntryEditorModal
@@ -1935,9 +3358,12 @@ export function FeatsTab({
 }) {
   const [editor, setEditor] = useState(null);
   const [slotEditor, setSlotEditor] = useState(null);
+  const [expandedId, setExpandedId] = useState("");
+  const [sheetItem, setSheetItem] = useState(null);
   const featSlots = system.featSlots || [];
   const allItems = Array.isArray(items) ? items : [];
   const featItems = allItems.filter((item) => item.type === "feat");
+  const level = Math.max(1, Math.trunc(Number(system.details?.level?.value) || 1));
 
   const commit = (nextSystem, nextItems) => {
     if (typeof onCommitActor === "function") {
@@ -1947,12 +3373,51 @@ export function FeatsTab({
     updateSystem(() => nextSystem);
   };
 
+  const toggleExpanded = (key) =>
+    setExpandedId((current) => (current === key ? "" : key));
+
+  /**
+   * Step 5.7: class features are granted automatically by the class pipeline
+   * and are shown above the player-selectable slots. Activated features are
+   * stored as `action` items, passive ones as `feat` items; both belong here.
+   */
+  const classFeatures = useMemo(() => {
+    const list = [...(system.feats?.classfeature || [])];
+    const seen = new Set(list.map((entry) => entry.id));
+    for (const item of allItems) {
+      if (!item || seen.has(item.id)) {
+        continue;
+      }
+      const category = String(
+        item.system?.category || item.category || "",
+      ).toLowerCase();
+      if (category !== "classfeature") {
+        continue;
+      }
+      seen.add(item.id);
+      list.push({
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        img: item.img || null,
+        level: item.level,
+        traits: item.traits,
+        description: item.description,
+      });
+    }
+    return list.sort(
+      (a, b) =>
+        Number(a.level || 1) - Number(b.level || 1) ||
+        String(a.name || "").localeCompare(String(b.name || "")),
+    );
+  }, [system.feats, allItems]);
+
   const findSlotFeat = (slot) => {
     if (!slot.featId) {
       return null;
     }
-    for (const section of FEAT_SECTIONS) {
-      const match = (system.feats?.[section.id] || []).find(
+    for (const section of ["classfeature", ...FEAT_SECTIONS.map((entry) => entry.id)]) {
+      const match = (system.feats?.[section] || []).find(
         (entry) => entry.id === slot.featId,
       );
       if (match) {
@@ -1970,14 +3435,14 @@ export function FeatsTab({
         ? feat.section
         : "class";
     const id = feat.id || nextEntryId("feat");
-    const level = Math.max(1, Math.trunc(Number(feat.level) || 1));
+    const levelValue = Math.max(1, Math.trunc(Number(feat.level) || 1));
     const item = {
       ...(existing || {}),
       id,
       name: feat.name,
       type: "feat",
       img: feat.img || existing?.img || null,
-      level,
+      level: levelValue,
       description: feat.description || "",
       traits: feat.traits || "",
       category: section,
@@ -1987,7 +3452,7 @@ export function FeatsTab({
       system: {
         ...(existing?.system || {}),
         category: section,
-        level: { value: level },
+        level: { value: levelValue },
         traits: {
           ...(existing?.system?.traits || {}),
           value: splitTraits(feat.traits).map((trait) => trait.toLowerCase()),
@@ -2002,26 +3467,40 @@ export function FeatsTab({
   };
 
   const removeFeat = (feat) => {
-    const nextItems = allItems.filter((entry) => entry.id !== feat.id);
-    const nextSystem = {
-      ...system,
-      feats: Object.fromEntries(
-        FEAT_SECTIONS.map((section) => [
-          section.id,
-          (system.feats?.[section.id] || []).filter(
-            (entry) => entry.id !== feat.id,
+    confirmAction({
+      title: "Удалить черту",
+      message:
+        'Убрать "' + feat.name + '" из листа? Слот освободится, фит будет удалён.',
+      danger: true,
+    }).then((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      const nextItems = allItems.filter((entry) => entry.id !== feat.id);
+      const nextSystem = {
+        ...system,
+        feats: Object.fromEntries(
+          ["classfeature", ...FEAT_SECTIONS.map((section) => section.id)].map(
+            (section) => [
+              section,
+              (system.feats?.[section] || []).filter(
+                (entry) => entry.id !== feat.id,
+              ),
+            ],
           ),
-        ]),
-      ),
-      featSlots: (system.featSlots || []).map((slot) =>
-        slot.featId === feat.id ? { ...slot, featId: null } : slot,
-      ),
-    };
-    commit(nextSystem, nextItems);
+        ),
+        featSlots: (system.featSlots || []).map((slot) =>
+          slot.featId === feat.id ? { ...slot, featId: null } : slot,
+        ),
+      };
+      commit(nextSystem, nextItems);
+    });
   };
 
   const assignSlotFeat = (slot, feat) => {
-    const target = slot.type === "general" ? "general" : "class";
+    const target = ["ancestry", "class", "skill", "general"].includes(slot.type)
+      ? slot.type
+      : "class";
     const id = feat.id || nextEntryId("feat");
     const existing = featItems.find((entry) => entry.id === id) || null;
     const item = {
@@ -2046,9 +3525,10 @@ export function FeatsTab({
     const previousFeatId = (system.featSlots || []).find(
       (entry) => entry.id === slot.id,
     )?.featId;
-    const cleaned = previousFeatId && previousFeatId !== id
-      ? nextItems.filter((entry) => entry.id !== previousFeatId)
-      : nextItems;
+    const cleaned =
+      previousFeatId && previousFeatId !== id
+        ? nextItems.filter((entry) => entry.id !== previousFeatId)
+        : nextItems;
     const nextSystem = {
       ...system,
       featSlots: (system.featSlots || []).map((entry) =>
@@ -2093,11 +3573,35 @@ export function FeatsTab({
     },
   });
 
+  const shareFeat = (feat) => {
+    if (typeof onRoll === "function") {
+      onRoll(featChatText(feat), false);
+    }
+  };
+
+  const openSheet = (feat) => setSheetItem(feat);
+
+  const renderFeatCard = (feat, keyPrefix, options = {}) => {
+    const key = keyPrefix + ":" + feat.id;
+    return (
+      <FeatCard
+        key={key}
+        feat={feat}
+        expanded={expandedId === key}
+        onToggle={() => toggleExpanded(key)}
+        onShare={() => shareFeat(feat)}
+        onOpenSheet={options.canOpenSheet === false ? undefined : openSheet}
+        onRemove={options.onRemove}
+        editable={editable && typeof options.onRemove === "function"}
+      />
+    );
+  };
+
   return (
     <section className="pf2e-tab pf2e-tab--feats">
       <SectionHeader
         title="Черты"
-        hint="Перетащите черту из компендиума"
+        hint={"Уровень " + level + " · перетащите черту из компендиума в слот"}
         actions={
           editable ? (
             <button type="button" className="pf2e-small-button" onClick={() => setEditor({})}>
@@ -2107,59 +3611,155 @@ export function FeatsTab({
         }
       />
 
-      {featSlots.length > 0 ? (
-        <section className="pf2e-feat-slots">
-          <header>
-            <span>Слоты черт класса и общие</span>
-            <span className="pf2e-section-header__count">{featSlots.length}</span>
-          </header>
-          <ol className="pf2e-feat-slot-list">
-            {featSlots.map((slot) => {
-              const feat = findSlotFeat(slot);
-              return (
-                <li
-                  className={
-                    "pf2e-feat-slot" +
-                    (feat ? " pf2e-feat-slot--filled" : " pf2e-feat-slot--drop")
-                  }
-                  key={slot.id}
-                  {...(feat ? {} : dropTargetFor({ section: slot.type, slotId: slot.id }))}
-                >
-                  <span className="pf2e-feat__level">ур. {slot.level}</span>
-                  <span className="pf2e-feat-slot__type">
-                    {slot.type === "general" ? "Общая" : "Классовая"}
-                  </span>
-                  <span className="pf2e-feat-slot__name">
-                    {feat ? feat.name : "Пустой слот · перетащите черту"}
-                  </span>
-                  {editable ? (
-                    feat ? (
-                      <button
-                        type="button"
-                        className="pf2e-small-button"
-                        title="Освободить слот"
-                        onClick={() => clearSlot(slot)}
-                      >
-                        Освободить
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="pf2e-small-button"
-                        onClick={() => setSlotEditor(slot)}
-                      >
-                        + Заполнить
-                      </button>
-                    )
-                  ) : null}
-                </li>
-              );
-            })}
+      <section className="pf2e-feat-section pf2e-feat-section--classfeatures">
+        <header>
+          <span>✨ Особенности класса</span>
+          <span className="pf2e-section-header__count">
+            {classFeatures.length}
+          </span>
+        </header>
+        {classFeatures.length === 0 ? (
+          <p className="pf2e-empty pf2e-empty--small">
+            Класс не выбран или у класса пока нет особенностей.
+          </p>
+        ) : (
+          <ol className="pf2e-feat-list">
+            {classFeatures.map((feat) =>
+              renderFeatCard(feat, "classfeature", { canOpenSheet: true }),
+            )}
           </ol>
-        </section>
-      ) : null}
+        )}
+      </section>
 
-      {FEAT_SECTIONS.map((section) => {
+      {FEAT_SLOT_SECTIONS.map((section) => {
+        const slots = featSlots.filter((slot) => slot.type === section.type);
+        const filled = slots.filter((slot) => Boolean(slot.featId)).length;
+        const slotIds = new Set(slots.map((slot) => slot.id));
+        const loose = (system.feats?.[section.type] || []).filter(
+          (feat) => !feat.slotId || !slotIds.has(feat.slotId),
+        );
+        return (
+          <section
+            className="pf2e-feat-section pf2e-feat-section--slots pf2e-feat-section--drop"
+            key={section.type}
+            {...(editable ? dropTargetFor({ section: section.type }) : {})}
+          >
+            <header>
+              <span>
+                <span aria-hidden="true">{section.icon}</span> {section.label}
+              </span>
+              <span className="pf2e-section-header__count">
+                {slots.length === 0 ? "нет слотов" : filled + "/" + slots.length}
+              </span>
+            </header>
+
+            {slots.length === 0 ? (
+              <p className="pf2e-empty pf2e-empty--small">
+                На {level} уровне слоты этой группы ещё не открыты.
+              </p>
+            ) : (
+              <ol className="pf2e-feat-slot-list">
+                {slots.map((slot) => {
+                  const feat = findSlotFeat(slot);
+                  const key = "slot:" + slot.id;
+                  const expanded = expandedId === key;
+                  return (
+                    <li
+                      className={
+                        "pf2e-feat-slot" +
+                        (feat
+                          ? " pf2e-feat-slot--filled"
+                          : " pf2e-feat-slot--drop")
+                      }
+                      key={slot.id}
+                      {...(!feat && editable
+                        ? dropTargetFor({
+                            section: section.type,
+                            slotType: slot.type,
+                            slotId: slot.id,
+                          })
+                        : {})}
+                    >
+                      <span className="pf2e-feat__level">ур. {slot.level}</span>
+                      <span className="pf2e-feat-slot__type">{section.label}</span>
+                      {feat ? (
+                        <button
+                          type="button"
+                          className="pf2e-feat-slot__name pf2e-feat__name--button"
+                          title="Показать или скрыть описание"
+                          aria-expanded={expanded}
+                          onClick={() => toggleExpanded(key)}
+                        >
+                          {feat.name}
+                        </button>
+                      ) : (
+                        <span className="pf2e-feat-slot__name">
+                          Пустой слот · перетащите черту
+                        </span>
+                      )}
+                      <span className="pf2e-item-controls">
+                        {feat ? (
+                          <>
+                            <button
+                              type="button"
+                              className="pf2e-icon-button"
+                              title="Поделиться описанием в чате"
+                              onClick={() => shareFeat(feat)}
+                            >
+                              💬
+                            </button>
+                            <button
+                              type="button"
+                              className="pf2e-icon-button"
+                              title="Изменить (карточка предмета)"
+                              onClick={() => openSheet(feat)}
+                            >
+                              ✎
+                            </button>
+                            {editable ? (
+                              <button
+                                type="button"
+                                className="pf2e-small-button"
+                                title="Освободить слот"
+                                onClick={() => clearSlot(slot)}
+                              >
+                                Освободить
+                              </button>
+                            ) : null}
+                          </>
+                        ) : editable ? (
+                          <button
+                            type="button"
+                            className="pf2e-small-button"
+                            onClick={() => setSlotEditor(slot)}
+                          >
+                            + Заполнить
+                          </button>
+                        ) : null}
+                      </span>
+                      {expanded && feat ? (
+                        <InlineDescription text={feat.description} />
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
+            {loose.length > 0 ? (
+              <ol className="pf2e-feat-list pf2e-feat-list--loose">
+                {loose.map((feat) =>
+                  renderFeatCard(feat, section.type + "-loose", {
+                    onRemove: removeFeat,
+                  }),
+                )}
+              </ol>
+            ) : null}
+          </section>
+        );
+      })}
+
+      {EXTRA_FEAT_SECTIONS.map((section) => {
         const entries = system.feats?.[section.id] || [];
         return (
           <section
@@ -2168,68 +3768,22 @@ export function FeatsTab({
             {...(editable ? dropTargetFor({ section: section.id }) : {})}
           >
             <header>
-              <span>{section.label}</span>
+              <span>
+                <span aria-hidden="true">{section.icon}</span> {section.label}
+              </span>
               <span className="pf2e-section-header__count">{entries.length}</span>
             </header>
-            <ol className="pf2e-feat-list">
-              {entries.length === 0 ? (
-                <li className="pf2e-empty">Нет черт. Перетащите сюда из компендиума.</li>
-              ) : (
-                entries.map((feat) => (
-                  <li className="pf2e-feat pf2e-feat--card" key={feat.id}>
-                    <button
-                      type="button"
-                      className="pf2e-feat__img"
-                      title="Отправить описание черты в чат"
-                      onClick={() => onRoll && onRoll(featChatText(feat), false)}
-                    >
-                      {feat.img ? (
-                        <img src={feat.img} alt="" loading="lazy" />
-                      ) : (
-                        <span aria-hidden="true">🏅</span>
-                      )}
-                    </button>
-                    <span className="pf2e-feat__level">ур. {feat.level || 1}</span>
-                    <span className="pf2e-feat__name">{feat.name}</span>
-                    {feat.traits ? (
-                      <span className="pf2e-feat__traits">
-                        {splitTraits(feat.traits).slice(0, 4).join(", ")}
-                      </span>
-                    ) : null}
-                    <div className="pf2e-item-controls">
-                      <button
-                        type="button"
-                        className="pf2e-icon-button"
-                        title="Поделиться описанием в чате"
-                        onClick={() => onRoll && onRoll(featChatText(feat), false)}
-                      >
-                        💬
-                      </button>
-                      {editable ? (
-                        <>
-                          <button
-                            type="button"
-                            className="pf2e-icon-button"
-                            title="Изменить"
-                            onClick={() => setEditor({ ...feat, section: section.id })}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            className="pf2e-icon-button pf2e-icon-button--danger"
-                            title="Удалить"
-                            onClick={() => removeFeat(feat)}
-                          >
-                            ✕
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  </li>
-                ))
-              )}
-            </ol>
+            {entries.length === 0 ? (
+              <p className="pf2e-empty pf2e-empty--small">
+                Нет черт. Перетащите сюда из компендиума.
+              </p>
+            ) : (
+              <ol className="pf2e-feat-list">
+                {entries.map((feat) =>
+                  renderFeatCard(feat, section.id, { onRemove: removeFeat }),
+                )}
+              </ol>
+            )}
           </section>
         );
       })}
@@ -2248,16 +3802,35 @@ export function FeatsTab({
         <EntryEditorModal
           kind="feat"
           title={
-            slotEditor.type === "general"
-              ? "Общая черта · ур. " + slotEditor.level
-              : "Классовая черта · ур. " + slotEditor.level
+            FEAT_SLOT_SECTIONS.find((entry) => entry.type === slotEditor.type)
+              ?.label +
+            " · ур. " +
+            slotEditor.level
           }
           initial={{
-            section: slotEditor.type === "general" ? "general" : "class",
+            section: slotEditor.type,
             level: slotEditor.level,
           }}
           onSave={(feat) => assignSlotFeat(slotEditor, feat)}
           onClose={() => setSlotEditor(null)}
+        />
+      ) : null}
+
+      {sheetItem ? (
+        <ItemSheetModal
+          item={sheetItem}
+          canEdit={editable && sheetItem.category !== "classfeature"}
+          onEdit={(feat) =>
+            setEditor({
+              ...feat,
+              section: FEAT_SECTIONS.some(
+                (entry) => entry.id === feat.category,
+              )
+                ? feat.category
+                : "class",
+            })
+          }
+          onClose={() => setSheetItem(null)}
         />
       ) : null}
     </section>
@@ -2265,13 +3838,458 @@ export function FeatsTab({
 }
 
 
+
+
+// -------------------------------------------------------------- Biography
+
+function BiographyFieldShell({
+  label,
+  editable,
+  editing,
+  wide = false,
+  onEdit,
+  onCancel,
+  onSave,
+  children,
+  readOnly,
+  editLabel,
+  saveLabel,
+  cancelLabel,
+}) {
+  return (
+    <div
+      className={
+        "pf2e-bio-field" + (wide ? " pf2e-bio-field--wide" : "")
+      }
+    >
+      <div className="pf2e-bio-field__header">
+        <span className="pf2e-bio-field__label">{label}</span>
+        {editable && !editing ? (
+          <button
+            type="button"
+            className="pf2e-bio-field__edit"
+            title={editLabel}
+            aria-label={label + " — " + editLabel}
+            onClick={onEdit}
+          >
+            ✎
+          </button>
+        ) : null}
+      </div>
+
+      {editing ? (
+        <div className="pf2e-bio-field__editor">
+          {children}
+          <div className="pf2e-bio-field__actions">
+            <button
+              type="button"
+              className="pf2e-small-button"
+              onClick={onSave}
+            >
+              {saveLabel}
+            </button>
+            <button type="button" className="pf2e-small-button" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="pf2e-bio-field__value">{readOnly}</div>
+      )}
+    </div>
+  );
+}
+
+function BiographyText({
+  label,
+  value,
+  editable,
+  onSave,
+  labels,
+  type = "text",
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+
+  return (
+    <BiographyFieldShell
+      label={label}
+      editable={editable}
+      editing={editing}
+      onEdit={() => {
+        setDraft(value);
+        setEditing(true);
+      }}
+      onCancel={() => setEditing(false)}
+      onSave={() => {
+        onSave(draft);
+        setEditing(false);
+      }}
+      editLabel={labels.edit}
+      saveLabel={labels.save}
+      cancelLabel={labels.cancel}
+      readOnly={
+        value ? (
+          <span>{value}</span>
+        ) : (
+          <span className="pf2e-muted">{labels.empty}</span>
+        )
+      }
+    >
+      <input
+        className="pf2e-input"
+        type={type}
+        value={draft}
+        autoFocus
+        onChange={(event) => setDraft(event.target.value)}
+      />
+    </BiographyFieldShell>
+  );
+}
+
+function BiographyRich({
+  label,
+  value,
+  editable,
+  onSave,
+  labels,
+  wide = false,
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <BiographyFieldShell
+      label={label}
+      editable={editable}
+      editing={editing}
+      wide={wide}
+      onEdit={() => {
+        setDraft(value);
+        setEditing(true);
+      }}
+      onCancel={() => setEditing(false)}
+      onSave={() => {
+        onSave(draft);
+        setEditing(false);
+      }}
+      editLabel={labels.edit}
+      saveLabel={labels.save}
+      cancelLabel={labels.cancel}
+      readOnly={
+        value ? (
+          <div
+            className="pf2e-bio-field__rich"
+            dangerouslySetInnerHTML={{ __html: value }}
+          />
+        ) : (
+          <span className="pf2e-muted">{labels.empty}</span>
+        )
+      }
+    >
+      <RichTextEditor
+        initialValue={value}
+        onChange={setDraft}
+        ariaLabel={label}
+        placeholder={labels.empty}
+      />
+    </BiographyFieldShell>
+  );
+}
+
+function BiographyList({ label, values, editable, onSave, labels }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(values);
+  const [entry, setEntry] = useState("");
+
+  useEffect(() => setDraft(values), [values]);
+
+  const addEntry = () => {
+    const trimmed = entry.trim();
+    if (trimmed === "") {
+      return;
+    }
+    setDraft((current) => [...current, trimmed]);
+    setEntry("");
+  };
+
+  const removeEntry = (index) => {
+    setDraft((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  return (
+    <BiographyFieldShell
+      label={label}
+      editable={editable}
+      editing={editing}
+      onEdit={() => {
+        setDraft(values);
+        setEntry("");
+        setEditing(true);
+      }}
+      onCancel={() => setEditing(false)}
+      onSave={() => {
+        onSave(draft);
+        setEditing(false);
+      }}
+      editLabel={labels.edit}
+      saveLabel={labels.save}
+      cancelLabel={labels.cancel}
+      readOnly={
+        values.length > 0 ? (
+          <span className="pf2e-bio-field__tags">
+            {values.map((value, index) => (
+              <span className="pf2e-tag" key={value + ":" + index}>
+                {value}
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span className="pf2e-muted">{labels.empty}</span>
+        )
+      }
+    >
+      <div className="pf2e-bio-field__tags">
+        {draft.map((value, index) => (
+          <span className="pf2e-tag" key={value + ":" + index}>
+            {value}
+            <button
+              type="button"
+              className="pf2e-bio-field__tag-remove"
+              title={labels.remove}
+              aria-label={labels.remove + ": " + value}
+              onClick={() => removeEntry(index)}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="pf2e-bio-field__add">
+        <input
+          className="pf2e-input"
+          value={entry}
+          placeholder={labels.entryPlaceholder}
+          onChange={(event) => setEntry(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addEntry();
+            }
+          }}
+        />
+        <button type="button" className="pf2e-small-button" onClick={addEntry}>
+          {labels.add}
+        </button>
+      </div>
+    </BiographyFieldShell>
+  );
+}
+
+export function BiographyTab({ system, editable, updateSystem }) {
+  const { t } = useTranslation();
+
+  const biography = system.details?.biography || {};
+
+  const text = (key) => {
+    const value = biography[key];
+    if (typeof value === "string") {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.join("\n");
+    }
+    if (value && typeof value === "object") {
+      return typeof value.value === "string" ? value.value : "";
+    }
+    return "";
+  };
+
+  const list = (key) => {
+    const value = biography[key];
+    if (Array.isArray(value)) {
+      return value.filter((entry) => typeof entry === "string" && entry !== "");
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+      return value
+        .split(/\r?\n/)
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
+  const patch = (key, value) =>
+    updateSystem((current) => ({
+      ...current,
+      details: {
+        ...current.details,
+        biography: {
+          ...(current.details?.biography || {}),
+          [key]: value,
+        },
+      },
+    }));
+
+  const labels = {
+    edit: t("PF2E.Platform.Biography.Edit", "Edit"),
+    save: t("PF2E.Platform.Biography.Save", "Save"),
+    cancel: t("PF2E.Platform.Biography.Cancel", "Cancel"),
+    empty: t("PF2E.Platform.Biography.Empty", "Click the pencil to fill this in."),
+    add: t("PF2E.Platform.Biography.AddEntry", "Add"),
+    entryPlaceholder: t("PF2E.Platform.Biography.EntryPlaceholder", "New entry…"),
+    remove: t("PF2E.Platform.Biography.RemoveEntry", "Remove entry"),
+  };
+
+  return (
+    <section className="pf2e-tab pf2e-tab--biography">
+      <SectionHeader
+        title={t("PF2E.BiographyAppearance", "Appearance")}
+      />
+      <div className="pf2e-bio-grid">
+        <BiographyText
+          label={t("PF2E.Height", "Height")}
+          value={text("height")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("height", value)}
+        />
+        <BiographyText
+          label={t("PF2E.Weight", "Weight")}
+          value={text("weight")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("weight", value)}
+        />
+      </div>
+
+      <SectionHeader title={t("PF2E.BiographyBackStory", "Backstory")} />
+      <BiographyRich
+        label={t("PF2E.BiographyBackStory", "Backstory")}
+        value={text("backstory")}
+        editable={editable}
+        labels={labels}
+        wide
+        onSave={(value) => patch("backstory", value)}
+      />
+
+      <SectionHeader
+        title={t("PF2E.BiographyPersonalityHeader", "Personality")}
+      />
+      <div className="pf2e-bio-grid">
+        <BiographyRich
+          label={t("PF2E.Platform.Biography.Character", "Character")}
+          value={text("personality")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("personality", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyBeliefs", "Beliefs")}
+          value={text("beliefs")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("beliefs", value)}
+        />
+        <BiographyList
+          label={t("PF2E.BiographyEdicts", "Edicts")}
+          values={list("edicts")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("edicts", value)}
+        />
+        <BiographyList
+          label={t("PF2E.BiographyAnathema", "Anathema")}
+          values={list("anathema")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("anathema", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyLikes", "Likes")}
+          value={text("likes")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("likes", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyDislikes", "Dislikes")}
+          value={text("dislikes")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("dislikes", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyCatchphrases", "Catchphrases")}
+          value={text("catchphrases")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("catchphrases", value)}
+        />
+      </div>
+
+      <SectionHeader
+        title={t("PF2E.BiographyCampaignNotesHeader", "Campaign")}
+      />
+      <div className="pf2e-bio-grid">
+        <BiographyRich
+          label={t("PF2E.BiographyCampaignNotes", "Notes")}
+          value={text("campaignNotes")}
+          editable={editable}
+          labels={labels}
+          wide
+          onSave={(value) => patch("campaignNotes", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyAllies", "Allies")}
+          value={text("allies")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("allies", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyEnemies", "Enemies")}
+          value={text("enemies")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("enemies", value)}
+        />
+        <BiographyRich
+          label={t("PF2E.BiographyOrganizations", "Organizations")}
+          value={text("organizations")}
+          editable={editable}
+          labels={labels}
+          onSave={(value) => patch("organizations", value)}
+        />
+      </div>
+    </section>
+  );
+}
+
 // ------------------------------------------------------------------ Skills
 
 export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
+  const { t, language } = useTranslation();
   const [loreEditor, setLoreEditor] = useState(null);
   const level = system.details?.level?.value || 1;
   const lore = system.lore || [];
   const actorId = actor && actor.id ? actor.id : null;
+
+  // Step 6.8: the 16 base skills are rendered in two CSS-grid columns and are
+  // ordered by their *localised* names, so switching RU/EN re-sorts the list
+  // (for example «Акробатика» stays first in RU, while EN starts with
+  // «Acrobatics» and follows the English alphabet through «Thievery»).
+  const localizedSkills = SKILLS.map((skill) => ({
+    ...skill,
+    displayLabel: t(skill.labelKey, skill.name || skill.label),
+  })).sort((a, b) =>
+    a.displayLabel.localeCompare(
+      b.displayLabel,
+      language === "en" ? "en" : "ru",
+      { sensitivity: "base" },
+    ),
+  );
 
   const skillMacro = (actionId, name, text, blind = false) => ({
     type: "skill",
@@ -2284,34 +4302,60 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
   });
 
   const patchSkill = (key, rank) =>
-    updateSystem((current) => ({
-      ...current,
-      skills: { ...current.skills, [key]: { ...current.skills[key], rank } },
-    }));
+    updateSystem((current) => {
+      const floor = clampRank(current.skills?.[key]?.minRank);
+      const nextRank = Math.max(clampRank(rank), floor);
+      return {
+        ...current,
+        skills: {
+          ...current.skills,
+          [key]: { ...current.skills[key], rank: nextRank },
+        },
+      };
+    });
 
   const patchSave = (key, rank) =>
-    updateSystem((current) => ({
-      ...current,
-      saves: { ...current.saves, [key]: { ...current.saves[key], rank } },
-    }));
+    updateSystem((current) => {
+      const floor = clampRank(current.saves?.[key]?.minRank);
+      const nextRank = Math.max(clampRank(rank), floor);
+      return {
+        ...current,
+        saves: {
+          ...current.saves,
+          [key]: { ...current.saves[key], rank: nextRank },
+        },
+      };
+    });
 
   const patchPerception = (rank) =>
-    updateSystem((current) => ({
-      ...current,
-      perception: { ...current.perception, rank },
-    }));
+    updateSystem((current) => {
+      const floor = clampRank(current.perception?.minRank);
+      return {
+        ...current,
+        perception: {
+          ...current.perception,
+          rank: Math.max(clampRank(rank), floor),
+        },
+      };
+    });
 
   const patchMartial = (group, key, rank) =>
-    updateSystem((current) => ({
-      ...current,
-      proficiencies: {
-        ...current.proficiencies,
-        [group]: {
-          ...current.proficiencies[group],
-          [key]: { ...(current.proficiencies[group]?.[key] || {}), rank },
+    updateSystem((current) => {
+      const floor = clampRank(current.proficiencies?.[group]?.[key]?.minRank);
+      return {
+        ...current,
+        proficiencies: {
+          ...current.proficiencies,
+          [group]: {
+            ...current.proficiencies[group],
+            [key]: {
+              ...(current.proficiencies[group]?.[key] || {}),
+              rank: Math.max(clampRank(rank), floor),
+            },
+          },
         },
-      },
-    }));
+      };
+    });
 
   const saveLore = (entry) => {
     const normalized = {
@@ -2338,11 +4382,19 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
     }));
   };
 
+  const perceptionTotal =
+    abilityMod(system, "wis") + proficiencyBonus(level, system.perception?.rank);
+
   return (
     <section className="pf2e-tab pf2e-tab--skills">
-      <SectionHeader title="Навыки" hint={"Уровень " + level} />
-      <ul className="pf2e-skill-list">
-        {SKILLS.map((skill) => {
+      <SectionHeader
+        title={t("PF2E.Platform.Sheet.Skills", "Skills")}
+        hint={
+          t("PF2E.Platform.Sheet.Level", "Level") + " " + level
+        }
+      />
+      <ul className="pf2e-skill-list pf2e-skill-grid">
+        {localizedSkills.map((skill) => {
           const modifier = skillModifier(system, skill.key, skill.ability);
           const rank = clampRank(system.skills?.[skill.key]?.rank);
           return (
@@ -2350,27 +4402,41 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
               <button
                 type="button"
                 className="pf2e-roll-button"
-                title={"Проверка: " + skill.label}
-                onClick={() => onRoll(rollLabel(modifier, skill.label))}
+                title={
+                  t("PF2E.Platform.Sheet.SkillCheck", "Check") +
+                  ": " +
+                  skill.displayLabel
+                }
+                onClick={() => onRoll(rollLabel(modifier, skill.displayLabel))}
                 {...hotbarMacroProps(
                   skillMacro(
                     skill.key,
-                    skill.label,
-                    rollLabel(modifier, skill.label),
+                    skill.displayLabel,
+                    rollLabel(modifier, skill.displayLabel),
                   ),
                 )}
               >
                 <span className="pf2e-d20">d20</span>
               </button>
               <BlindRollButton
-                title={"Тайная проверка: " + skill.label}
+                title={
+                  t("PF2E.Platform.Sheet.BlindCheck", "Secret check") +
+                  ": " +
+                  skill.displayLabel
+                }
                 onClick={() =>
-                  onRoll(blindRollLabel(modifier, skill.label), false, "blind")
+                  onRoll(
+                    blindRollLabel(modifier, skill.displayLabel),
+                    false,
+                    "blind",
+                  )
                 }
                 dragMacro={skillMacro(
                   skill.key + ":blind",
-                  skill.label + " (тайно)",
-                  blindRollLabel(modifier, skill.label),
+                  skill.displayLabel +
+                    " " +
+                    t("PF2E.Platform.Sheet.SecretSuffix", "(secret)"),
+                  blindRollLabel(modifier, skill.displayLabel),
                   true,
                 )}
               />
@@ -2378,23 +4444,32 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
                 className="pf2e-skill__modifier"
                 title={
                   Number(system.skills?.[skill.key]?.armorPenalty)
-                    ? "Штраф брони: " + Number(system.skills[skill.key].armorPenalty)
+                    ? t("PF2E.Platform.Sheet.ArmorPenalty", "Armor penalty") +
+                      ": " +
+                      Number(system.skills[skill.key].armorPenalty)
                     : undefined
                 }
               >
                 {signed(modifier)}
               </span>
-              <span className="pf2e-skill__name">{skill.label}</span>
+              <span className="pf2e-skill__name">{skill.displayLabel}</span>
               <span className="pf2e-skill__ability">
                 {ABILITIES.find((ability) => ability.key === skill.ability)?.abbr}
               </span>
               {Number(system.skills?.[skill.key]?.armorPenalty) ? (
-                <span className="pf2e-skill__acp" title="Штраф проверок от брони">
+                <span
+                  className="pf2e-skill__acp"
+                  title={t(
+                    "PF2E.Platform.Sheet.ArmorCheckPenalty",
+                    "Armor check penalty",
+                  )}
+                >
                   ACP {signed(Number(system.skills[skill.key].armorPenalty))}
                 </span>
               ) : null}
               <RankSelect
                 rank={rank}
+                minRank={system.skills?.[skill.key]?.minRank}
                 disabled={!editable}
                 onChange={(value) => patchSkill(skill.key, value)}
               />
@@ -2404,7 +4479,7 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
       </ul>
 
       <SectionHeader
-        title="Знания"
+        title={t("PF2E.Platform.Sheet.Lore", "Lore")}
         actions={
           editable ? (
             <button
@@ -2412,14 +4487,16 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
               className="pf2e-small-button"
               onClick={() => setLoreEditor({})}
             >
-              + Добавить знание
+              {t("PF2E.Platform.Sheet.AddLore", "+ Add Lore")}
             </button>
           ) : null
         }
       />
       <ul className="pf2e-skill-list">
         {lore.length === 0 ? (
-          <li className="pf2e-empty">Знаний пока нет.</li>
+          <li className="pf2e-empty">
+            {t("PF2E.Platform.Sheet.NoLore", "No lore yet.")}
+          </li>
         ) : (
           lore.map((entry) => {
             const modifier = abilityMod(system, "int") + proficiencyBonus(level, entry.rank);
@@ -2440,6 +4517,18 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
                 >
                   <span className="pf2e-d20">d20</span>
                 </button>
+                <BlindRollButton
+                  title={"Тайная проверка: " + entry.name}
+                  onClick={() =>
+                    onRoll(blindRollLabel(modifier, entry.name), false, "blind")
+                  }
+                  dragMacro={skillMacro(
+                    "lore:" + entry.id + ":blind",
+                    entry.name + " (тайно)",
+                    blindRollLabel(modifier, entry.name),
+                    true,
+                  )}
+                />
                 <span className="pf2e-skill__modifier">{signed(modifier)}</span>
                 <span className="pf2e-skill__name">{entry.name}</span>
                 <RankBadge rank={entry.rank} />
@@ -2478,35 +4567,36 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
             type="button"
             className="pf2e-roll-button"
             title="Проверка восприятия"
-            onClick={() =>
-              onRoll(
-                rollLabel(
-                  abilityMod(system, "wis") + proficiencyBonus(level, system.perception?.rank),
-                  "Восприятие",
-                ),
-              )
-            }
+            onClick={() => onRoll(rollLabel(perceptionTotal, "Восприятие"))}
             {...hotbarMacroProps(
               skillMacro(
                 "perception",
                 "Восприятие",
-                rollLabel(
-                  abilityMod(system, "wis") + proficiencyBonus(level, system.perception?.rank),
-                  "Восприятие",
-                ),
+                rollLabel(perceptionTotal, "Восприятие"),
               ),
             )}
           >
             <span className="pf2e-d20">d20</span>
           </button>
-          <span className="pf2e-skill__modifier">
-            {signed(
-              abilityMod(system, "wis") + proficiencyBonus(level, system.perception?.rank),
+          <BlindRollButton
+            title="Тайная проверка восприятия"
+            onClick={() =>
+              onRoll(blindRollLabel(perceptionTotal, "Восприятие"), false, "blind")
+            }
+            dragMacro={skillMacro(
+              "perception:blind",
+              "Восприятие (тайно)",
+              blindRollLabel(perceptionTotal, "Восприятие"),
+              true,
             )}
+          />
+          <span className="pf2e-skill__modifier">
+            {signed(perceptionTotal)}
           </span>
           <span className="pf2e-skill__name">Восприятие</span>
           <RankSelect
             rank={system.perception?.rank}
+            minRank={system.perception?.minRank}
             disabled={!editable}
             onChange={patchPerception}
           />
@@ -2532,22 +4622,11 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
               >
                 <span className="pf2e-d20">d20</span>
               </button>
-              <BlindRollButton
-                title={"Тайный спасбросок: " + save.label}
-                onClick={() =>
-                  onRoll(blindRollLabel(modifier, save.label), false, "blind")
-                }
-                dragMacro={skillMacro(
-                  "save:" + save.key + ":blind",
-                  save.label + " (тайно)",
-                  blindRollLabel(modifier, save.label),
-                  true,
-                )}
-              />
               <span className="pf2e-skill__modifier">{signed(modifier)}</span>
               <span className="pf2e-skill__name">{save.label}</span>
               <RankSelect
                 rank={system.saves?.[save.key]?.rank}
+                minRank={system.saves?.[save.key]?.minRank}
                 disabled={!editable}
                 onChange={(value) => patchSave(save.key, value)}
               />
@@ -2576,6 +4655,7 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
               </span>
               <RankSelect
                 rank={entry.rank}
+                minRank={entry.minRank}
                 disabled={!editable}
                 onChange={(value) => patchMartial("attacks", key, value)}
               />
@@ -2600,6 +4680,7 @@ export function SkillsTab({ system, actor, editable, updateSystem, onRoll }) {
               </span>
               <RankSelect
                 rank={entry.rank}
+                minRank={entry.minRank}
                 disabled={!editable}
                 onChange={(value) => patchMartial("defenses", key, value)}
               />

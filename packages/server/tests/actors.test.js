@@ -137,6 +137,14 @@ test("actor sheet ownership: owner edits own actor, other players are rejected",
   session.addMember({ id: "p-2", role: "player" });
   const actor = session.createDirectoryEntry("actors", { name: "Рыцарь" });
 
+  // Phase 6.1: ownership is the source of truth; linking characterId only
+  // controls chat identity and never grants edit permission by itself.
+  session.updateActor(
+    actor.id,
+    { ownership: { default: 0, "p-1": 3 } },
+    "gm-1",
+    "gm",
+  );
   session.updateProfile("p-1", { characterId: actor.id });
 
   assert.doesNotThrow(function () {
@@ -222,6 +230,25 @@ test("actor sheets survive saveToDisk/loadFromDisk", async function () {
   } finally {
     await fs.rm(file, { force: true });
   }
+});
+
+test("deleteDirectoryEntry removes an actor and rejects unknown ids", function () {
+  const session = new EncounterSession({ id: "actor-delete" });
+  session.addMember({ id: "gm-1", role: "gm" });
+  const actor = session.createDirectoryEntry("actors", { name: "Delete Me" });
+
+  const removed = session.deleteDirectoryEntry("actors", actor.id, "gm-1", "gm");
+  assert.equal(removed.id, actor.id);
+  assert.equal(
+    session.getDirectories().actors.entries.some((entry) => entry.id === actor.id),
+    false,
+  );
+  assert.throws(
+    function () {
+      session.deleteDirectoryEntry("actors", actor.id, "gm-1", "gm");
+    },
+    /Unknown actors entry/,
+  );
 });
 
 test("WebSocket room:update-actor broadcasts the persisted sheet", async function () {

@@ -1,0 +1,181 @@
+{
+	"label": "Глоссарий умений Бестиария",
+	"entries": {
+		"Nimble Dodge": {
+			"name": "Ловкое уклонение",
+			"description": "<p><strong>Триггер:</strong> Существо целится в вас атакой, и вы можете видеть атакующего.</p><p><strong>Требования:</strong> Вы не @UUID[Compendium.pf2e.conditionitems.Item.D5mg6Tc7Jzrj6ro7]{Перегружены}</p><hr /><p>Вы ловко уворачиваетесь, получая против спровоцировавшей атаки бонус обстоятельства +2 к КБ.</p>"
+		},
+		"Attack of Opportunity": {
+			"name": "Возможность для атаки"
+		},
+		"Catch Rock": {
+			"name": "Поймать камень"
+		},
+		"Retributive Strike": {
+			"name": "Карающий удар"
+		},
+		"Sneak Attack": {
+			"name": "Внезапная атака",
+			"description": "<p>\"Удары\" существа наносят дополнительные 0d6 точного урона @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнутым врасплох} существам.</p>"
+		},
+		"Form Up": {
+			"name": "Построение"
+		},
+		"+1 Status to All Saves vs. Magic": {
+			"name": "Бонус состояния +1 ко всем спасброскам от магии"
+		},
+		"All-Around Vision": {
+			"name": "Круговое зрение"
+		},
+		"Aquatic Ambush": {
+			"name": "Водная засада"
+		},
+		"At-Will Spells": {
+			"name": "Заклинания по желанию"
+		},
+		"Aura": {
+			"name": "Аура"
+		},
+		"Buck": {
+			"name": "Брыкаться",
+			"description": "<p>Спасбросок @Check[reflex|dc:]{Рефлекса}</p><p>@Localize[PF2E.NPC.Abilities.Glossary.Buck]</p>"
+		},
+		"Change Shape": {
+			"name": "Изменение формы"
+		},
+		"Constant Spells": {
+			"name": "Постоянные заклинания"
+		},
+		"Constrict": {
+			"name": "Сжимать",
+			"description": "<p>@Damage[(0)[bludgeoning]], простой спасбросок @Check[fortitude|dc:|basic]{Стойкости}</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.Constrict]</p>"
+		},
+		"Coven": {
+			"name": "Ковен"
+		},
+		"Darkvision": {
+			"name": "Ночное зрение"
+		},
+		"Disease": {
+			"name": "Болезнь"
+		},
+		"Engulf": {
+			"name": "Поглотить",
+			"description": "<p>Спасбросок @Check[reflex|dc:]{Рефлекса}, @Damage[(0)[damageType]], @UUID[Compendium.pf2e.actionspf2e.Item.SkZAQRkLLkmBQNB9]{Вырваться} ([[/act escape dc=0]]), Разрыв [0]</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.Engulf]</p>"
+		},
+		"Fast Healing": {
+			"name": "Быстрое исцеление"
+		},
+		"Ferocity": {
+			"name": "Свирепость"
+		},
+		"Frightful Presence": {
+			"name": "Устрашающее присутствие",
+			"description": "<p>0 футов. Спасбросок @Check[will|dc:|options:area-effect,inflicts:frightened]{Воли}</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.FrightfulPresence]</p>"
+		},
+		"Grab": {
+			"name": "Захват"
+		},
+		"Greater Constrict": {
+			"name": "Сильно сжимать",
+			"description": "<p>@Damage[(0)[bludgeoning]], простой спасбросок @Check[fortitude|dc:|basic]{Стойкости}</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.GreaterConstrict]</p>"
+		},
+		"Greater Darkvision": {
+			"name": "Сильное ночное зрение"
+		},
+		"Improved Grab": {
+			"name": "Улучшенный захват"
+		},
+		"Improved Knockdown": {
+			"name": "Улучшенный нокдаун"
+		},
+		"Improved Push": {
+			"name": "Улучшенный толчок"
+		},
+		"Knockdown": {
+			"name": "Нокдаун"
+		},
+		"Lifesense": {
+			"name": "Жизнечувствительность"
+		},
+		"Light Blindness": {
+			"name": "Световая слепота"
+		},
+		"Low-Light Vision": {
+			"name": "Сумеречное зрение"
+		},
+		"Master's Eye": {
+			"name": "Глаз хозяина",
+			"description": "<p>Хозяин рактаварна наблюдает за миром его глазами, а не своими собственными, используя Восприятие и ночное зрение рактаварна. Этот эффект длится до конца хода хозяина, но он может @UUID[Compendium.pf2e.actionspf2e.Item.3f5DMFu8fPiqHpRg]{Поддерживать} эту активность.</p><p>Это умение действует на любом расстоянии, даже на разных планах бытия. Если рактаварн умирает, пока его хозяин использует это умение, хозяин становится @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлен 5}.</p>"
+		},
+		"Poison": {
+			"name": "Яд"
+		},
+		"Pull": {
+			"name": "Притягивание"
+		},
+		"Push": {
+			"name": "Толчок"
+		},
+		"Reactive Strike": {
+			"name": "Реагирующий удар"
+		},
+		"Regeneration": {
+			"name": "Регенерация"
+		},
+		"Rend": {
+			"name": "Раздирать"
+		},
+		"Scent": {
+			"name": "Нюх"
+		},
+		"Shield Block": {
+			"name": "Блок щитом"
+		},
+		"Stench": {
+			"name": "Вонь",
+			"description": "<p>0 футов. Спасбросок @Check[fortitude|dc:|options:area-effect,inflicts:sickened,inflicts:slowed]{Стойкости}</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.Stench]</p>"
+		},
+		"Swallow Whole": {
+			"name": "Проглотить целиком",
+			"description": "<p>[Указанный размер], @Damage[(0)[bludgeoning]], Разрыв [0]</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.SwallowWhole]</p>"
+		},
+		"Swarm Mind": {
+			"name": "Разум роя"
+		},
+		"Telepathy": {
+			"name": "Телепатия"
+		},
+		"Throw Rock": {
+			"name": "Бросок камня"
+		},
+		"Trample": {
+			"name": "Растоптать",
+			"description": "<p>[Размер], [Удар из списка], простой спасбросок @Check[reflex|dc:|basic]{Рефлекса}</p><hr /><p>@Localize[PF2E.NPC.Abilities.Glossary.Trample]</p>"
+		},
+		"Tremorsense": {
+			"name": "Виброчувствительность"
+		},
+		"Void Healing": {
+			"name": "Исцеление пустотой"
+		},
+		"Wavesense": {
+			"name": "Волночувствительность"
+		},
+		"Change Formation": {
+			"name": "Смена построения"
+		},
+		"Troop Defenses": {
+			"name": "Защита отряда"
+		},
+		"Troop Movement": {
+			"name": "Передвижение отряда"
+		},
+		"Power Attack": {
+			"name": "Мощная атака"
+		},
+		"Thoughtsense": {
+			"name": "Мыслечувствительность"
+		}
+	}
+}

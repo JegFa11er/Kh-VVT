@@ -197,15 +197,23 @@ export default function AttributeBuilderModal({
     }
     initializedRef.current = true;
     const saved = normalizeAbilityBuild(system?.build);
+    // Step 5.6: builds saved by the old auto-distributing builder have no
+    // `version` marker. Re-open them on the empty grid instead of reviving the
+    // pre-spent free boosts; builds applied by this version (version >= 2) keep
+    // the player's explicit choices.
+    const savedIsAuthoritative = saved.version >= 2;
     const hasSavedGrid =
       Boolean(system?.build?.manual) ||
-      saved.boosts.ancestry.length > 0 ||
-      saved.boosts.background.length > 0 ||
-      Boolean(saved.boosts.class) ||
-      ABILITY_BUILDER_LEVELS.some((rowLevel) => saved.boosts.levels[rowLevel].length > 0);
+      (savedIsAuthoritative &&
+        (saved.boosts.ancestry.length > 0 ||
+          saved.boosts.background.length > 0 ||
+          Boolean(saved.boosts.class) ||
+          ABILITY_BUILDER_LEVELS.some(
+            (rowLevel) => saved.boosts.levels[rowLevel].length > 0,
+          )));
     const next = hasSavedGrid
       ? sanitizeAbilityBuild(saved, sources, level)
-      : defaultAbilityBuild(sources, level, system?.abilities);
+      : defaultAbilityBuild(sources, level);
     setBuild(next);
     setManual(Boolean(system?.build?.manual));
     setManualValues(abilityModsFromSystem(system));
@@ -378,7 +386,7 @@ export default function AttributeBuilderModal({
           ]),
         )
       : abilityBuildBreakdown(sources, normalized, level).abilities;
-    onSave({ abilities, build: { ...normalized, manual } });
+    onSave({ abilities, build: { ...normalized, manual, version: 2 } });
     onClose();
   };
 

@@ -24,6 +24,21 @@ const PACKS_ROOT = resolvePacksRoot();
 const OUTPUT_DIR = process.env.COMPENDIUM_OUT_DIR
   ? path.resolve(process.env.COMPENDIUM_OUT_DIR)
   : DEFAULT_OUTPUT_DIR;
+// Step 6.5: Babele translation packs. The user may place them under the
+// upstream community path (`pf2r/data/community/pf2e/packs`) or the compact
+// layout shipped in this repository (`pf2r/packs`).
+const TRANSLATIONS_PACKS_DIR = resolveTranslationsPacksDir();
+
+const CATEGORY_TRANSLATION_ALIASES = Object.freeze({
+  spells: ["pf2e.spells-srd.json"],
+  equipment: ["pf2e.equipment-srd.json"],
+  feats: ["pf2e.feats-srd.json", "pf2e.classfeatures.json", "pf2e.ancestryfeatures.json"],
+  actions: ["pf2e.actionspf2e.json", "pf2e.adventure-specific-actions.json"],
+  ancestries: ["pf2e.ancestries.json"],
+  heritages: ["pf2e.heritages.json"],
+  backgrounds: ["pf2e.backgrounds.json"],
+  classes: ["pf2e.classes.json"],
+});
 
 const INCLUDED_TYPES = Object.freeze({
   spells: new Set(["spell"]),
@@ -112,6 +127,37 @@ function resolvePacksRoot() {
   }
 
   return DEFAULT_PACKS_ROOT;
+}
+
+/**
+ * Locate the Babele translation packs. Returns the first directory that exists
+ * so both the upstream community layout and the local `pf2r/packs` layout work
+ * without configuration.
+ */
+function resolveTranslationsPacksDir() {
+  const candidates = [
+    process.env.PF2E_TRANSLATIONS_DIR,
+    path.join(
+      SERVER_DIR,
+      "data",
+      "translations",
+      "pf2r",
+      "data",
+      "community",
+      "pf2e",
+      "packs",
+    ),
+    path.join(SERVER_DIR, "data", "translations", "pf2r", "packs"),
+    path.join(SERVER_DIR, "data", "translations", "packs"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return path.resolve(candidate);
+    }
+  }
+
+  return path.join(SERVER_DIR, "data", "translations", "pf2r", "packs");
 }
 
 /**
@@ -712,10 +758,26 @@ function makeIndexEntry(item) {
     name: item.name,
     type: item.type,
     level: item.level,
+    rarity: item.rarity || null,
     traits: item.traits,
     img: item.img,
     source: item.source,
   };
+
+  // Step 6.6: the equipment filter sidebar needs these compact fields so the
+  // server can filter by rarity/type/category/price before pagination without
+  // loading the multi-megabyte full catalog. The keys are always present (even
+  // when the value is null) so the catalog service can tell a new index from a
+  // legacy one that needs a one-time hydration from the full file.
+  const system = item.system && typeof item.system === "object" ? item.system : null;
+  entry.category =
+    system && typeof system.category === "string" && system.category.trim() !== ""
+      ? system.category.trim()
+      : null;
+  entry.price =
+    system && system.price && typeof system.price === "object"
+      ? system.price
+      : null;
 
   // Step 4.8.2: heritages are filtered by their ancestry. Versatile heritages
   // (Nephilim, Dhampir, ...) have no ancestry link and are available to every
@@ -773,6 +835,151 @@ function writeJson(filePath, data) {
   const payload = JSON.stringify(data);
   fs.writeFileSync(filePath, payload + "\n", "utf8");
   return Buffer.byteLength(payload, "utf8");
+}
+
+// ------------------------------------------------------- translation (6.5)
+
+/**
+ * Translation files that may contain entries for one category. Category packs
+ * use different upstream names (`spells` -> `pf2e.spells-srd.json`), so the
+ * aliases are merged with one candidate per configured source pack.
+ */
+function translationFileNames(category, config) {
+  const names = new Set();
+  for (const name of CATEGORY_TRANSLATION_ALIASES[category] || []) {
+    names.add(name);
+  }
+  for (const pack of config.packs || []) {
+    names.add("pf2e." + pack + ".json");
+  }
+  names.add("pf2e." + category + ".json");
+  names.add("pf2e." + category + "-srd.json");
+  return Array.from(names);
+}
+
+function readTranslationEntries(fileName) {
+  const filePath = path.join(TRANSLATIONS_PACKS_DIR, fileName);
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+    const entries = parsed.entries;
+    if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
+      return null;
+    }
+    return entries;
+  } catch (error) {
+    console.warn(
+      "Skipping invalid translation file " + fileName + ": " + error.message,
+    );
+    return null;
+  }
+}
+
+function readTranslatedDescription(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  if (typeof entry.description === "string" && entry.description.trim() !== "") {
+    return entry.description;
+  }
+  if (
+    entry.description &&
+    typeof entry.description === "object" &&
+    typeof entry.description.value === "string" &&
+    entry.description.value.trim() !== ""
+  ) {
+    return entry.description.value;
+  }
+  return null;
+}
+
+/** Load every translation file that maps onto a category. */
+function loadCategoryTranslations(category, config) {
+  const byName = new Map();
+  const byPack = new Map();
+  const loadedFiles = [];
+
+  for (const fileName of translationFileNames(category, config)) {
+    const entries = readTranslationEntries(fileName);
+    if (!entries) {
+      continue;
+    }
+    loadedFiles.push(fileName);
+    const pack = fileName.replace(/^pf2e\./, "").replace(/\.json$/i, "");
+    const packMap = byPack.get(pack) || new Map();
+
+    for (const englishName of Object.keys(entries)) {
+      const translated = entries[englishName];
+      if (!translated || typeof translated !== "object") {
+        continue;
+      }
+      const record = {
+        name:
+          typeof translated.name === "string" && translated.name.trim() !== ""
+            ? translated.name
+            : null,
+        // The English compendium stores readable text, not HTML, so the
+        // translated description is normalized the same way.
+        description: readTranslatedDescription(translated),
+      };
+      byName.set(englishName, record);
+      packMap.set(englishName, record);
+    }
+
+    byPack.set(pack, packMap);
+  }
+
+  return {
+    byName: byName,
+    byPack: byPack,
+    loadedFiles: loadedFiles,
+  };
+}
+
+/**
+ * Deep-copy the English items and replace names/descriptions when the Babele
+ * translation uses the original English name as its key.
+ */
+function translateItems(items, translations) {
+  const translatedItems = JSON.parse(JSON.stringify(items));
+  if (!translations || translations.loadedFiles.length === 0) {
+    return { items: translatedItems, translated: 0 };
+  }
+
+  let translated = 0;
+  for (const item of translatedItems) {
+    const sourcePack = item.source && item.source.pack ? item.source.pack : null;
+    const packMap = sourcePack ? translations.byPack.get(sourcePack) : null;
+    const entry =
+      (packMap && packMap.get(item.name)) ||
+      translations.byName.get(item.name) ||
+      null;
+    if (!entry) {
+      continue;
+    }
+
+    if (entry.name) {
+      item.name = entry.name;
+    }
+    if (entry.description) {
+      const text = cleanHtml(entry.description);
+      item.description = text;
+      item.system =
+        item.system && typeof item.system === "object" ? item.system : {};
+      item.system.description =
+        item.system.description && typeof item.system.description === "object"
+          ? Object.assign({}, item.system.description, { value: text })
+          : { value: text };
+    }
+    translated += 1;
+  }
+
+  return { items: translatedItems, translated: translated };
 }
 
 // ---------------------------------------------------------------------- build
@@ -839,8 +1046,14 @@ function createStats() {
       sourcePacks: new Set(),
       fullBytes: 0,
       indexBytes: 0,
-      fullPath: path.join(OUTPUT_DIR, category + ".json"),
-      indexPath: path.join(OUTPUT_DIR, category + ".index.json"),
+      ruFullBytes: 0,
+      ruIndexBytes: 0,
+      translatedCount: 0,
+      translationFiles: [],
+      fullPath: path.join(OUTPUT_DIR, category + ".en.json"),
+      indexPath: path.join(OUTPUT_DIR, category + ".en.index.json"),
+      ruFullPath: path.join(OUTPUT_DIR, category + ".ru.json"),
+      ruIndexPath: path.join(OUTPUT_DIR, category + ".ru.index.json"),
     });
   }
   return stats;
@@ -910,10 +1123,22 @@ function writeCategory(category, stat) {
     return byName !== 0 ? byName : a.id.localeCompare(b.id);
   });
 
-  const index = stat.items.map(makeIndexEntry);
+  // Step 6.5: always emit an English set. The Russian set is a deep copy with
+  // names/descriptions replaced from the matching Babele pack (English text is
+  // kept for every entry without a translation).
   stat.count = stat.items.length;
   stat.fullBytes = writeJson(stat.fullPath, stat.items);
-  stat.indexBytes = writeJson(stat.indexPath, index);
+  stat.indexBytes = writeJson(stat.indexPath, stat.items.map(makeIndexEntry));
+
+  const translations = loadCategoryTranslations(category, CATEGORY_CONFIG[category]);
+  const russian = translateItems(stat.items, translations);
+  stat.translatedCount = russian.translated;
+  stat.translationFiles = translations.loadedFiles;
+  stat.ruFullBytes = writeJson(stat.ruFullPath, russian.items);
+  stat.ruIndexBytes = writeJson(
+    stat.ruIndexPath,
+    russian.items.map(makeIndexEntry),
+  );
 
   return {
     category: category,
@@ -932,8 +1157,14 @@ function writeCategory(category, stat) {
     }),
     fullBytes: stat.fullBytes,
     indexBytes: stat.indexBytes,
+    ruFullBytes: stat.ruFullBytes,
+    ruIndexBytes: stat.ruIndexBytes,
+    translatedCount: stat.translatedCount,
+    translationFiles: stat.translationFiles,
     fullPath: stat.fullPath,
     indexPath: stat.indexPath,
+    ruFullPath: stat.ruFullPath,
+    ruIndexPath: stat.ruIndexPath,
     sources: CATEGORY_CONFIG[category].packs || null,
   };
 }
@@ -1040,23 +1271,43 @@ function printReport(report) {
   let totalItems = 0;
   let totalFullBytes = 0;
   let totalIndexBytes = 0;
+  let totalRuFullBytes = 0;
+  let totalRuIndexBytes = 0;
+  let totalTranslated = 0;
   let totalTraitWarnings = 0;
 
   for (const stat of stats) {
     totalItems += stat.count;
     totalFullBytes += stat.fullBytes;
     totalIndexBytes += stat.indexBytes;
+    totalRuFullBytes += stat.ruFullBytes;
+    totalRuIndexBytes += stat.ruIndexBytes;
+    totalTranslated += stat.translatedCount;
     totalTraitWarnings += stat.missingTraits + stat.malformedTraits;
 
     console.log(
       stat.label.padEnd(10) +
         " " +
         String(stat.count).padStart(6) +
-        " items  | " +
+        " items  | EN " +
         formatMegabytes(stat.fullBytes).padStart(9) +
         " full / " +
         formatMegabytes(stat.indexBytes).padStart(9) +
+        " index | RU " +
+        formatMegabytes(stat.ruFullBytes).padStart(9) +
+        " full / " +
+        formatMegabytes(stat.ruIndexBytes).padStart(9) +
         " index",
+    );
+    console.log(
+      "           translated=" +
+        stat.translatedCount +
+        " / " +
+        stat.count +
+        " via " +
+        (stat.translationFiles.length > 0
+          ? stat.translationFiles.join(", ")
+          : "no translation pack"),
     );
     console.log(
       "           candidates=" +
@@ -1096,11 +1347,17 @@ function printReport(report) {
   console.log(
     "TOTAL: " +
       totalItems +
-      " items | " +
+      " items | EN " +
       formatMegabytes(totalFullBytes) +
-      " full data / " +
+      " full / " +
       formatMegabytes(totalIndexBytes) +
-      " indexes",
+      " indexes | RU " +
+      formatMegabytes(totalRuFullBytes) +
+      " full / " +
+      formatMegabytes(totalRuIndexBytes) +
+      " indexes | " +
+      totalTranslated +
+      " translated entries",
   );
   console.log(
     "Files: " +
@@ -1170,7 +1427,10 @@ module.exports = {
   normalizeItem,
   readTraits,
   readLevel,
+  loadCategoryTranslations,
+  translateItems,
   CATEGORY_CONFIG,
   PACKS_ROOT,
   OUTPUT_DIR,
+  TRANSLATIONS_PACKS_DIR,
 };

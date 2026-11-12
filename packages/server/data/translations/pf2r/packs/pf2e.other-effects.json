@@ -1,0 +1,222 @@
+{
+	"label": "Другие эффекты",
+	"entries": {
+		"Effect: Adverse Subsist Situation": {
+			"name": "Эффект: Неблагоприятная жизненная ситуация",
+			"description": "<p>Предоставляется активностью @UUID[Compendium.pf2e.actionspf2e.Item.49y9Ec4bDii8pcD3]</p><p>Вы получаете штраф обстоятельства −2 к проверкам \"Проживания\".</p>"
+		},
+		"Effect: Aid": {
+			"name": "Эффект: Помощь",
+			"description": "<p>Предоставляется действием @UUID[Compendium.pf2e.actionspf2e.Item.HCl3pzVefiv9ZKQW]</p><p>Вы получаете бонус обстоятельства к проверке, основанный на результате проверки \"Помощи\" вашего союзника.</p>"
+		},
+		"Effect: Aquatic Combat": {
+			"name": "Эффект: Водный бой",
+			"description": "<p>Смотрите @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.OiRwxbfLNUniLg15#vodnyj-boj]{Водный бой}</p><p>Используйте эти правила для сражений в воде или под водой:</p><ul><li>Вы @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнуты врасплох}, если только у вас нет Скорости плавания.</li><li>Вы получаете сопротивление 5 кислоте и огню.</li><li>Вы получаете штраф обстоятельства −2 к броскам режущих или дробящих атак, проходящим через воду.</li><li>Дистанционные атаки, совершаемые подводными существами или по подводной цели, имеют вдвое уменьшенный шаг дистанции.</li><li>Под водой вы не можете сотворять огненные заклинания или использовать действия с признаком @Trait[Fire]{огонь}. Как обычно для признаков, любая часть эффекта, не имеющая отношения к огню, всё ещё работает. Например, атака <em>огненным боевым топором</em> всё ещё наносит свой физический урон, но не наносит урон огнём.</li></ul><p>@UUID[Compendium.pf2e.other-effects.Item.2u26bmArDPuoCljc]</p>"
+		},
+		"Effect: Avert Gaze": {
+			"name": "Эффект: Отвести взгляд",
+			"description": "<p>Предоставляется действием @UUID[Compendium.pf2e.actionspf2e.Item.UWdRX1VelipCzrCg]</p><p>Вы получаете бонус обстоятельства +2 к спасброскам против @Trait[Visual]{визуальных} умений, которые требуют от вас смотреть на существо или объект, как например взгляд медузы, превращающий в камень.</p>"
+		},
+		"Effect: Cover": {
+			"name": "Эффект: Укрытие",
+			"description": "<p>Когда вы за препятствием, которое может блокировать оружие, защищать от взрывов и затруднить ваше обнаружение, то вы находитесь в укрытии. Стандартное укрытие даёт вам бонус обстоятельства +2 к КБ, спасброскам Рефлекса против эффектов по области и к проверкам Скрытности для действий @UUID[Compendium.pf2e.actionspf2e.Item.XMcnh4cSI32tljXa]{Спрятаться}, @UUID[Compendium.pf2e.actionspf2e.Item.VMozDqMMuK5kpoX4]{Красться} или другим образом избегать обнаружения. Вы можете получить преимущество как от большого укрытия, использовав базовое действие @UUID[Compendium.pf2e.actionspf2e.Item.ust1jJSCZQUhBZIz]{Укрыться}, увеличивая бонус обстоятельства до +4. Если укрытие не особенно надёжное, обычно являющееся существом, то вы получаете небольшое укрытие, которое даёт бонус обстоятельства +1 к КБ. Существо со стандартным укрытием или большим укрытием может попытаться использовать Скрытность, чтобы \"Спрятаться\", но небольшого укрытия для этого недостаточно.</p>"
+		},
+		"Effect: Disarm (Bonus)": {
+			"name": "Эффект: Разоружить [Бонус]",
+			"description": "<p>Предоставляется действием @UUID[Compendium.pf2e.actionspf2e.Item.Dt6B1slsBy8ipJu9] через эфемерный эффект</p><p>Вы получаете бонус обстоятельства +2 к @UUID[Compendium.pf2e.actionspf2e.Item.Dt6B1slsBy8ipJu9].</p>"
+		},
+		"Effect: Disarm (Success)": {
+			"name": "Эффект: Разоружить [Успех]",
+			"description": "<p>Предоставляется действием @UUID[Compendium.pf2e.actionspf2e.Item.Dt6B1slsBy8ipJu9]</p><p>Вы получаете штраф обстоятельства −2 к атакам, использующим целевой предмет. Дальнейшие попытки \"Разоружить\" вас получают бонус обстоятельства +2.</p>"
+		},
+		"Effect: Follow The Expert": {
+			"name": "Эффект: Повторять за экспертом",
+			"description": "<p>Предоставляется активностью @UUID[Compendium.pf2e.actionspf2e.Item.tfa4Sh7wcxCEqL29]</p><p>Вы можете добавить к проверке навыка ваш уровень, как бонус мастерства, даже если вы необучены ему. В дополнение, вы получаете бонус обстоятельства к проверке навыка, в зависимости от уровня мастерства союзника.</p>"
+		},
+		"Effect: Mounted": {
+			"name": "Эффект: Верхом",
+			"description": "<p>Смотрите @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.OiRwxbfLNUniLg15#boj-verhom]{Бой верхом}</p><p>Вы получаете штраф обстоятельства −2 к спасброскам Рефлекса пока находитесь верхом.</p>"
+		},
+		"Effect: Remaining Air": {
+			"name": "Эффект: Оставшийся воздух",
+			"description": "<p>Смотрите @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.OiRwxbfLNUniLg15#tonutь-i-zadyhatьsya]{Тонуть и задыхаться}</p><p>Вы можете задерживать дыхание на количество раундов, равное 5 + модификатор Телосложения. Уменьшайте ваш оставшийся воздух на 1 в конце каждого своего хода, или на 2 если вы атаковали или сотворяли заклинание в этот ход.</p><p>Вы также теряете воздуха на 1 раунд, когда по вам критически попадают или вы критически проваливаете спасбросок против эффектов, наносящих урон. Если вы говорите (включая \"Сотворение заклинаний\") то теряете весь оставшийся воздух.</p>"
+		},
+		"Effect: Scout": {
+			"name": "Эффект: Разведывать",
+			"description": "<p>Предоставляется активностью @UUID[Compendium.pf2e.actionspf2e.Item.kV3XM0YJeS2KCSOb]</p><p>Вы получаете бонус обстоятельства +1 к вашему броску инициативы.</p>"
+		},
+		"Effect: Treat Disease": {
+			"name": "Эффект: Лечение болезни",
+			"description": "<p>Предоставляется активностью @UUID[Compendium.pf2e.actionspf2e.Item.TC7OcDa7JlWbqMaN]</p><p>Вы получаете бонус или штраф обстоятельства к вашему следующему спасброску против @Trait[Disease]{болезни}.</p>"
+		},
+		"Effect: Treat Poison": {
+			"name": "Эффект: Лечение от яда",
+			"description": "<p>Предоставляется активностью @UUID[Compendium.pf2e.actionspf2e.Item.KjoCEEmPGTeFE4hh]</p><p>Вы получаете бонус или штраф обстоятельства к вашему следующему спасброску против @Trait[Poison]{яда}.</p>"
+		},
+		"Effect: -1 circumstance penalty to attack rolls until you score a critical hit": {
+			"name": "Эффект: Штраф обстоятельства −1 к броскам атаки, пока не совершите критическое попадание",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.kjoBsS79JcjUUPnr], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.qD8KoshDJsayGbCB], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.mcniWnifXwXkZocv], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.8D8NPBNMxQftBmyd]</strong></p><p>Вы получаете штраф обстоятельства −1 к броскам атаки, пока не совершите критическое попадание</p>"
+		},
+		"Effect: -2 circumstance penalty to attack rolls": {
+			"name": "Эффект: Штраф обстоятельства −2 к броскам атаки",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.wga13mR4vo73tbTY], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.xsBlA35rvfHSzJe4], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.1urnmEt4sn4ATDRL]</strong></p><p>Штраф обстоятельства −2 к броскам атаки</p>"
+		},
+		"Effect: -2 circumstance penalty to attack rolls made with this attack until healed": {
+			"name": "Эффект: Штраф обстоятельства −2 к броскам атаки этой атаки, пока не будет исцелён",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.HERWPcFlzK2FTPLJ]</strong></p><p>Штраф обстоятельства −2 к броскам атаки этой атаки, пока не будет исцелён</p>"
+		},
+		"Effect: -2 circumstance penalty to attack rolls until healed": {
+			"name": "Эффект: Штраф обстоятельства −2 к броскам атаки, пока не будет исцелён",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.LY6T2YgrSoI79BDR]</strong></p><p>Штраф обстоятельства −2 к броскам атаки, пока не будет исцелён</p>"
+		},
+		"Effect: -2 circumstance penalty to attack rolls with this weapon": {
+			"name": "Эффект: Штраф обстоятельства −2 к броскам атаки этим оружием",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.EP333dUdoJ8xdkzq], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.YRY6c3WdBEuKiOCv]</strong></p><p>Штраф обстоятельства −2 к броскам атаки этим оружием</p>"
+		},
+		"Effect: -2 circumstance penalty to checks and saving throws until healed": {
+			"name": "Эффект: Штраф обстоятельства −2 к проверкам и спасброскам, пока не будет исцелён",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.IvDJkDpe3JxMHaj1]</strong></p><p>Штраф обстоятельства −2 к проверкам и спасброскам, пока не будет исцелён</p>"
+		},
+		"Effect: -2 circumstance penalty to ranged attacks": {
+			"name": "Эффект: Штраф обстоятельства −2 к атакам дальнего боя",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.Wn47ZhXINo7jz8JZ]</strong></p><p>Штраф обстоятельства −2 к атакам дальнего боя</p>"
+		},
+		"Effect: -2 circumstance penalty to spell attack rolls and spell DC's": {
+			"name": "Эффект: Штраф обстоятельства −2 к броскам атаки заклинаниями и КС заклинаний",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.NNfsKAHcKvTuyha4]</strong></p><p>Штраф обстоятельства −2 к броскам атаки заклинаниями и КС заклинаний</p>"
+		},
+		"Effect: –10-foot circumstance penalty to all Speeds": {
+			"name": "Эффект: Штраф обстоятельства −10 футов ко всем Скоростям",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.dP4Zy3ILcjWRx6ZO]</strong></p><p>Штраф обстоятельства −10 футов ко всем Скоростям</p>"
+		},
+		"Effect: –10-foot circumstance penalty to your land Speed": {
+			"name": "Эффект: Штраф обстоятельства −10 футов к вашей наземной Скорости",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.qD4ybNUceFacSJGu], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.DpY6k60UrpvKgjx2], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.99BxUbTtFlyPWkq5]</strong></p><p>Штраф обстоятельства −10 футов к вашей наземной Скорости</p>"
+		},
+		"Effect: –10-foot status penalty to your land Speed": {
+			"name": "Эффект: Штраф состояния −10 футов к вашей наземной Скорости",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.maXudTqcDiAj86Ym], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.A0gsgMjgDpkOXtYp], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.wHwwHq9RcOUvwFeB], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.wCsoyffDxSWQ2c8o]</strong></p><p>Штраф состояния −10 футов к вашей наземной Скорости</p>"
+		},
+		"Effect: –15-foot status penalty to your land Speed": {
+			"name": "Эффект: Штраф состояния −15 футов к вашей наземной Скорости",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.nI9pM4SeM39SRVaR]</strong></p><p>Штраф состояния −15 футов к вашей наземной Скорости</p>"
+		},
+		"Effect: –5-foot circumstance penalty to your land Speed": {
+			"name": "Эффект: Штраф обстоятельства −5 футов к вашей наземной Скорости",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.WGBL7l5DatQnszg7]</strong></p><p>Штраф обстоятельства −5 футов ко наземной Скорости</p>"
+		},
+		"Effect: –5-foot status penalty to your land Speed": {
+			"name": "Эффект: Штраф состояния −5 футов к вашей наземной Скорости",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.maXudTqcDiAj86Ym], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.2CCPMTk5DlZslpOp], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.QR3e1uCNURvxDzbV]</strong></p><p>Штраф состояния −5 футов к вашей наземной Скорости</p>"
+		},
+		"Effect: +1 circumstance bonus to attack rolls for 3 rounds": {
+			"name": "Эффект: Бонус обстоятельства +1 к броскам атаки на 3 раунда",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.TbXmAqEzgW1nZV2r]</strong></p><p>Бонус обстоятельства +1 к броскам атаки в течение 3 раундов, но вы @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнуты врасплох}.</p>"
+		},
+		"Effect: +2 circumstance bonus to AC": {
+			"name": "Эффект: Бонус обстоятельства +2 к КБ",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.Wn47ZhXINo7jz8JZ], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.YcQEfWxkmpMWXUz4]</strong></p><p>Бонус обстоятельства +2 к КБ</p>"
+		},
+		"Effect: +2 circumstance bonus to attack rolls": {
+			"name": "Эффект: Бонус обстоятельства +2 к броскам атаки",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.bzIzGjyNUc52lhCS], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.pjR0QGXE58oWS8uU], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.gdYlgrtfGK8mAoXK]</strong></p><p>Бонус обстоятельства +2 к броскам атаки</p>"
+		},
+		"Effect: +2 status bonus to AC and all saving throws": {
+			"name": "Эффект: Бонус состояния +2 к КБ и всем спасброскам",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.iZYZTEtihsVkbRKR]</strong></p><p>Бонус состояния +2 к КБ и всем спасброскам</p>"
+		},
+		"Effect: +2 status bonus to attack rolls": {
+			"name": "Эффект: Бонус состояния +2 к броскам атаки",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.wcqXFhggTcAutBk6]</strong></p><p>Бонус состояния +2 к броскам атаки</p>"
+		},
+		"Effect: +2 status bonus to saving throws against spells for 1 min": {
+			"name": "Эффект: Бонус состояния +2 к спасброскам против заклинаний на 1 минуту",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.yBE9e9l5KW7SdHZH]</strong></p><p>Бонус состояния +2 к спасброскам против заклинаний на 1 минуту</p>"
+		},
+		"Effect: +4 circumstance bonus to AC against your ranged attacks": {
+			"name": "Эффект: Бонус обстоятельства +4 к КБ против ваших атак дальнего боя",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.4MkOtc3bBYsBGF97]</strong></p><p>Бонус обстоятельства +4 к КБ против ваших атак дальнего боя</p>",
+			"rules": {
+				"1": {
+					"label": "Имеет укрытие от цели эффекта промаха Чрезмерная компенсация"
+				}
+			}
+		},
+		"Effect: Dazzled until end of your next turn": {
+			"name": "Эффект: Ослеплён до конца своего следующего хода",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.mwz1Ukw9laGyRocF], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.dvL063pJYJpCMsA6]</strong></p><p>Вы @UUID[Compendium.pf2e.conditionitems.Item.TkIyaNPgTZFBCCuh]{Ослеплены} до конца вашего следующего хода.</p>"
+		},
+		"Effect: Deafened until end of your next turn": {
+			"name": "Эффект: Оглушен до конца своего следующего хода",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.mcniWnifXwXkZocv]</strong></p><p>Вы @UUID[Compendium.pf2e.conditionitems.Item.9PR9y0bi4JPKnHPR]{Оглушены} до конца вашего следующего хода.</p>"
+		},
+		"Effect: Off-Guard until end of your next turn": {
+			"name": "Эффект: Застигнут врасплох до конца своего следующего хода",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.IrUeMJoKEYUSJKs1], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.gWa7wGUfUvYoIK8z], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.I5omhoK6rqfCZiUZ], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.Ps9VYxI2zJPG6PEV], @UUID[Compendium.pf2e.criticaldeck.JournalEntry.qD8KoshDJsayGbCB]</strong></p><p>Вы @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнуты врасплох} до конца своего следующего хода.</p>"
+		},
+		"Effect: Resistance 5 to all damage": {
+			"name": "Эффект: Сопротивление 5 ко всему урону",
+			"description": "<p><strong>Эффект, применяемый @UUID[Compendium.pf2e.criticaldeck.JournalEntry.TYTNFtVvFqFBM8oy]</strong></p><p>Сопротивление 5 ко всему урону</p>"
+		},
+		"Effect: Ancestral Might": {
+			"name": "Эффект: Мощь предков",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.quxPxuMub8k6abzN]</p><p>Вы получаете бонус состояния +2 к проверкам, основанным на атрибутах, повышенных вашей родословной (игнорируя свободные повышения). Если ваша родословная даёт только свободные повышения, вместо этого выберите один атрибут, получающий бонус.</p>"
+		},
+		"Effect: Aura of Protection": {
+			"name": "Эффект: Аура защиты",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.7uERHpfJplGtYf8w]</p><p>Вы получаете сопротивление всему урону, равное рангу заклинания, \"Сотворённого\" вами.</p>"
+		},
+		"Effect: Called Foe": {
+			"name": "Эффект: Названный враг",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.spzRl5CS4vnvcrm5]</p><p>Обозначьте врага. Вы получаете бонус состояния +2 к броскам атаки против этого врага, но штраф состояния −4 к броскам атаки, сделанным против любого другого существа.</p>"
+		},
+		"Effect: Catch your Breath": {
+			"name": "Эффект: Отдышаться",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.LafJ1PXfnR4Ogyzh]</p><p>Вы получаете количество временных ОЗ, равное удвоенному уровню источника.</p>"
+		},
+		"Effect: Class Might": {
+			"name": "Эффект: Мощь класса",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.a68Phr1qsqVRPMVp]</p><p>Вы получаете бонус состояния +2 к проверкам, основанным на ключевом атрибуте вашего класса.</p>"
+		},
+		"Effect: Critical Moment": {
+			"name": "Эффект: Критический момент",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.P3mSUWRvCCwEouB0]</p><p>Перебросьте проверку дважды и используйте лучший результат. Это эффект @Trait[Fortune]{удачи}. Если вы всё равно проваливаете проверку, то становитесь @UUID[Compendium.pf2e.conditionitems.Item.3uh1r86TzbQvosxv]{Обречены 1}.</p>"
+		},
+		"Effect: Daring Attempt": {
+			"name": "Эффект: Дерзкая попытка",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.jHn1m1r95YgMQSvM]</p><p>Выберите один нетренированный навык. Вы обучены этому навыку.</p>"
+		},
+		"Effect: Desperate Swing": {
+			"name": "Эффект: Отчаянный замах",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.d15Zjdqplmj7ZTKK]</p><p>Ваш \"Удар\" игнорирует штраф множественных атак. Если вы получаете критический успех, результат считается обычным успехом.</p>"
+		},
+		"Effect: Endure the Onslaught": {
+			"name": "Эффект: Выдержать натиск",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.TU21DvdpQG7U2Q9Y]</p><p>Вы получаете сопротивление всему урону.</p>"
+		},
+		"Effect: Fluid Motion": {
+			"name": "Эффект: Плавное движение",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.D6hqfmZUksRvqNFR]</p><p>Вы получаете Скорость карабканья и Скорость плавания, равную половине вашей наземной Скорости.</p>"
+		},
+		"Effect: Impossible Shot": {
+			"name": "Эффект: Невозможный выстрел",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.k0ue81dFKH4OKxed]</p><p>Вы удваиваете шаг дистанции своего оружия или безоружной атаки.</p>"
+		},
+		"Effect: Press On": {
+			"name": "Эффект: Превозмогать",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.zcBCxlvPCpmjt5IS]</p><p>Вы игнорируете штрафы к проверкам и КС от состояний.</p>"
+		},
+		"Effect: Rage and Fury": {
+			"name": "Эффект: Ярость и неистовство",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.cQH9Syl1SQpbAi5A]</p><p>Вы получаете бонус +2 к урону \"Ударов\" ближнего боя и штраф −1 к КБ.</p>"
+		},
+		"Effect: Spark of Courage": {
+			"name": "Эффект: Искра мужества",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.EZZxz9jeEB0N3FPZ]</p><p>Вы получаете бонус состояния +2 к броскам атаки и проверкам навыков.</p>"
+		},
+		"Effect: Strike True": {
+			"name": "Эффект: Верный удар",
+			"description": "<p>Предоставляется картой @UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.pS87Zh4QJnu0p8ES]</p><p>Вы бросаете дважды и используете лучший результат для своего \"Удара\". Этот \"Удар\" наносит дополнительную кость урона при попадании, если у атакующего менее половины ОЗ, или две дополнительных кости урона, если у атакующего менее четверти ОЗ.</p>"
+		}
+	}
+}

@@ -31,12 +31,22 @@ export class VisionLayer extends Container {
     // Step 5.3: persistent fog of war accumulation lives in its own layer, but
     // it consumes exactly the same LOS polygons produced here.
     this.fogLayer = options.fogLayer || null;
+    // Step 5.4: the darkness overlay is hidden together with the fog while a
+    // GM browses the map without a selected token.
+    this.lightLayer = options.lightLayer || null;
     this.radius = Number.isFinite(Number(options.radius))
       ? Math.max(1, Number(options.radius))
       : DEFAULT_VISION_RADIUS;
     this.gmVision = options.gmVision === true;
     this.enabled = options.enabled !== false;
     this.showOutline = options.showOutline === true;
+    /**
+     * Current viewer role. `gm` browses the whole scene until a token is
+     * selected; `player` always renders the fog through their tokens.
+     *
+     * @type {"gm"|"player"}
+     */
+    this.viewerRole = options.viewerRole === "gm" ? "gm" : "player";
 
     this.outline = new Graphics();
     this.outline.label = "vision:outline";
@@ -80,8 +90,30 @@ export class VisionLayer extends Container {
     this.refresh();
   }
 
+  /** Switch between GM and player vision rules without reloading the scene. */
+  setViewerRole(role) {
+    const next = role === "gm" ? "gm" : "player";
+    if (next === this.viewerRole) {
+      return;
+    }
+    this.viewerRole = next;
+    if (this.tokenLayer) {
+      this.tokenLayer.setGMViewer(next === "gm");
+    }
+    this.refresh();
+  }
+
+  get isGM() {
+    return this.viewerRole === "gm";
+  }
+
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
+    this.refresh();
+  }
+
+  setLightLayer(lightLayer) {
+    this.lightLayer = lightLayer || null;
     this.refresh();
   }
 
@@ -100,17 +132,26 @@ export class VisionLayer extends Container {
 
   /** Polygon for the currently selected token, or null. */
   refresh() {
+    const selectedId = this.tokenLayer ? this.tokenLayer.selectedId : null;
+    const token =
+      selectedId && this.tokenLayer
+        ? this.tokenLayer.tokens.get(selectedId) || null
+        : null;
+    const actorKey = token ? this._actorKeyFor(token) : null;
+
+    // GM vision (Foundry parity): no selection reveals the whole map (fog and
+    // darkness hidden); selecting a token switches to that token's LOS.
+    this._syncViewerPresentation(Boolean(token), actorKey);
+
     if (!this.tokenLayer) {
       return null;
     }
-    const selectedId = this.tokenLayer.selectedId;
-    const token = selectedId ? this.tokenLayer.tokens.get(selectedId) : null;
     if (!this.enabled || !token) {
       this.polygon = null;
       this.visionOrigin = null;
       this.tokenLayer.applyVisionState(null);
       if (this.fogLayer) {
-        this.fogLayer.setCurrentVision(null);
+        this.fogLayer.updateVision(null, actorKey);
       }
       this._renderOutline();
       return null;
@@ -131,14 +172,48 @@ export class VisionLayer extends Container {
       polygon: polygon,
       gmVision: this.gmVision,
     });
-    // Step 5.3: the same polygon is the "currently visible" fog mask and is
-    // stamped into the persistent exploration texture. Both calls are no-ops
-    // for degenerate polygons.
+    // Step 5.3/5.4: the same polygon is the "currently visible" fog mask and is
+    // stamped into the selected actor's persistent exploration texture.
     if (this.fogLayer) {
-      this.fogLayer.updateVision(polygon);
+      this.fogLayer.updateVision(polygon, actorKey);
     }
     this._renderOutline();
     return polygon;
+  }
+
+  /** Actor/token id that owns the fog exploration for a token. */
+  _actorKeyFor(token) {
+    if (!token) {
+      return null;
+    }
+    if (
+      this.tokenLayer &&
+      typeof this.tokenLayer.actorKeyForToken === "function"
+    ) {
+      return this.tokenLayer.actorKeyForToken(token.combatantId);
+    }
+    if (typeof token.actorId === "string" && token.actorId !== "") {
+      return token.actorId;
+    }
+    return token.combatantId || null;
+  }
+
+  /**
+   * Hide the fog and darkness for a GM browsing without a selection, and turn
+   * them back on for players or when a token's vision is being emulated.
+   */
+  _syncViewerPresentation(hasToken, actorKey) {
+    const gm = this.isGM;
+    const showFog = !gm || hasToken;
+    if (this.fogLayer) {
+      this.fogLayer.setVisible(showFog);
+      if (hasToken) {
+        this.fogLayer.setActiveActor(actorKey);
+      }
+    }
+    if (this.lightLayer && typeof this.lightLayer.setRevealAll === "function") {
+      this.lightLayer.setRevealAll(gm && !hasToken);
+    }
   }
 
   /**
@@ -176,8 +251,9 @@ export class VisionLayer extends Container {
     if (this.tokenLayer) {
       this.tokenLayer.applyVisionState(null);
     }
+    this._syncViewerPresentation(false, null);
     if (this.fogLayer) {
-      this.fogLayer.setCurrentVision(null);
+      this.fogLayer.updateVision(null, null);
     }
     this._renderOutline();
   }

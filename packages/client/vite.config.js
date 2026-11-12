@@ -27,6 +27,12 @@ export default defineConfig({
         target: backendUrl,
         changeOrigin: true,
       },
+      // Scene backgrounds and chat uploads are served by the Node process at
+      // `/uploads/*`; the dev server must proxy that path as well.
+      "/uploads": {
+        target: backendUrl,
+        changeOrigin: true,
+      },
       "/ws": {
         target: backendUrl,
         changeOrigin: true,

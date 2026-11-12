@@ -1,0 +1,753 @@
+{
+	"label": "Случайные таблицы",
+	"mapping": {
+		"name": "name",
+		"description": "description",
+		"results": {
+			"path": "results",
+			"converter": "tableResults"
+		}
+	},
+	"entries": {
+		"10th-Level Consumables Items": {
+			"name": "Расходуемые предметы 10-го уровня",
+			"description": "<p>Таблица расходуемых предметов 10-го уровня</p>",
+			"results": {
+				"8grstfxII17gHd1A": "Зелье сопротивления [Среднее]"
+			}
+		},
+		"10th-Level Permanent Items": {
+			"name": "Постоянные предметы 10-го уровня",
+			"description": "<p>Таблица постоянных предметов 10-го уровня</p>",
+			"results": {
+				"G6QovZFdg6g38tvN": "Разящее оружие (+2)",
+				"PzAMwmwHTMf10pQQ": "Оружие из холодного железа [Стандартного качества]",
+				"wWUp1qvdIJxBLhep": "Серебряное оружие [Стандартного качества]",
+				"cNuhT4AiHOdOV64F": "Разящие повязки могучих ударов (+2)",
+				"dkJ0Cn4gTboOwuXt": "Волшебная палочка сверкающей молнии [4-го ранга]"
+			}
+		},
+		"11th-Level Consumables Items": {
+			"name": "Расходуемые предметы 11-го уровня",
+			"description": "<p>Таблица расходуемых предметов 11-го уровня</p>"
+		},
+		"11th-Level Permanent Items": {
+			"name": "Постоянные предметы 11-го уровня",
+			"description": "<p>Таблица постоянных предметов 11-го уровня</p>",
+			"results": {
+				"mYq4p5qykRLe1Ok4": "Магические доспехи [Стойкие +2]",
+				"QN2b9QvvhEhXYHss": "Доспех из холодного железа [Стандартного качества]",
+				"k455WZW8SCQLXbsv": "Серебряный доспех [Стандартного качества]",
+				"Z3wgvAAF6SpPFbsT": "Адамантиновое оружие [Стандартного качества]",
+				"zjFNu8gzAfPFJUv6": "Оружие из рассветного серебра [Стандартного качества]",
+				"oZy4Q5zhxbvqCS0p": "Оружие из сумеречного дерева [Стандартного качества]"
+			}
+		},
+		"12th-Level Consumables Items": {
+			"name": "Расходуемые предметы 12-го уровня",
+			"description": "<p>Таблица расходуемых предметов 12-го уровня</p>",
+			"results": {
+				"2lt3KAx6HzXe9TJS": "Зелье энергетического дыхания [Среднее]",
+				"FZo1uervoVClcAC4": "Зелье возмездия [Большое]"
+			}
+		},
+		"12th-Level Permanent Items": {
+			"name": "Постоянные предметы 12-го уровня",
+			"description": "<p>Таблица постоянных предметов 12-го уровня</p>",
+			"results": {
+				"mYq4p5qykRLe1Ok4": "Адамантиновый доспех [Стандартного качества]",
+				"QN2b9QvvhEhXYHss": "Доспех из рассветного серебра [Стандартного качества]",
+				"XAQlR4bSihWi4T68": "Доспех из сумеречного дерева [Стандартного качества]",
+				"G6NLKr5GklQEbxh6": "Волшебное оружие [Разящее +1]",
+				"LRqfXvaDgqs2P7AM": "Повязки могучих ударов [Отлично разящие +2]",
+				"n2ff0N2dTOWamrub": "Доспех из драконьей шкуры [Стандартного качества]"
+			}
+		},
+		"13th-Level Consumables Items": {
+			"name": "Расходуемые предметы 13-го уровня",
+			"description": "<p>Таблица расходуемых предметов 13-го уровня</p>"
+		},
+		"13th-Level Permanent Items": {
+			"name": "Постоянные предметы 13-го уровня",
+			"description": "<p>Таблица постоянных предметов 13-го уровня</p>"
+		},
+		"14th-Level Consumables Items": {
+			"name": "Расходуемые предметы 14-го уровня",
+			"description": "<p>Таблица расходуемых предметов 14-го уровня</p>",
+			"results": {
+				"iKzY64yAdoMSaUqk": "Зелье сопротивления [Большое]"
+			}
+		},
+		"14th-Level Permanent Items": {
+			"name": "Постоянные предметы 14-го уровня",
+			"description": "<p>Таблица постоянных предметов 14-го уровня</p>",
+			"results": {
+				"mYq4p5qykRLe1Ok4": "Магические доспехи [Отлично стойкие +2]",
+				"yKcAKyNCkd24VRMQ": "Волшебная палочка сверкающей молнии [6-й ранг заклинания]"
+			}
+		},
+		"15th-Level Consumables Items": {
+			"name": "Расходуемые предметы 15-го уровня",
+			"description": "<p>Таблица расходуемых предметов 15-го уровня</p>"
+		},
+		"15th-Level Permanent Items": {
+			"name": "Постоянные предметы 15-го уровня",
+			"description": "<p>Таблица постоянных предметов 15-го уровня</p>",
+			"results": {
+				"Wh7vECo1qGhBEJPH": "Баклер из холодного железа [Высококачественное]",
+				"a7Hio2h8DBxyOxtW": "Щит из холодного железа [Высококачественное]",
+				"8OznDFr9BOMq5Wa2": "Баклер из серебра [Высококачественное]",
+				"0XYx2mFHoq1jVNvR": "Щит из серебра [Высококачественное]"
+			}
+		},
+		"16th-Level Consumables Items": {
+			"name": "Расходуемые предметы 16-го уровня",
+			"description": "<p>Таблица расходуемых предметов 16-го уровня</p>"
+		},
+		"16th-Level Permanent Items": {
+			"name": "Постоянные предметы 16-го уровня",
+			"description": "<p>Таблица постоянных предметов 16-го уровня</p>",
+			"results": {
+				"vCuzOYCakW2jYfWL": "Баклер из адамантина [Высококачественное]",
+				"MOGcB4tFiWnqnjTB": "Щит из адамантина [Высококачественное]",
+				"QJge9C87jWXwTqxx": "Баклер из рассветного серебра [Высококачественное]",
+				"5SC049RWqPZCEb0b": "Щит из рассветного серебра [Высококачественное]",
+				"KukTyATcUCIgDwE1": "Баклер из сумеречного дерева [Высококачественное]",
+				"f9D1HL9zEaN7UFbS": "Щит из сумеречного дерева [Высококачественное]",
+				"cYMwgBndcsiUdBWO": "Башенный щит из сумеречного дерева [Высококачественное]",
+				"shsNW4GWyqdUH6kv": "PFS Стандартное магическое оружие [Отлично разящее +3]",
+				"zzvOhjNSYEcFOSro": "Серебряное оружие [Высококачественное]",
+				"n5zDdFGdfjsLYXX1": "Повязки могучих ударов [Отлично разящие +3]",
+				"Zvf9LDDHW7eDT1nz": "Dragonhide Buckler [Высококачественное]",
+				"1M5zQjvdRmPxnqWn": "Dragonhide Shield [Высококачественное]"
+			}
+		},
+		"17th-Level Consumables Items": {
+			"name": "Расходуемые предметы 17-го уровня",
+			"description": "<p>Таблица расходуемых предметов 17-го уровня</p>",
+			"results": {
+				"oSws9xfamTmNoygk": "Зелье энергетического дыхания [Большое]"
+			}
+		},
+		"17th-Level Permanent Items": {
+			"name": "Постоянные предметы 17-го уровня",
+			"description": "<p>Таблица постоянных предметов 17-го уровня</p>",
+			"results": {
+				"krGdjQzVCJV4L8dL": "Баклер из орихалка [Высококачественное]",
+				"5jH4YZ61q3ZXR8Up": "Щит из орихалка [Высококачественное]",
+				"SWTpYQqnH8N5Rc27": "Оружие из адамантина [Высококачественное]",
+				"U6qWRAv8ho1VOAxD": "Оружие из рассветного серебра [Высококачественное]",
+				"8VykN166sn0jGWUv": "Оружие из сумеречного дерева [Высококачественное]"
+			}
+		},
+		"18th-Level Consumables": {
+			"name": "Расходуемые предметы 18-го уровня",
+			"description": "<p>Таблица расходуемых предметов 18-го уровня</p>",
+			"results": {
+				"87xPbrMbTERta9Gl": "Зелье возмездия [Сильное]"
+			}
+		},
+		"18th-Level Permanent Items": {
+			"name": "Постоянные предметы 18-го уровня",
+			"description": "<p>Таблица постоянных предметов 18-го уровня</p>",
+			"results": {
+				"lW5MoTpfiIkEd4nw": "Магические доспехи [Отлично стойкие +3]",
+				"C6ippWC7SsXOvPgH": "Доспех из холодного железа [Высококачественное]",
+				"iki3QHowi13s59GG": "Доспех из серебра [Высококачественное]",
+				"IrJG9FbHryJyRAs7": "Оружие из орихалка [Высококачественное]"
+			}
+		},
+		"19th-Level Consumables Items": {
+			"name": "Расходуемые предметы 19-го уровня",
+			"description": "<p>Таблица расходуемых предметов 19-го уровня</p>"
+		},
+		"19th-Level Permanent Items": {
+			"name": "Постоянные предметы 19-го уровня",
+			"description": "<p>Таблица постоянных предметов 19-го уровня</p>",
+			"results": {
+				"YShK0NwrjdIm64Mo": "Доспех из адамантина [Высококачественное]",
+				"qxzQgU4OuEyT8GNx": "Доспех из рассветного серебра [Высококачественное]",
+				"KB3Kd0IrTgohqh6j": "Доспех из сумеречного дерева [Высококачественное]",
+				"yG4GwoYUoL5E0QnP": "Волшебное оружие [Сильно разящее +3]",
+				"gSOnTA94nEXi4kwm": "Повязки могучих ударов [Сильно разящие +3]",
+				"oPPErpJO9yse3BLY": "Доспех из драконьей чешуи [Высококачественное]"
+			}
+		},
+		"1st-Level Consumables": {
+			"name": "Расходуемые предметы 1-го уровня",
+			"description": "<p>Таблица расходуемых предметов 1-го уровня</p>",
+			"results": {
+				"oOEc2xckDeOxKIMQ": "Зелье возмездия [Слабое]"
+			}
+		},
+		"1st-Level Permanent Items": {
+			"name": "Постоянные предметы 1-го уровня",
+			"description": "<p>Таблица постоянных предметов 1-го уровня</p>"
+		},
+		"20th-Level Consumable Items": {
+			"name": "Расходуемые предметы 20-го уровня",
+			"description": "<p>Таблица расходуемых предметов 20-го уровня</p>"
+		},
+		"20th-Level Permanent Items": {
+			"name": "Постоянные предметы 20-го уровня",
+			"description": "<p>Таблица постоянных предметов 20-го уровня</p>",
+			"results": {
+				"SxgcvC6PMDQIPXv2": "Магические доспехи [Отлично стойкие +3]",
+				"IbXWbT6hEaI9KOkz": "Доспех из орихалка [Высококачественное]"
+			}
+		},
+		"2nd-Level Consumables": {
+			"name": "Расходуемые предметы 2-го уровня",
+			"description": "<p>Таблица расходуемых предметов 2-го уровня</p>"
+		},
+		"2nd-Level Permanent Items": {
+			"name": "Постоянные предметы 2-го уровня",
+			"description": "<p>Таблица постоянных предметов 2-го уровня</p>",
+			"results": {
+				"qnI5nkuGsl6Jmjjd": "Баклер из холодного железа [Низкокачественное]",
+				"z0tdjRaeXASL4wKn": "Щит из холодного железа [Низкокачественное]",
+				"JbTOP9JhTvHsBFmL": "Баклер из серебра [Низкокачественное]",
+				"SoOChaMbrJmNWTs1": "Щит из серебра [Низкокачественное])",
+				"u8nS5wBuSp2s3lwm": "Оружие (+1)",
+				"laOcY47kKt4Ppnym": "Оружие из холодного железа [Низкокачественное]",
+				"0y5jey7BczIbTeJQ": "Оружие из серебра [Низкокачественное]",
+				"1XyBjGTgUCNu0Bwc": "Повязки могучих ударов (+1)"
+			}
+		},
+		"3rd-Level Consumables": {
+			"name": "Расходуемые предметы 3-го уровня",
+			"description": "<p>Таблица расходуемых предметов 3-го уровня</p>",
+			"results": {
+				"OAEmZRjyYuuhEQYp": "Зелье возмездия [Малое]"
+			}
+		},
+		"3rd-Level Permanent Items": {
+			"name": "Постоянные предметы 3-го уровня",
+			"description": "<p>Таблица постоянных предметов 3-го уровня</p>"
+		},
+		"4th-Level Consumables Items": {
+			"name": "Расходуемые предметы 4-го уровня",
+			"description": "Таблица расходуемых предметов 4-го уровня"
+		},
+		"4th-Level Permanent Items": {
+			"name": "Постоянные предметы 4-го уровня",
+			"description": "Таблица постоянных предметов 4-го уровня",
+			"results": {
+				"ws11Q7zMLmdJi0QE": "Разящее оружие (+1)",
+				"PYXHf2kEFfDwhPiP": "Разящие повязки могучих ударов (+1)"
+			}
+		},
+		"5th-Level Consumables Items": {
+			"name": "Расходуемые предметы 5-го уровня",
+			"description": "<p>Таблица расходуемых предметов 5-го уровня</p>"
+		},
+		"5th-Level Permanent Items": {
+			"name": "Постоянные предметы 5-го уровня",
+			"description": "<p>Таблица постоянных предметов 5-го уровня</p>",
+			"results": {
+				"mYq4p5qykRLe1Ok4": "Магические доспехи (+1)",
+				"QN2b9QvvhEhXYHss": "Доспех из холодного железа (Низкокачественный)",
+				"k455WZW8SCQLXbsv": "Доспех из серебра (Низкокачественный)"
+			}
+		},
+		"6th-Level Consumables Items": {
+			"name": "Расходуемые предметы 6-го уровня",
+			"description": "<p>Таблица расходуемых предметов 6-го уровня</p>",
+			"results": {
+				"Bg6sjAczrRQvalH8": "Зелье сопротивления [Малое]",
+				"yWyjYnCC5KZRQrkG": "Зелье возмездия [Среднее]"
+			}
+		},
+		"6th-Level Permanent Items": {
+			"name": "Постоянные предметы 6-го уровня",
+			"description": "<p>Таблица постоянных предметов 6-го уровня</p>",
+			"results": {
+				"WSdLtrutUAszSLmi": "@UUID[Compendium.pf2e.equipment-srd.Item.pjUACbrAXNIy9O7S]"
+			}
+		},
+		"7th-Level Consumables Items": {
+			"name": "Расходуемые предметы 7-го уровня",
+			"description": "<p>Таблица расходуемых предметов 7-го уровня</p>",
+			"results": {
+				"vF1LPiWtPCukIDHb": "Зелье энергетического дыхания [Малое]"
+			}
+		},
+		"7th-Level Permanent Items": {
+			"name": "Постоянные предметы 7-го уровня",
+			"description": "<p>Таблица постоянных предметов 7-го уровня</p>",
+			"results": {
+				"5tBCxKoBvOWy8FCh": "Баклер из холодного железа [Стандартного качества]",
+				"vmgndvjErJl4KGjr": "Щит из холодного железа [Стандартного качества]",
+				"6U7RxYpfBESBrbOR": "Баклер из серебра [Стандартного качества]",
+				"ymYabv3L4B5aOs8h": "Щит из серебра [Стандартного качества]"
+			}
+		},
+		"8th-Level Consumables Items": {
+			"name": "Расходуемые предметы 8-го уровня",
+			"description": "<p>Таблица расходуемых предметов 8-го уровня</p>"
+		},
+		"8th-Level Permanent Items": {
+			"name": "Постоянные предметы 8-го уровня",
+			"description": "<p>Таблица постоянных предметов 8-го уровня</p>",
+			"results": {
+				"mYq4p5qykRLe1Ok4": "Магические доспехи [Стойкие +1]",
+				"CcFSvU9Mmrip8E5J": "Баклер из адамантина [Стандартного качества]",
+				"my2jSejW9KRoI7Gc": "Щит из адамантина [Стандартного качества]",
+				"fjz0JhTBhS4V7jnO": "Баклер из рассветного серебра [Стандартного качества]",
+				"lTkXdbFj2PwcsDMJ": "Щит из рассветного серебра [Стандартного качества]",
+				"UFBIj5HsXCcW4T5b": "Баклер из сумеречного дерева [Стандартного качества]",
+				"iWxpEl1j1O4tW7rG": "Щит из сумеречного дерева [Стандартного качества]",
+				"4Xt7xoXfcdxwmLxI": "Башенный щит из сумеречного дерева [Стандартного качества]",
+				"68mYV0QqhyVWIHMv": "Баклер из драконьей чешуи [Стандартного качества]",
+				"Pe4abHNZQ8yDLQNJ": "Щит из драконьей чешуи [Стандартного качества]",
+				"QunwVXXk5nz3odNt": "@UUID[Compendium.pf2e.equipment-srd.Item.NmhKGflbT5NnKduz]"
+			}
+		},
+		"9th-Level Consumables Items": {
+			"name": "Расходуемые предметы 9-го уровня",
+			"description": "<p>Таблица расходуемых предметов 9-го уровня</p>"
+		},
+		"9th-Level Permanent Items": {
+			"name": "Постоянные предметы 9-го уровня",
+			"description": "<p>Таблица постоянных предметов 9-го уровня</p>"
+		},
+		"Critical Fumble Deck": {
+			"name": "Колода карт критического промаха",
+			"description": "Таблица для карт критического промаха"
+		},
+		"Critical Hit Deck": {
+			"name": "Колода карт критического попадания",
+			"description": "Таблица для карт критического попадания"
+		},
+		"Deck of Illusions Cards": {
+			"name": "Карты колоды иллюзий",
+			"description": "Потенциальные иллюзии, которые могут быть случайным образом взяты из колоды. Карта уничтожается при использовании.",
+			"results": {
+				"Q5IhsBXIYWRn9zi8": "Железный надзиратель",
+				"YKneqnBlHIHS8Ky6": "Кентавр",
+				"4D2g1s8JV9YGQsVj": "Великая тень",
+				"3iiAwD8QTsP1jhhn": "Скамп земли",
+				"TSPIExOzQu8ny0TI": "Холмовой гигант",
+				"iSQkNfP8nseZnGFr": "Желатиновый куб",
+				"uC4VPzqUwqUrloum": "Пикси",
+				"fnkWGXFUQyU2J8Lz": "Древень-надзиратель",
+				"j9Ik4vZ0hI2ClGbB": "Глабрезу (демон)",
+				"TLjCFakdGD97QyRI": "Химера",
+				"rs0dvFdHzTxch2SW": "Варг",
+				"ADwQG04sCA9vKgcW": "Тролль",
+				"8quboaFIlmEp317e": "Йети",
+				"7sjI7NcUrsuZMHAl": "Гарпия",
+				"n6R8isaB1tp0ap8Q": "Гидра",
+				"d6tW4DVP0fmzUJFj": "Сфинкс",
+				"SFh1VrvlLwrApYVc": "Пепельный дракон",
+				"kSL2ziwHACYJKebE": "Гиенодон",
+				"QpPTLumvFh0mH7Dz": "Багбер",
+				"D61bMEQ5OrRwNIMG": "Эттин",
+				"pN45OEsGEnXOIOLo": "Облачный гигант",
+				"E93bIkmyQmEuVVjY": "Гигантский богомол",
+				"L6dStQYxLzhFql9r": "Мамонт",
+				"E1BxDAUxhQlwlGBP": "Тираннозавр",
+				"6FUnENBrhKyw4kC2": "Лич",
+				"N2hfySUDPGYxDWEC": "Королева дриада",
+				"TXuTMvbfpbdQo6Sv": "Гигантский скорпион",
+				"ncaRPLopD4AHWL8U": "Тролль",
+				"pDirSXUKu7ykC5f3": "Морозный гигант",
+				"Sb16Vb7t8OjNy9kY": "Кабан",
+				"rbXLYSDAEAq5bfEo": "Медуза",
+				"tKlyLl4LJ7qEQKFx": "Лиственный леший",
+				"8NAIZmnesuxTc7xR": "Активатор колоды",
+				"DQMgh30t3SCGCqje": "Величайший страх активатора колоды"
+			}
+		},
+		"Deck of Many Things": {
+			"name": "Колода многих вещей",
+			"description": "Эти 22 карты из плотного пергамента, обычно хранящиеся в коробке или мешочке, имеют изображения или глифы, изображающие символы магической силы. При просмотре карты без активации она показывает лицевую сторону карты, но не имеет магического эффекта. После того, как колода перевернута рубашкой вверх, карты случайно перемешиваются, и если вы посмотрите на верхнюю карту несколько раз, вы можете обнаружить, что она меняется. Любая карта, убранная из колоды, пропадает через несколько секунд, снова появляясь в колоде.",
+			"results": {
+				"k2bU8HwsXsdlD751": "<strong>Равновесие.</strong> Ваши эдикты и анафемы меняются на совершенно противоположные. Если вам не удается придерживаться этих устоев, то вы теряете уровень и все преимущества, которые вы получили на этом уровне. Ваши общие Очки Опыта не меняются при потере уровня таким способом.",
+				"bhsRH9J5zjNDTWoN": "<strong>Комета.</strong> Если вы в одиночку побеждаете следующего враждебного противника или противников низкой угрозы или выше с которыми сталкиваетесь, то получаете достаточно Опыта, чтобы достичь следующего уровня. В противном случае вы не получаете преимуществ.",
+				"s0tXOfbHmP05pPZB": "<strong>Темница.</strong> Вы пленены ритуалом @UUID[Compendium.pf2e.spells-srd.Item.2CNqkt2s2IYkVnv6] 10-го ранга. Он использует вариант \"Тюрьма (Prison)\", как правило изолирующий вас в отдаленной части мира. Еще вы теряете все свои предметы. Вы перестаете вытягивать карты.",
+				"hHDitnvZMXhcXvXH": "<strong>Тупица.</strong> Мгновенно снижает ваш модификатор Интеллекта на [[/r {1d4+1} #Dullard Intelligence Decrease]]{1d4+1}. Потом вы можете вытащить дополнительную карту и после этого \"Тупица\" исчезает навсегда.",
+				"xG8u3RutXZxCUwy2": "<strong>Эвриала</strong> (@Trait[Curse]{проклятие}). Образ медузы проклинает вас постоянным штрафом состояния -1 ко всем спасброскам. Оно может быть снято только божеством или картой \"Судьба\". @UUID[Compendium.pf2e.equipment-effects.Item.8ersuvNJXX00XaIQ]",
+				"FU57ySgbNKFiP072": "<strong>Судьба</strong>. \"Судьба\" переворачивает ткань реальности спасая вас от любой выбранной ситуации. Это может даже полностью изменить прошлое событие, и вы можете принять решение мгновенно, даже если это событие убьет вас. Это вмешательство спасает только вас, а не любого другого на кого влияет событие. Нет ограничения на то, как долго вы можете ждать перед использованием эффекта.",
+				"OCFpk3rQrpUqXDvT": "<strong>Пламя</strong>. @Trait[Fiend]{Бес} наполняется гневом, ревностью, завистью или какой-то другой причиной, чтобы вас презирать. Его ненависть к вам не прекращается до тех пор, пока вы или он не умрете. Он нападает на вас или иным образом пытается помешать вам в течение [[/r 1d20 #days]]{1d20 дней}. Мастер определяет специфику беса.",
+				"0zp7RBdgmdRPR5l8": "<strong>Дурак</strong>. Вы теряете [[/r 1d10*100 #XP]]{1d10*100 ОО}, если только не выберете вытянуть еще 2 карты.",
+				"trjMY3ANlAOZNnZ4": "<strong>Самоцвет</strong>. Получите на свой выбор 25 ювелирных предметов стоимостью 200 зм каждый или 50 самоцветов 100 зм каждый.",
+				"AYjVRETpvxMKYiuN": "<strong>Шут</strong>. Вы можете либо вытянуть еще 2 карты, либо получить [[/r 1d10*100 #XP]]{1d10*100 ОО}. После этого карта пропадает навсегда.",
+				"izt7fcWGlFn8YDJ6": "<strong>Ключ</strong>. Получаете магическое оружие 12-го уровня или выше. Мастер решает что это за предмет и какие руны на нем есть (если они есть).",
+				"DNmSH7LbnJyOewsY": "<strong>Рыцарь</strong>. Прибывает @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.94fOoBeUT8PgTywH] и клянется вам в верности.",
+				"BnyhTHMU2vL8jgGs": "<strong>Луна</strong>. Киньте [[/r {1d4} #Wishes]]{1d4}, чтобы определить сколько желаний дает вам карта, что также изображает фазу луны на карте (1: полумесяц (молодая, старая); 2: половина луны (первая четверть, последняя четверть); 3: выпуклая луна (прибывающая, убывающая); 4: полнолуние). Произнесение каждого из этих желаний занимает 1 действие и обладает эффектом ритуала @UUID[Compendium.pf2e.spells-srd.Item.6dDtGIUerazSHIOu].",
+				"NLin9yXULkvwlPuu": "<strong>Плут</strong>. Один союзный НИП мгновенно наполняется ненавистью и навсегда становится к вам враждебным. Этот НИП может держать эту ненависть в тайне до определенного момента.",
+				"XXg7hBOoHnYJvgrz": "<strong>Крах</strong>. Вы теряете все свое немагическое имущество, включая все богатство и собственность.",
+				"k9ylMOwxvzle8J83": "<strong>Череп</strong>. Вы должны мгновенно сразиться с @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.WoICHri7raCYv1wU]. Если убиты в битве, вы не можете быть воскрешены, кроме как божеством.",
+				"OZFI4sZMVUQm2llo": "<strong>Звезда</strong>. Получаете повышение атрибута, которое должны сразу же использовать для одного из атрибутов на свой выбор.",
+				"qJdrTOUikiVbtTGc": "<strong>Солнце</strong>. Получаете 1.000 Очков Опыта и полезный постоянный магический предмет с 6-го по 11-й уровень, на выбор Мастера.",
+				"25uwbtS69r1YdUwp": "<strong>Когти</strong>. Все ваши магические предметы пропадают навсегда, кроме этой колоды и любых артефактов уровня выше колоды.",
+				"QawAO8XinONOoh8Z": "<strong>Трон</strong>. Вы получаете постоянный бонус состояния +4 к проверкам Дипломатии, и теперь владеете небольшим замком в любой незанятой местности, которую пожелаете. Вы должны выбрать его местоположение в течение часа. @UUID[Compendium.pf2e.equipment-effects.Item.Zb8RYgmzCI6fQE0o]",
+				"RFlSN1I3YVqrpQ47": "<strong>Визирь</strong>. Спросив, вы можете узнать решение любой одной проблемы или правильный ответ на один любой вопрос, если только это информация не скрывается божеством. Это не обязательно дает вам возможность действовать в соответствии с этим решением. У вас есть один год, чтобы воспользоваться советом визиря, иначе вы теряете эти преимущества.",
+				"zVYSClZjVZW1fwnO": "<strong>Пустота</strong>. Ваш разум навсегда попадает в ловушку. Эта карта переменчива, но она часто бросает душу в тюрьму внутри объекта на далеком плане или планете. @UUID[Compendium.pf2e.spells-srd.Item.6dDtGIUerazSHIOu] или подобная мощная магия может раскрыть местонахождение вашей души, но не вернет вас обратно. Ваше коматозное тело продолжает функционировать. Вы прекращаете вытягивать карты."
+			}
+		},
+		"Deities, Faiths and Philosophies": {
+			"name": "Боги, верования и философии",
+			"description": "Таблица богов, верований и философий"
+		},
+		"Family Size": {
+			"name": "Размер семьи",
+			"description": "Таблица размера семьи",
+			"results": {
+				"QXE8mw5PCpSRu6qk": "Маленькая семья: 0. Средняя семья: 0. Большая семья: 0",
+				"zTWHgWPzpbWBhUu5": "Маленькая семья: 0. Средняя семья: 0. Большая семья: 1",
+				"pXFrWMv7D4hFTVft": "Маленькая семья: 0. Средняя семья: 0. Большая семья: 2",
+				"JHImoKLreQfuE3gw": "Маленькая семья: 0. Средняя семья: 1. Большая семья: 3",
+				"drcSib3eh4PbXImA": "Маленькая семья: 1. Средняя семья: 2. Большая семья: 3",
+				"atCs9xr9gAzLpqMO": "Маленькая семья: 1. Средняя семья: 2. Большая семья: 4",
+				"KqrpckSiyIZP1roG": "Маленькая семья: 2. Средняя семья: 3. Большая семья: 4",
+				"hTI5BNLZZoZPxMei": "Маленькая семья: 2. Средняя семья: 3. Большая семья: 5",
+				"m1QoWXBpyOI62fLp": "Маленькая семья: 2. Средняя семья: 4. Большая семья: 5",
+				"DWOJCzABx2R4GdgP": "Маленькая семья: 3. Средняя семья: 4. Большая семья: 5",
+				"kodUJwxhe4VuaAF5": "Маленькая семья: 4. Средняя семья: 4. Большая семья: 6",
+				"IE2ceewX0ttDb6An": "Маленькая семья: 4. Средняя семья: 5. Большая семья: 6",
+				"cvRI3gKTVaFqn3ea": "Маленькая семья: 5. Средняя семья: 5. Большая семья: 6",
+				"Fjq7YFqbnrJ2Ddnz": "Маленькая семья: 5. Средняя семья: 6. Большая семья: 7",
+				"98IHbBoPDEsKqZfi": "Маленькая семья: 6. Средняя семья: 6. Большая семья: 7",
+				"0H2IseN8nJoIAO0Z": "Маленькая семья: 6. Средняя семья: 7. Большая семья: 7",
+				"9oLvpOV5Ekfik0Vf": "Маленькая семья: 7. Средняя семья: 7. Большая семья: 8+",
+				"9t4p5taIrU9z9Jk4": "Маленькая семья: 8+. Средняя семья: 8+. Большая семья: 8+"
+			}
+		},
+		"Forest Dangers": {
+			"name": "Опасные столкновения в лесах",
+			"results": {
+				"ifAZu9Ai7RJyNDC3": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.sYcMzx8RcgaIxyLu] (Умеренное 1)",
+				"d518WQivOTxwCh4M": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.Xo4IGzw28hivgMmM] (Умеренное 1)",
+				"HnN0Lmz3OD2dC01i": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.5FGuXfg6Ub2hCBG7] и [[/r 1d6]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.0rhltfBkQtYkCwXd] (Умеренное 2)",
+				"6LEleW4uHEpFGKQx": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.FBq4bqtKUBpJUCMU]{Бандита} (Умеренное 2)",
+				"a8Ip7FLCqbKyAl9x": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.DWQzgPL1WjXfu4rV]{Лозы-убийцы} (Умеренное 3)",
+				"Sv3ezUXGFZ8JjfMn": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.n1GmLT7b5Q579Tcf]{Костлявых тропохода} (Умеренное 3)",
+				"KuySqvgVAX1FGalX": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.Aa652cDdKTani3DY] (Умеренное 4)",
+				"T6mX1isUb4xVhydH": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.FBq4bqtKUBpJUCMU]{Бандита} (Умеренное 4)",
+				"KD3Z8NA99lrCFXCL": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.WQYzPF4cN4msA8lw]{Волочащихся отряда} (Умеренное 5)",
+				"IfOZSSqtKs5qvB2q": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.V4rVnbjJbcOIdC4Z]{Громадных скелета} (Умеренное 5)",
+				"usdRN5QFrpBsA0xC": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.ekC1VHJtexh3AgVv]{Серных зомби} (Умеренное 6)",
+				"Cn8YntWeMoG3zWXT": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.SaNOrmVDvQGX5U1D]{Скелета гарпии} (Умеренное 6)",
+				"s5ejJLhvCABxRB5O": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.6xioRweZ0T4o4X9e] (Умеренное 7)",
+				"BZSnq6ipmXSukpDu": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.fCsCDQAH23UOtECx] (Умеренное 7)",
+				"SPOkgZ2EDL5W8NKy": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.HNEUSYnInffvGPHK]{Спектра} (Умеренное 8)",
+				"0XGbXwP7fx08UpRw": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.jR4E2I2tmQ6sd5DR] (Умеренное 8)",
+				"xI3FRtqyY2PYE6sy": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.an7tww93Y4pQ8HP6]{Байкока} (Умеренное 9)",
+				"DXGCKgdWiKedMyys": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.MCgSMT680ic6kr5k]{Могильных рыцаря} (Умеренное 9)",
+				"44tqUxKK9m00417b": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.ka7bXO7HIfBxk8Gy]{Гигантские мухоловки} (Умеренное 10)",
+				"nZfoc0fuEyTt09w2": "2 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.dwPrJjsIA0AEk3vl]{Пехоты скелетов} (Умеренное 11)",
+				"vn8HaQ3qzxcmcZKt": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.rEjKVZqLfEC5jdVV]{Гадючьи лозы} (Умеренное 12)",
+				"jthRhs6AOauSAUt6": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.jW55DX3sJU2uTNrM] (Умеренное 13)",
+				"R9jzGQi18gfKG8yz": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.llSpQyOTaylpqgnW] (Умеренное 14)",
+				"I556dADPanL3ZBNa": "2 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.Ge5Q5I7TTksf7QyN]{Зомока} (Умеренное 15)"
+			}
+		},
+		"Greater Art Object": {
+			"name": "Отличные произведения искусства",
+			"description": "Таблица отличных произведений искусства"
+		},
+		"Greater Precious Stones": {
+			"name": "Большие драгоценные камни",
+			"description": "Таблица больших драгоценных камней"
+		},
+		"Greater Semiprecious Stones": {
+			"name": "Большие полудрагоценные камни",
+			"description": "Таблица больших полудрагоценных камней"
+		},
+		"Hero Point Deck": {
+			"name": "Колода Очков Героизма",
+			"description": "<p>Таблица для карточек Очков Героизма</p>",
+			"results": {
+				"jDDTMCTfeJotdH7k": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.quxPxuMub8k6abzN]",
+				"itz43q5LBVfOHjbC": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.7uERHpfJplGtYf8w]",
+				"5GjGp3sbB1NT4K9c": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.cQH9Syl1SQpbAi5A]",
+				"0fC0EprmBrp3oEs4": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.OnB94Y7wYE9j0ict]",
+				"DEbcObF09bguVWno": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.TU21DvdpQG7U2Q9Y]",
+				"8PJgTJKp9QcHOiP5": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.8NHTJ8kK9qCzOVxp]",
+				"3804GmribwcHR3NE": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.LafJ1PXfnR4Ogyzh]",
+				"HaRROkB0sAlTGQFD": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.jMhD1Z6aagYAYCnb]",
+				"ZLd5DzNOKo6QhoNC": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.j6hsF2TWFtGMyClW]",
+				"xxRXynpSrakpIGkw": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.E4aI0BTV9ATxfjGd]",
+				"fuoDiMMF7JCfxxVR": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.6xnJaS3qRZGdDHtr]",
+				"8vOeM2QgKPxMY47X": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.LaNM3BfoZUG2B39v]",
+				"KjYzdVj9f99lINdK": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.spzRl5CS4vnvcrm5]",
+				"T16e5iE8kGw9BU1z": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.a68Phr1qsqVRPMVp]",
+				"bIopmyLRg7dINuLX": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.FgA086C40VR9mzNr]",
+				"E1cjgAqFZIzCjDuU": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.Gu6CHAPMigpV9awj]",
+				"T3PbUUrya639eH4l": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.D6hqfmZUksRvqNFR]",
+				"vJ9wEkarCEQNNMD6": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.gmwyfTlk0BGZLdCt]",
+				"UOh7zztCDTGLSGOf": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.EZZxz9jeEB0N3FPZ]",
+				"7Dv1PrDRDST2qwaA": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.lLdAvaOo1rLLg5b4]",
+				"hZ5VxnL7RSZ8Gllb": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.zcBCxlvPCpmjt5IS]",
+				"vtCHxzKgcwdcnNWc": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.k0ue81dFKH4OKxed]",
+				"Un1uTUtcQoqyVdbC": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.ftdrUGjW8A4TPkMa]",
+				"PZI2ZCFv4End9rnT": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.Ttn2H0JHJVksChGi]",
+				"7EGqtN6f6IKWQhL0": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.jIs5mtRaqG0aGQ8u]",
+				"JslVaXF3LlCdDWK1": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.XHSXMcRaMOsbjoO1]",
+				"wjx05h2N0vtVIsrI": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.QUhXVsUDujUTYz7F]",
+				"0F80zKMMeMah5yXz": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.pS87Zh4QJnu0p8ES]",
+				"xKv3lBtBpopBs8LZ": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.xsdJIpd9NRLpRZT2]",
+				"KkfagR1YW3VVnZZE": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.Y20GMjqVbTvGZ87k]",
+				"tEYvpcvZbbtRO6we": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.O2hME2ilgN9BcEA4]",
+				"sheV3bji8b9hreRR": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.lJe2uRM1wNJw4Mgr]",
+				"5BIuFOaMT8cLjIv6": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.g5G4unm9tbEDu3pZ]",
+				"yWnmUKmaoOSfcLtS": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.tUu3x2iHtOUqqWUc]",
+				"tnZaNlT7JRrUOQgj": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.AeGcoQNaZ1BUmWvu]",
+				"AHowCrzZXoJUeTSI": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.ox9mFGY50NEzRR12]",
+				"NXX1rmS2uy4a7m6I": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.P3mSUWRvCCwEouB0]",
+				"Bz6cbtlVOjTCk7X7": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.odrMigI38k7lgurE]",
+				"yM9S7QdJME96AIWL": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.bb4nv44qEdpt0pLq]",
+				"Vmi14hTF8fV0pJ5i": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.d15Zjdqplmj7ZTKK]",
+				"fO5EiKSUPFshS4J4": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.eZUSi5q5NnEvCDEk]",
+				"h1szC0OEzEz9hXg1": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.8w220Bvj6W2Ui8Ae]",
+				"7P8WEldT3USfSpOb": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.ksg8D5ssP6WGwGqi]",
+				"jkmYaAWNdvQyQlsl": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.zX28AGU1k5sO2Tpd]",
+				"06FKjklJ6hiVcawH": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.EGa7oNFMSLkvkQjL]",
+				"GmJ52rna1r99Jmte": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.VSZGUtcr5NGNPtlB]",
+				"0SYj0crqTiDg2Pqc": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.GqZLaGQDNe41saZ7]",
+				"2sEGCoY14mavj3T1": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.MSdKfjoNBj7PjEoo]",
+				"aZHbri54rMaXaAeT": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.Fq1KEUyv0zBp5nMV]",
+				"nxcrb0JxVgYpbHQu": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.dCd0YXLVx0DQwitm]",
+				"a10PkuR5DGXXvLXc": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.oa0wVDfT3dbWwNDf]",
+				"DG8EUPA7qagE0igX": "@UUID[Compendium.pf2e.journals.JournalEntry.BSp4LUSaOmUyjBko.JournalEntryPage.jHn1m1r95YgMQSvM]"
+			}
+		},
+		"Hills Dangers": {
+			"name": "Опасные столкновения на холмах",
+			"results": {
+				"JCGs0eDiSIV0Paac": "[[/r 1d6]] @UUID[Compendium.pf2e.pathfinder-bestiary.Actor.LHHgGSs0ELCR4CYK] (Умеренное 2)",
+				"0dsJXk1Co0baDW5f": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.PLZk6zY5iwccPTPS] и [[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.V90OYOMyyPLPJuod] (Умеренное 3)",
+				"qlTGLR2BByYlwnVP": "3 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.bveW59P2mTiiFVIt] (Умеренное 3)",
+				"P2Yka64yYq7sBh3r": "[[/r 1d8]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.WioQ6rOeMRuTOliY] (Умеренное 4)",
+				"qsePxx1ueoO5BcXE": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.EDYKUdYmilw3rgJg] (Умеренное 4)",
+				"QVA7Pr60tuk6nghf": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.SY8pvLPqc2EgP9Xj] (Умеренное 5)",
+				"ZCn4XA7J6P1k3wTB": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.HNEUSYnInffvGPHK] (Умеренное 5)",
+				"5dogcrDVpYYvJ48t": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.pPQyoQHTxrE2U7px] и [[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.dFzTXkrpoOOdbzuW] (Умеренное 6)",
+				"DbXeI9CHbg53USXo": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.DBTbqI9QQRtlJwWh] (Умеренное 6)",
+				"MzBrFKI4glBgXRnX": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.V4rVnbjJbcOIdC4Z] (Умеренное 7)",
+				"rawEPNXaFhNFU4Sp": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.QWx9cIVUeP7dMOez] (Умеренное 7)",
+				"rHUFqsQB9YudALvv": "1 @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.MKwLXGzr48qU0hZR] и [[/r 1d6]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.BcSzGmSxCn0uWkxU] (Умеренное 8)",
+				"7MckN6u4hprgpYA6": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.j43O2vBu8eu2wC5z] (Умеренное 8)",
+				"mLRnvv5w2xdQrCx0": "2 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.fCsCDQAH23UOtECx] (Умеренное 9)",
+				"f96q5SwPno0gPqJ6": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.smItqlbr0iuDJ8nL] (Умеренное 10)",
+				"lYnXPPIxvx8Hwrpv": "[[/r 1d6]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.ZQ7lS9TYOFv07m1a] (Умеренное 11)",
+				"cBZ6gftOMV6LBuuW": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.XbaIHmvgqjLChTKq] (Умеренное 12)",
+				"wkeWmnrukKj3CLdV": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.jW55DX3sJU2uTNrM] (Умеренное 13)",
+				"QE5uSvA8b6pcPBH4": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.WoICHri7raCYv1wU] (Умеренное 14)",
+				"dwN8DqMlyetWd1mq": "2 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.llSpQyOTaylpqgnW] (Умеренное 16)"
+			}
+		},
+		"Lesser Art Object": {
+			"name": "Малые произведения искусства",
+			"description": "Таблица малых произведений искусства"
+		},
+		"Lesser Precious Stones": {
+			"name": "Малые драгоценные камни",
+			"description": "Таблица малых драгоценных камней"
+		},
+		"Lesser Semiprecious Stones": {
+			"name": "Малые полудрагоценные камни",
+			"description": "Таблица малых полудрагоценных камней"
+		},
+		"Madcap Top Effect": {
+			"name": "Эффекты волчка-сорванца",
+			"results": {
+				"0lQlqIz0L8VVi1i2": "Вы вращаетесь также как волчок. Вы @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлены} на 1 раунд, а затем в @UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ]{Замешательстве} на 1 раунд.",
+				"2vhQI8kndU7h0qf0": "@UUID[Compendium.pf2e.spells-srd.Item.WsUwpfmhKrKwoIe3] воздействует на цель.",
+				"7KhzJnr22wPFssih": "На вас на 1 день действует @UUID[Compendium.pf2e.spells-srd.Item.PjhUmyKnq6K5uDby].",
+				"5sDwJoqNHxyI2TQO": "@UUID[Compendium.pf2e.spells-srd.Item.i35dpZFI7jZcRoBo] 3-ранга заставляет вас выглядеть как цель.",
+				"YL92khhYjrvY4ov2": "Статуя цели, сделанная из шоколада или конфет, появляется рядом с вами.",
+				"zpyqD9qSghMdwHtO": "Гравитация меняется на противоположную, отправляя вас и цель на 30 футов в воздух и @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Обездвиживая}. Вы оба падаете в начале вашего следующего хода.",
+				"jBJPCmdxb1dpn5W6": "На цель действует @UUID[Compendium.pf2e.spells-srd.Item.KHnhPHL4x1AQHfbC], и волчок громко декламирует то, что обнаруживает.",
+				"8sFCiAPUxlErYiMG": "@UUID[Compendium.pf2e.spells-srd.Item.tlSE7Ly8vi1Dgddv] воздействует на цель.",
+				"0lRQU4g694CsmLQG": "Из волчка вырывается фонтан, разбрызгивающий вино в течение 10 минут.",
+				"naSeEKjJPGRVe3Bs": "На вас действует @UUID[Compendium.pf2e.spells-srd.Item.VlNcjmYyu95vOUe8], но вы телепортируетесь через Ад.",
+				"XK9pq3Wx8Pmp02xl": "@UUID[Compendium.pf2e.spells-srd.Item.XXqE1eY3w3z6xJCB] воздействует на вас.",
+				"lYQwt2vCCMi9Gt4B": "Четыре поющих скелета появляются, чтобы петь серенады вам и вашим союзникам в течение 1 минуты, давая бонус состояния +1 к броскам атаки, проверкам Восприятия, спасброскам и проверкам навыков.",
+				"9kFbFT8HGUkzJnRM": "Волчок бросает в вас 1 мм (медную монету).",
+				"seit4Mxe7AZ6Ravo": "@UUID[Compendium.pf2e.spells-srd.Item.LiGbewa9pO0yjbsY] воздействует на цель.",
+				"GQ6Op0OyOTiSXxkg": "Вы обмениваетесь с целью местами; это эффект @Trait[Teleportation]{телепортации}.",
+				"4v21ZNewmV92GvFA": "На цель действует @UUID[Compendium.pf2e.spells-srd.Item.bay4AfSu2iIozNNW], или @UUID[Compendium.pf2e.spells-srd.Item.DCQHaLrYXMI37dvW], если цель на своём родном плане.",
+				"8Rk8GQBrTIpvnoem": "Радужная краска взрывается и покрывает вас на 24 часа.",
+				"L6hkNOXhpaCHoChO": "Волчок сотворяет @UUID[Compendium.pf2e.spells-srd.Item.MlpbeZ61Euhl0d60] с центром на цели.",
+				"8PUrDGIwFuOOHXaj": "Случайный ничейный предмет в радиусе 60 футов отращивает животные ноги и следует за вами, возвращаясь в обычное состояние когда активация волчка перезаряжается.",
+				"gtOaddzevSeISIgi": "Вращайте волчок снова, и цель также вращает волчок, как если бы она его активировала."
+			}
+		},
+		"Major Art Object": {
+			"name": "Превосходные произведения искусства",
+			"description": "<p>Таблица превосходных произведений искусства</p>",
+			"results": {
+				"A3RREduxsVbFohCp": "Затвердевший момент времени",
+				"LDtK3B3M8tIv2MiR": "Мыслительная линза астральной сущности",
+				"AIk4yjA4C7t4zwAV": "Превосходная картина, легендарная"
+			}
+		},
+		"Minor Art Object": {
+			"name": "Незначительные произведения искусства",
+			"description": "Таблица незначительных произведений искусства"
+		},
+		"Moderate Art Object": {
+			"name": "Средние произведения искусства",
+			"description": "Таблица средних произведений искусства"
+		},
+		"Moderate Precious Stones": {
+			"name": "Средние драгоценные камни",
+			"description": "Таблица средних драгоценных камней"
+		},
+		"Moderate Semiprecious Stones": {
+			"name": "Средние полудрагоценные камни",
+			"description": "Таблица средних полудрагоценных камней"
+		},
+		"Plains Dangers": {
+			"name": "Опасные столкновения на равнинах",
+			"results": {
+				"tN5JKsWzilRrlHs2": "[[/r 1d8]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.KH1GkazaI59zftst] (Умеренное 1)",
+				"awBCY7mfI0WZDlLo": "[[/r 1d3+1]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.NQlPvg8SaIb9jzDl] (Умеренное 2)",
+				"4HOFiPRCa2KlYCuM": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.WQYzPF4cN4msA8lw] (Умеренное 2)",
+				"nci27bhg5zpjW6jl": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.DWQzgPL1WjXfu4rV]{Лозы-убийцы} (Умеренное 3)",
+				"tP1hkxRkU4rMaQNz": "[[/r 2d6]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.trchDxbDR2TiPMxT] (Умеренное 3)",
+				"q2WLLuJI3iHxHvoy": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.SfPoGbcaQqPlgJ85] (Умеренное 4)",
+				"iaZECXvXswU1GfpO": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.Aa652cDdKTani3DY] (Умеренное 4)",
+				"OVMYLJ2dPVQjmuVD": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.BcSzGmSxCn0uWkxU] (Умеренное 5)",
+				"Yrr37oyX8GbcJX6s": "[[/r 2d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.WioQ6rOeMRuTOliY] (Умеренное 5)",
+				"mUOKAPKr9HFc3hDs": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.5meW7DytYnF7Iq2V] и 1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.VotlWUsFKdOrHWF6] (Умеренное 6)",
+				"MW9ixwCW93jkhZ9I": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-bestiary.Actor.6XlGTt3RveX49YbC] (Умеренное 6)",
+				"QtTACUG23nHVOrZc": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.ZQ7lS9TYOFv07m1a] (Умеренное 7)",
+				"5nsnLgH7gW4nRPja": "[[/r 1d3+1]] @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.ilGMPBvjT9ovIiXB] (Умеренное 7)",
+				"mcYt3adKxdlcznRy": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.5WAy9PYWu1PuQKXg] (Умеренное 8)",
+				"fiP57z7JVNtuB8Hu": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-bestiary.Actor.CzxQpB3p0d9hwPeR] (Умеренное 8)",
+				"uo6a7YYU2bW5LUqz": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.WKsogmP2X2F68Zdm] (Умеренное 9)",
+				"K2bScFmVPv2oR8ki": "3 @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.324ZRtmDYulbw0CM] (Умеренное 9)",
+				"Fp6LLcZedr6v9grj": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.MCgSMT680ic6kr5k] (Умеренное 10)",
+				"l54K1LGfNGwhbpJw": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.rEjKVZqLfEC5jdVV] (Умеренное 11)",
+				"mejp0hGcgBMAz7Jh": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.dwPrJjsIA0AEk3vl]{Пехоты скелетов} (Умеренное 12)"
+			}
+		},
+		"Random Encounter Type": {
+			"name": "Тип случайного столкновения",
+			"description": "Таблица типов случайного столкновения",
+			"results": {
+				"Ge3sOmWyCK3Gkywz": "Безвредное",
+				"NgewU6R7gvs4vVY0": "Опасность",
+				"GcS1EOhwiQseQeb5": "Существо"
+			}
+		},
+		"Random Terrain Feature": {
+			"name": "Случайный элемент местности",
+			"description": "Таблица случайных элементов местности",
+			"results": {
+				"CzVsWagwMSXeYUYw": "[Ориентир] Особенность, имеющая определенное значение, которая отличает гекс как заслуживающий внимания.",
+				"NPrtUA5N4Wu7u1xf": "[Секрет] Гекс содержит секрет, который партия раскрывает, исследуя его.",
+				"RM3QY8a7Xq1PiMM7": "[Ресурс] Гекс содержит какой-то ценный ресурс, соответствующий местности.",
+				"Xo5ufyDjGtrYdSVY": "[Стандарт] Стандартное представление типа местности."
+			}
+		},
+		"Random Terrain Type": {
+			"name": "Случайный тип местности",
+			"description": "Таблица случайных типов местности",
+			"results": {
+				"wDrwjJYpXACI8ynZ": "Равнинная",
+				"QyKxctmZtKBB9W1p": "Пустынная",
+				"ysFulr1jHkOwidJE": "Водная (озеро, море или океан)",
+				"TA4eD5O1eVZnx4UI": "Горная",
+				"xZEZzWLSjlAQPGaS": "Лесная",
+				"3rR4ShQgWHiEdu7p": "Болотная",
+				"zLSFAj8fGWdi2za2": "Арктическая",
+				"JjxlPURwUO7ObHlw": "Match the previous hex"
+			}
+		},
+		"Rod of Wonder": {
+			"name": "Жезл удивления",
+			"description": "<p>Этот необычный жезл странен и непредсказуем. Каждый раз при активации, он случайным образом создает один из различных эффектов.</p>",
+			"results": {
+				"q4F7v0ZVHoO0xw9f": "Листва вырастают из цели; это длится 24 часа",
+				"8PX1PKHlRBxFGRc7": "Призывает @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.MkupNnMKqDBElhhp] (@UUID[Compendium.pf2e.spells-srd.Item.4YnON9JHYqtLzccu] 5-го ранга)",
+				"LARqs6OQ24TOJk0T": "Поток из 600 больших и разноцветных бабочек вылетает наружу, поржая в @Template[burst|distance:20]{20-футовом взрыве} в течение 2 раундов; существа @UUID[Compendium.pf2e.conditionitems.Item.XgEqL1kFApUbl5Z2]{Слепы} находясь в облаке бабочек",
+				"d72F3TOLhyG5DVOQ": "Все оружие цели оживляется с эффектами руны свойства @UUID[Compendium.pf2e.equipment-srd.Item.DCPsilr8wbPXxTUv]",
+				"IA8k3V8sWkYL8eT4": "Трава вырастает в @Template[cone|distance:60]{60-футовом конусе} перед жезлом, или существующая трава вырастает в 10 × больше нормы",
+				"HcgfbOwKeD2WgPcB": "Цель становится зеленой, синей или фиолетовой на неограниченный срок",
+				"Q5FwE89qfiow0PHP": "Призывает @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.1x0BdpVQLX7o3rrA] (@UUID[Compendium.pf2e.spells-srd.Item.4YnON9JHYqtLzccu] 6-го ранга)",
+				"n0o0vmsCnsHDk05W": "Сильный дождь идет в @Template[emanation|distance:60]{60-футовой эманации} вокруг вас в течение 1 раунда",
+				"VAPCJ9I6CEbuq3AR": "Призыв неэффективной мыши (@UUID[Compendium.pf2e.spells-srd.Item.4YnON9JHYqtLzccu] 1-го ранга)",
+				"zo0UxWq1d4Ma1zMy": "@UUID[Compendium.pf2e.spells-srd.Item.RQjSQVZRG497cJhX], с продолжительностью 1 раунд",
+				"qwIR0f6JfPp2opLT": "Жезл сотворяет @UUID[Compendium.pf2e.spells-srd.Item.j8vIoIEWElvpwkcI] на вас",
+				"OzVHSIVEw4jhjPXi": "Ближайший к цели неживой ничейный объект (размером до @Unit[Cubic-foot|30]{30 кубических футов}) становится бесплотным на неограниченный срок",
+				"qfBnw6xJf1g9RwiE": "Вы станвоитесь зеленым, синим или фиолетовым на неограниченный срок",
+				"42NSRZJajfERGYQW": "Жезл сотворяет @UUID[Compendium.pf2e.spells-srd.Item.gfPjmG6Fe6D3MFjl] на вас, действующую [[/gmr 1d4 #Раунды]]{1d4 раунда}",
+				"wFpnsLsgfuInSk5W": "[[/r 1d4*10 #драгоценные камни]]{1d4*10 драгоценных камней}, каждый стоимостью 1 см, выстреливают из жезла, нанося @Damage[1[piercing]] каждому существу в @Template[cone|distance:15]{15-футовом конусе}",
+				"BBiH8xXbKlzgZXlF": "@UUID[Compendium.pf2e.spells-srd.Item.o4lRVTwSxnOOn5vl], в @Template[burst|distance:100]{100-футовом взрыве}",
+				"IgFwwKbJzm4j3Uxo": "Бросьте снова; цель верит, что вы создали эффект второго броска",
+				"KrEtKsqnAA4zdiKW": "Цель покрыта нектаром, делая её @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжей 1} на 1 раунд",
+				"RpBcqsDVhPbDirUZ": "Жезл сотворяет @UUID[Compendium.pf2e.spells-srd.Item.XXqE1eY3w3z6xJCB] на вас",
+				"o0vIrLyVBp8avBZi": "Жезл сотворяет @UUID[Compendium.pf2e.spells-srd.Item.PjhUmyKnq6K5uDby] на вас, действующую 1 день"
+			}
+		},
+		"Warpwaves": {
+			"name": "Волны искажения",
+			"description": "<p>Многие протеи могут использовать силы хаоса, чтобы искажать реальность в сознании своих врагов, создавая ментальные пульсации, называемые волнами искажения.</p><p>Когда существо проваливает спасбросок и оказывается под воздействием волны искажения, бросьте 1d8 и обратитесь к таблице ниже, чтобы узнать, какой именно эффект будет применен к этому существу.</p><p>Если не указано иное, эффект волны искажения длится [[/gmr 1d4 #Раунды]]{1d4 раунда}, и новый эффект волны искажения отменяет любой предыдущий эффект волны искажения, уже воздействовавший на существо.</p>",
+			"results": {
+				"F9BIk39PcQCqvsDx": "@UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюже 2} (@UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюже 3} при критическом провале)",
+				"cxFL9nfmWweVrJT3": "@UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ] и получает [[/r 4d6 #Temporary Hit Points]]{4d6 временных ОЗ}",
+				"fxdfxSHw2CiMFHO4": "@UUID[Compendium.pf2e.conditionitems.Item.TkIyaNPgTZFBCCuh] (навсегда при критическом провале)",
+				"yS08eN4U6QDmUfM0": "@UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблено 2} (@UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблено 3} при критическом провале)",
+				"BXlAFMAw5UKL8pmx": "@UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe] с помощью энергетических нитей",
+				"0T5nUDOcoKho9VUN": "@UUID[Compendium.pf2e.conditionitems.Item.nlCjDvLMf2EkV2dl] (только \"Перемещение\", \"Шаг\" или \"Удар\")",
+				"lze10COuXTyHrPWd": "@UUID[Compendium.pf2e.conditionitems.Item.xYTAsEpcJE1Ccni3]{Замедлено 1}",
+				"Wh9bjqS7V6XDIVYf": "@UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманено 2} (@UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманено 3} при критическом провале)"
+			}
+		},
+		"Waterways Dangers": {
+			"name": "Опасные столкновения на водных путях",
+			"results": {
+				"4ZX0TZxCh1DlEWIo": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-npc-core.Actor.FBq4bqtKUBpJUCMU]{Бандита} (Умеренное 2)",
+				"FRs47fK71E1UlPme": "[[/r 1d6]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.lCDygpomjUnutb5b] (Умеренное 3)",
+				"QdOxsVkekX1vcStM": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.nMC9d7ORMz3cdaHa] (Умеренное 3)",
+				"L49bFNFqT1faWxDe": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.S1OFq9Ywrr4MHMAg] (Умеренное 4)",
+				"zYK9fLAhOzmRWFRO": "2 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.hIWzgjW2E2K6ImPA]{Bog Mummies} (Умеренное 4)",
+				"JRtEdbb3dBi4Nezo": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.bsrQp0pLgvjJr6mC] (Умеренное 5)",
+				"NgHL6SVsnMeoVXO8": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.KgJq51AeYrENo3Db] (Умеренное 5)",
+				"rm4u8LhGIqkerWfU": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.mno9JBZ1XgEHo6m4] (Умеренное 6)",
+				"URZzthbx7q938WBL": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.tIDbOvltrFsgnwgf] (Умеренное 6)",
+				"rWI0Y2xBR04XWy1N": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.V4rVnbjJbcOIdC4Z] (Умеренное 7)",
+				"mZ8qO7e8NrnQrHVW": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.fVvRASaKa6SkQkYG] (Умеренное 7)",
+				"MgXXCi5UvJbokZa4": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.g1htYgARxNKxc7MV] (Умеренное 8)",
+				"2XoQqECaFeBqwve2": "[[/r 1d4]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.ZQ7lS9TYOFv07m1a] (Умеренное 8)",
+				"CktdwIU5i1GNPr5U": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.ZdQfNuQQjytFzuyd] (Умеренное 9)",
+				"cO56e6xzpeyV4qfb": "1 @UUID[Compendium.pf2e.pathfinder-monster-core.Actor.PUPnGG406PanzIvL] (Умеренное 10)",
+				"MhGsYsbiopnQt5mp": "[[/r 1d3]] @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.RA2dkQJANNFjgdSt] (Умеренное 11)",
+				"7TRr7WzsIZfXZXEa": "1 @UUID[Compendium.pf2e.pathfinder-monster-core-2.Actor.OK7Gl2rBDDBvICvh] (Умеренное 12)",
+				"agxhetKDFl1xQrVH": "1 @UUID[Compendium.pf2e.pathfinder-bestiary.Actor.S35DifoycBwkxaGq] (Умеренное 13)",
+				"ferBy7sPBmF8BdgF": "2 @UUID[Compendium.pf2e.pathfinder-bestiary-2.Actor.WjZCNuHNKfeeHCQS] (Умеренное 14)",
+				"UbVPC9RCPgPTQA6u": "1 @UUID[Compendium.pf2e.pathfinder-bestiary-3.Actor.iD32uhsjUGLvC2q6] (Умеренное 16)"
+			}
+		},
+		"Wellspring Surges": {
+			"name": "Приливы истока",
+			"results": {
+				"1AzPp65hEX6byrev": "<p><strong>Высвобожденная энергия:</strong> Грубая энергия наносит в @Template[distance:10|type:burst]{10-футовом взрыве} @Damage[2d6[untyped]] за ранг заклинания прилива (@Check[reflex|basic|against:spell]).</p>",
+				"p84Y6ewk2LKRxZvA": "<p><strong>Выброс энергии жизненности:</strong> (@Trait[Vitality][жизненность}, @Trait[Healing]{исцеление}) Энергия жизненности вырывается в @Template[distance:20|type:burst]{20-футовом взрыве}, исцеляя живых существ на @Damage[1d8[healing,vitality]] за ранг заклинания прилива. @Trait[Undead]{Нежить} вместо этого получает такое же количество @Damage[1d8[vitality]], с простым спасброском @Check[will|basic|against:spell]{Воли}.</p>",
+				"WDNKkRYU2XBkLHlp": "<p><strong>Утечка массы:</strong> Существа и объекты в @Template[distance:30|type:emanation]{30-футовой эманации} становятся после невесомыми до конца вашего следующего хода. Почти невесомые существа могут @UUID[Compendium.pf2e.actionspf2e.Item.pprgrYQ1QnIDGZiy]{Карабкаться} со своей наземной Скоростью и совершать @UUID[Compendium.pf2e.actionspf2e.Item.d5I6018Mci2SWokk]{Прыжок} так высоко вверх, как могут нормально \"Прыгнуть\" горизонтально.</p>",
+				"cVnTaq4ZqzEwri3w": "<strong>Магический заклятый враг:</strong> (@Trait[Teleportation]{телепортация}) В радиусе 60 футов появляется случайное существо, связанное с вашей магией (или враждебное ей). Существо должно быть уровнем примерно равным уровню животного, призываемого @UUID[Compendium.pf2e.spells-srd.Item.4YnON9JHYqtLzccu] этого ранга заклинания, однако может быть любого вида. Мастер выбирает определенное существо. Существо недружелюбно к вам и дружественно вашему предполагаемому противнику. Через 1 минуту, существо может выбрать либо вернуться туда откуда оно прибыло, или остаться. Оно не @Trait[Summoned]{призвано} и не @Trait[Minion]{миньон}.",
+				"HVMQuEj4S6AFqIIA": "<p><strong>Монструозная трансформация:</strong> (@Trait[Mental]{ментальный}, @Trait[Morph]{трансформация}) Ваша голова и руки на 1 минуту превращаются в преувеличенную имитацию существа, связанного с вашей магией. Мастер определяет существо. Вы получаете бонус состояния к броскам урона оружием и безоружными атаками, равный рангу заклинания. В начале каждого вашего хода пока вы превращены, вы должны преуспеть в спасброске @Check[will|against:spell]{Воли}, иначе будете в @UUID[Compendium.pf2e.conditionitems.Item.yblD8fOR1J8rDwEQ]{Замешательстве} до начала своего следующего хода. При критическом успехе, вы можете выбрать закончить этот эффект полностью, также теряя бонус состояния.</p>",
+				"KjQ8RrG6JhLvNtlg": "<p><strong>Внезапный шторм:</strong> (@Trait[Air]{воздух}) Нарушается погода в @Template[distance:40|type:emanation]{40-футовой эманации}. В течение 1 минуты в случайных направлениях дуют сильные ветры. Каждое существо, начинающее свой ход в этой области должно преуспеть в спасброске @Check[fortitude|against:spell]{Стойкости}, иначе упадет @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком} (а при критическом провале будет оттолкнуто на 10 футов), и вы должны совершить его сразу после прилива. Любое движение против ветра является @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью или особо сложной местностью} во время полета.</p>",
+				"h56e4AM62E0etitK": "<p><strong>Дрожь:</strong> (@Trait[Earth]{земля}) Земля в @Template[distance:40|type:emanation]{40-футовой эманации} дрожит. Каждое существо на поверхности должно немедленно преуспеть в спасброске @Check[fortitude|against:spell]{Стойкости}, иначе упадет @UUID[Compendium.pf2e.conditionitems.Item.j91X7x0XSomq8d60]{Ничком}. После этого поверхность на 1 минуту становится @UUID[Compendium.pf2e.journals.JournalEntry.S55aqwWIzpQRFhcq.JournalEntryPage.z68vgV2XWhi1KYEP#mestnostь]{Сложной местностью}.</p>",
+				"Umrz2Av56FN7CLpp": "<p><strong>Гнетущий голос:</strong> (@Trait[Nonlethal]{несмертельный}, @Trait[Mental]{ментальный}) Голос вашей музы, божества, предка или другой подходящей сущности внезапно переполняет ваш разум. Вы должны совершить простой спасбросок @Check[will|basic|against:spell]{Воли}. Вы получаете @Damage[1d4[mental]|traits:nonlethal] за ранг заклинания. При провале, вы еще @UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлены 1} (@UUID[Compendium.pf2e.conditionitems.Item.dfCMdR4wnpbYNTix]{Ошеломлены 2} при критическом провале).</p>",
+				"TpRexxYdnyrEmpEp": "<p><strong>Шквал безделушек:</strong> (@Trait[Illusion]{иллюзия}) В течение 1 минуты, визуальные иллюзии предметов, связанных с вашей магией, падают как дождь в @Template[distance:40|type:burst]{40-футовом взрыве} давая сокрытие в этой области. Существа могут попытаться не поверить в эту иллюзию.</p>",
+				"pTPe0jznH3uabJpy": "<p><strong>Антимагическое извержение:</strong> Прилив пытается противодействовать случайному заклинанию активному на вас и на каждом существе в @Template[distance:10|type:burst]{10-футовом взрыве}.</p>",
+				"2G4xqVyraMge7XX0": "<strong>Ментальное вещание:</strong> (@Trait[Detection]{обнаружение}, @Trait[Mental]{ментальный}) На 1 минуту, все в радиусе 30 футов от вас могут слышать ваши поверхностные мысли.",
+				"MFmgb1dkwk1Pvoxp": "<p><strong>Цепкость зелени:</strong> (@Trait[Plant]{растение}) Растения и лозы вырастают из всех поверхностей в радиусе 20 футов, @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe]{Обездвиживая} всех существ в области, если они не совершат успешный спасбросок @Check[reflex|against:spell]{Рефлекса}. КС Вырваться равен КС заклинания.</p>",
+				"fP5MDtSHKV4znHNJ": "<p><strong>Оттенок террора:</strong> (@Trait[Mental]{ментальный}, @Trait[Fear]{страх}, @Trait[Emotion]{эмоция}) Все существа в радиусе 20 футов подвергаются мощнейшему страху. Они совершают спасбросок @Check[will|against:spell]{Воли}, при провале становясь @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напуганным 1} (@UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напуганным 2} при критическом провале).</p>",
+				"wKWNSfSLnVnBBrwR": "<strong>Собрать группу:</strong> (@Trait[Illusion]{иллюзия}, @Trait[Auditory]{слуховой}) В течение 1 минуты вас сопровождает оркестровая музыка, связанная с эмоциональным содержанием выполняемых вами действий. Это дает вам бонус состояния +2 к проверкам Дипломатии, Запугивания и Выступления, а также штраф состояния -2 к проверкам Обмана, и делает определенные использования Скрытности практически невозможными. Еще это может иметь другие эффекты на усмотрение Мастера.",
+				"RmdyGW8zg5Iiak0Y": "<p><strong>Вытягивание жизни:</strong> Прилив вытягивает вашу жизнь и силу. Вы становитесь @UUID[Compendium.pf2e.conditionitems.Item.4D2KBtexWXa6oUMR]{Истощены 1} и @UUID[Compendium.pf2e.conditionitems.Item.3uh1r86TzbQvosxv]{Обречены 1}, и вы на 1 минуту @UUID[Compendium.pf2e.conditionitems.Item.MIRkyAjyBeXivMa7]{Ослаблены 2}.</p>",
+				"I4D7YzGtRR5CccLo": "<p><strong>Абляционный барьер:</strong> Энергия образует защитный барьер, который медленно разрушается по мере того, как существа в этой области получают урон. Все существа в @Template[distance:40|type:burst]{40-футовом взрыве}, получают сопротивление всему урону, равное удвоенному рангу заклинания прилива, длительностью вплоть до 1 минуты. Всякий раз, когда существо применяет это сопротивление, то это сопротивление действующее на всех существ снижается на 1. Эффект заканчивается для всех существ, когда оно снижается до 0.</p>",
+				"lHV5pF2CydpoSuXf": "<p><strong>Светящиеся паразиты:</strong> (@Trait[Visual]{визуальный}, @Trait[Illusion]{иллюзия}) Из вас появляются многочисленные крошечные летающие существа, сформированные из яркого разноцветного света, такие как летучие мыши или колибри, летя @Template[distance:30|type:cone]{30-футовым конусом}. Вы и все существа в этом конусе должны преуспеть в спасброске @Check[will|against:spell]{Воли}, иначе будут @UUID[Compendium.pf2e.conditionitems.Item.TkIyaNPgTZFBCCuh]{Ослеплены} на 1 минуту, либо при крит.провале @UUID[Compendium.pf2e.conditionitems.Item.XgEqL1kFApUbl5Z2]{Слепы} на 1 раунд, а потом @Condition[Dazzled]{ослеплены} на 1 минуту.</p>",
+				"uhSnZB1GWN2HpTsP": "<strong>Эмоциональный переполох:</strong> (@Trait[Mental]{ментальный}, @Trait[Emotion]{эмоция}) Вихрь противоречивых эмоций захлестывает вас от нахлынувшей магии. В начале каждого своего хода, в течение 1 минуты совершайте @Check[flat|dc:11]{Чистую проверку}. При успехе вы получаете бонус состояния +2 ко всем броскам атак, спасброскам и проверкам навыков; при провале вы вместо этого получаете к ним штраф состояния -2.",
+				"lg6vPrU6c68gpzjE": "<p><strong>Внезапный прилив:</strong> (@Trait[Water]{вода}) Сверху льет вода, туша немагические огни в @Template[distance:10|type:burst]{10-футовом взрыве} и пытаясь противодействовать @Trait[Magical]{магическим} огням.</p>",
+				"vuUJeb5rDYvG0Skc": "<strong>Прилив заклинаний:</strong> Вы мгновенно сотворяете любое заклинание своего репертуара, ранга заклинания прилива или менее (либо своих подготовленных или врожденных заклинаний, если у вас нет репертуара, но вас заставили произвести прилив истока). Вы должны выбрать заклинание, для сотворения которого требуется 3 действия или менее."
+			}
+		}
+	}
+}

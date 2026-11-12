@@ -1,0 +1,35 @@
+{
+	"label": "PF2e Макросы",
+	"entries": {
+		"Earn Income": {
+			"name": "Заработок денег"
+		},
+		"Generate Check Prompt": {
+			"name": "Создать проверку"
+		},
+		"Perception for Selected Tokens": {
+			"name": "Восприятие для выбранных токенов"
+		},
+		"Rest for the Night": {
+			"name": "Отдохнуть ночь"
+		},
+		"Stealth for Selected Tokens": {
+			"name": "Скрытность для выбранных токенов"
+		},
+		"Take a Breather": {
+			"name": "Передохнуть"
+		},
+		"Toggle Compendium Browser": {
+			"name": "Переключить браузер сборника"
+		},
+		"Travel Duration": {
+			"name": "Продолжительность путешествия"
+		},
+		"Treat Wounds": {
+			"name": "Лечение ран"
+		},
+		"XP": {
+			"name": "Очки опыта"
+		}
+	}
+}

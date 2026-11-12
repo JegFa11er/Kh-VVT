@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/character-data.test.js tests/hotbar.test.js tests/math.test.js tests/wall-collision.test.js tests/raycasting.test.js"
+    "test": "node --test tests/character-data.test.js tests/hotbar.test.js tests/math.test.js tests/wall-collision.test.js tests/raycasting.test.js tests/permissions.test.js tests/i18n.test.js tests/compendium-filters.test.js"
   },
   "dependencies": {
     "@pf2e/core": "1.0.0",

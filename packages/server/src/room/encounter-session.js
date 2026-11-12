@@ -16,6 +16,8 @@ const CombatEventBus =
   EventBusNamespace.CombatEventBus || EventBusNamespace.EventBus || EventBusNamespace;
 const Serializer = core.State.Serializer;
 const Actions = core.Actions;
+const Initiative = core.Initiative;
+const PrepareData = core.Actor.PrepareData;
 
 const SESSION_STATUS = Object.freeze({
   LOBBY: "lobby",
@@ -60,6 +62,12 @@ const DIRECTORY_KIND_ALIASES = Object.freeze({
   journals: "journals",
 });
 const MAX_DIRECTORY_NAME_LENGTH = 120;
+// Step 6.3: scene configuration defaults. `gridSize` is the pixel size of one
+// 5-ft cell; `backgroundColor` fills the renderer outside the map image.
+const DEFAULT_SCENE_GRID_SIZE = 100;
+const MIN_SCENE_GRID_SIZE = 20;
+const MAX_SCENE_GRID_SIZE = 400;
+const DEFAULT_SCENE_BACKGROUND = "#12151c";
 // Step 4.8: a character sheet may carry a large `system` payload. Cap it so a
 // malicious/broken client cannot bloat session.json or the write queue.
 const MAX_ACTOR_SYSTEM_BYTES = 256 * 1024;
@@ -71,6 +79,39 @@ const MAX_SCENE_OBJECTS = 4000;
 // RenderTexture. Cap it so a broken client cannot bloat session.json.
 const MAX_FOG_DATA_LENGTH = 8 * 1024 * 1024;
 const FOG_DATA_URL_PATTERN = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
+// Step 5.4: reserved key that keeps a pre-5.4 flat scene texture available as
+// a fallback while the world migrates to per-actor exploration.
+const FOG_SCENE_FALLBACK_KEY = "__scene__";
+
+// Phase 6.1: Foundry-compatible ownership matrix. Every actor stores
+// `ownership = { default: 0, [userId]: 3 }`; the GM always resolves to 3.
+const OWNERSHIP_LEVELS = Object.freeze({
+  NONE: 0,
+  LIMITED: 1,
+  OBSERVER: 2,
+  OWNER: 3,
+});
+
+function normalizeOwnershipLevel(value) {
+  const level = Number(value);
+  if (!Number.isInteger(level) || level < OWNERSHIP_LEVELS.NONE) {
+    return OWNERSHIP_LEVELS.NONE;
+  }
+  return level > OWNERSHIP_LEVELS.OWNER ? OWNERSHIP_LEVELS.OWNER : level;
+}
+
+function normalizeOwnership(raw) {
+  const source =
+    raw !== null && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const result = { default: normalizeOwnershipLevel(source.default) };
+  for (const [key, value] of Object.entries(source)) {
+    if (key === "default" || key === "") {
+      continue;
+    }
+    result[key] = normalizeOwnershipLevel(value);
+  }
+  return result;
+}
 
 // Step 4.7: room data survives a server restart. The server passes an explicit
 // `dataFile`; direct sessions (tests, embedders) stay purely in memory unless
@@ -97,6 +138,18 @@ function normalizeHexColor(value) {
   }
   const color = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(color) ? color.toLowerCase() : null;
+}
+
+/** Step 6.3: one scene cell is 20..400 px; the Foundry default is 100. */
+function normalizeSceneGridSize(value) {
+  const size = Number(value);
+  if (!Number.isFinite(size)) {
+    return DEFAULT_SCENE_GRID_SIZE;
+  }
+  return Math.max(
+    MIN_SCENE_GRID_SIZE,
+    Math.min(MAX_SCENE_GRID_SIZE, Math.round(size)),
+  );
 }
 
 /**
@@ -181,10 +234,38 @@ function sanitizeFogExploration(value) {
 /** Tolerant variant used for data coming from disk. */
 function sanitizePersistedFog(value) {
   try {
-    return sanitizeFogExploration(value);
+    return sanitizeFogCollection(value);
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Step 5.4: a scene stores exploration per actor:
+ * `scenes[id].fogExploration = { [actorId]: dataUrl }`. Older sessions stored
+ * one flat PNG string; both shapes are accepted here and by the client.
+ */
+function sanitizeFogCollection(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (typeof value === "string") {
+    return sanitizeFogExploration(value);
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("Fog exploration must be a PNG or an actor map.");
+  }
+  const result = {};
+  for (const [actorId, dataUrl] of Object.entries(value)) {
+    if (typeof actorId !== "string" || actorId === "") {
+      continue;
+    }
+    const fog = sanitizeFogExploration(dataUrl);
+    if (fog !== null) {
+      result[actorId] = fog;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null;
 }
 
 /** Validate and deep-copy a player character sheet payload (Step 4.8). */
@@ -259,6 +340,19 @@ function mergeDirectories(raw) {  const directories = createEmptyDirectories();
           const copy = clonePlainData(entry);
           if (kind === "journals" && !Array.isArray(copy.pages)) {
             copy.pages = [];
+          }
+          if (kind === "actors") {
+            copy.ownership = normalizeOwnership(copy.ownership);
+          }
+          if (kind === "scenes") {
+            // Step 6.3: pre-6.3 scenes get the Foundry defaults on load.
+            copy.gridSize = normalizeSceneGridSize(copy.gridSize);
+            copy.backgroundColor =
+              normalizeHexColor(copy.backgroundColor) || DEFAULT_SCENE_BACKGROUND;
+            copy.img =
+              typeof copy.img === "string" && copy.img.trim() !== ""
+                ? copy.img.trim()
+                : null;
           }
           return copy;
         });
@@ -368,6 +462,34 @@ function normalizeCell(value) {
     }
   }
   return null;
+}
+
+function finiteInteger(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number) : fallback;
+}
+
+/**
+ * Step 5.6: sheet initiative intent.
+ *
+ * Read the modifier for the actor's chosen initiative statistic. The sheet
+ * stores pure modifiers (`system.perception.mod`, `system.saves.reflex.mod`,
+ * `system.skills.stealth.mod`), and `prepareActorData` guarantees they exist.
+ */
+function initiativeModifierForSystem(system, statistic) {
+  const key = String(statistic || "perception").trim().toLowerCase();
+  if (key === "perception") {
+    return finiteInteger(system && system.perception && system.perception.mod, 0);
+  }
+  const save = system && system.saves ? system.saves[key] : null;
+  if (save && typeof save === "object") {
+    return finiteInteger(save.mod, 0);
+  }
+  const skill = system && system.skills ? system.skills[key] : null;
+  if (skill && typeof skill === "object") {
+    return finiteInteger(skill.mod, 0);
+  }
+  return finiteInteger(system && system.perception && system.perception.mod, 0);
 }
 
 /**
@@ -527,6 +649,46 @@ function normalizeChatImage(value) {
   return null;
 }
 
+const CHAT_CARD_TYPES = Object.freeze([
+  "spell-card",
+  "attack-card",
+  "damage-card",
+]);
+const CHAT_CARD_SAVE_TYPES = Object.freeze(["fortitude", "reflex", "will"]);
+
+function trimChatCardText(value, maxLength) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+/**
+ * Step 5.6: interactive chat cards.
+ *
+ * A spell/attack card is stored next to the text so every client can render the
+ * save-DC and damage buttons. The server validates the shape (the payload comes
+ * from a client) and drops anything it does not recognise.
+ */
+function normalizeChatCard(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const type = trimChatCardText(value.type, 32).toLowerCase();
+  if (CHAT_CARD_TYPES.indexOf(type) === -1) {
+    return null;
+  }
+  const dc = Number(value.dc);
+  const saveType = trimChatCardText(value.saveType, 32).toLowerCase();
+  return {
+    type: type,
+    spellId: trimChatCardText(value.spellId, 200) || null,
+    name: trimChatCardText(value.name, 200) || null,
+    dc: Number.isFinite(dc) && dc > 0 ? Math.trunc(dc) : null,
+    saveType:
+      CHAT_CARD_SAVE_TYPES.indexOf(saveType) === -1 ? null : saveType,
+    damageFormula: trimChatCardText(value.damageFormula, 120) || null,
+    description: trimChatCardText(value.description, 2000) || "",
+  };
+}
+
 /**
  * Parse a Foundry-style inline dice command (`/r 4d6`, `/roll 1d20+3`).
  * The server owns the random source so every client sees the same result.
@@ -583,6 +745,7 @@ function maskChatMessage(message) {
   return Object.assign({}, message, {
     text: "",
     image: null,
+    card: null,
     hidden: true,
     dice: message.dice
       ? {
@@ -601,6 +764,7 @@ function maskChatMessage(message) {
 function cloneChatMessage(message) {
   return Object.assign({}, message, {
     author: Object.assign({}, message.author),
+    card: message.card ? Object.assign({}, message.card) : null,
     dice: message.dice ? Object.assign({}, message.dice, {
       rolls: message.dice.rolls.slice(),
     }) : null,
@@ -635,6 +799,15 @@ class EncounterSession {
      * @type {Map<string, {id:string,name:string,role:string,color:string,pronouns:string,characterId:string|null}>}
      */
     this.users = new Map();
+    /**
+     * Persistent lobby accounts (Phase 6.1/6.2). These survive disconnects and
+     * are written to `session.json` as the `users` array. The connected roster
+     * above is derived from them on join.
+     *
+     * @type {Map<string, {id:string,name:string,role:string,color:string,pronouns:string,characterId:string|null,createdAt:string}>}
+     */
+    this.profiles = new Map();
+    this._profileSequence = 0;
     /** @type {Map<string, object>} combatantId -> Combatant */
     this.combatants = new Map();
 
@@ -747,9 +920,16 @@ class EncounterSession {
       throw new RangeError("Member already joined this session: " + member.id + ".");
     }
     this.members.set(member.id, member);
+
+    // Phase 6.1: profiles are the persistent accounts; the connected `users`
+    // roster is seeded from the profile so a lobby login keeps its name/colour.
+    const profile = this._ensureProfileForMember(member);
+    member.role = profile.role;
+    member.name = profile.name || member.name;
     if (!this.users.has(member.id)) {
-      this.users.set(member.id, this._createDefaultUser(member));
+      this.users.set(member.id, this._createUserFromProfile(profile, member));
     }
+
     this._emit("room:member-joined", { sessionId: this.id, member: member });
     this._emitUsersUpdate();
     return member;
@@ -761,6 +941,8 @@ class EncounterSession {
       return false;
     }
     this.members.delete(memberId);
+    // The persistent profile stays in `profiles`; only the live roster entry
+    // disappears. This is what lets the lobby list accounts after F5.
     const hadUser = this.users.delete(memberId);
     this._emit("room:member-left", { sessionId: this.id, member: member });
     if (hadUser) {
@@ -773,7 +955,122 @@ class EncounterSession {
     return this.members.get(memberId) || null;
   }
 
-  /** Default display profile for a freshly connected client. */
+  // --------------------------------------------------------------- profiles
+
+  /** Public, JSON-safe copy of the persistent lobby accounts. */
+  getProfiles() {
+    return Array.from(this.profiles.values())
+      .map(function (profile) {
+        return Object.assign({}, profile);
+      })
+      .sort(function (a, b) {
+        const byDate = String(a.createdAt || "").localeCompare(
+          String(b.createdAt || ""),
+        );
+        return byDate !== 0
+          ? byDate
+          : String(a.id).localeCompare(String(b.id));
+      });
+  }
+
+  getProfile(profileId) {
+    const profile = this.profiles.get(profileId);
+    return profile ? Object.assign({}, profile) : null;
+  }
+
+  /**
+   * Create a persistent account from the lobby. The display name is unique so
+   * the GM can tell players apart in the ownership matrix.
+   */
+  createProfile(options) {
+    const input =
+      options !== null && typeof options === "object" ? options : {};
+    const name = asNonEmptyString(input.name);
+    if (!name) {
+      throw new TypeError("Profile name is required.");
+    }
+    const displayName = name.slice(0, 80);
+    const duplicate = Array.from(this.profiles.values()).some(function (profile) {
+      return (
+        String(profile.name || "").toLowerCase() === displayName.toLowerCase()
+      );
+    });
+    if (duplicate) {
+      throw new Error("A profile named \"" + displayName + "\" already exists.");
+    }
+
+    let id = asNonEmptyString(input.id);
+    if (id) {
+      if (this.profiles.has(id)) {
+        throw new RangeError("Profile already exists: " + id + ".");
+      }
+    } else {
+      do {
+        this._profileSequence += 1;
+        id = "user-" + this._profileSequence;
+      } while (this.profiles.has(id));
+    }
+
+    const profile = {
+      id: id,
+      name: displayName,
+      role: roles.normalizeRole(input.role),
+      color:
+        normalizeHexColor(input.color) ||
+        (roles.normalizeRole(input.role) === roles.ROLES.GM
+          ? GM_COLOR
+          : randomPlayerColor()),
+      pronouns: "",
+      characterId: null,
+      createdAt: new Date().toISOString(),
+    };
+    this.profiles.set(profile.id, profile);
+    this._emitProfilesUpdate();
+    this._scheduleSave();
+    return Object.assign({}, profile);
+  }
+
+  /** Create or refresh the persistent account backing a connected member. */
+  _ensureProfileForMember(member) {
+    let profile = this.profiles.get(member.id);
+    if (!profile) {
+      const name =
+        typeof member.name === "string" &&
+        member.name.trim() !== "" &&
+        member.name !== member.id
+          ? member.name.trim().slice(0, 80)
+          : roles.isGM(member)
+            ? "Ведущий"
+            : "Игрок";
+      profile = {
+        id: member.id,
+        name: name,
+        role: member.role,
+        color: roles.isGM(member) ? GM_COLOR : randomPlayerColor(),
+        pronouns: "",
+        characterId: null,
+        createdAt: new Date().toISOString(),
+      };
+      this.profiles.set(member.id, profile);
+      this._emitProfilesUpdate();
+      this._scheduleSave();
+    }
+    return profile;
+  }
+
+  /** Default live-roster entry derived from a persistent profile. */
+  _createUserFromProfile(profile, member) {
+    return {
+      id: profile.id,
+      name: profile.name || (roles.isGM(member) ? "Ведущий" : "Игрок"),
+      role: profile.role || member.role,
+      color: profile.color || (roles.isGM(member) ? GM_COLOR : randomPlayerColor()),
+      pronouns: profile.pronouns || "",
+      characterId: profile.characterId || null,
+    };
+  }
+
+  /** Default display profile for a freshly connected client (legacy helper). */
   _createDefaultUser(member) {
     const isGM = roles.isGM(member);
     return {
@@ -845,8 +1142,30 @@ class EncounterSession {
 
     user.role = member.role;
     this.users.set(memberId, user);
+
+    // Mirror the edit into the persistent account so the lobby and the
+    // ownership matrix see the same identity after a reconnect.
+    const profile = this._ensureProfileForMember(member);
+    profile.name = user.name;
+    profile.role = user.role;
+    profile.color = user.color;
+    profile.pronouns = user.pronouns;
+    profile.characterId = user.characterId;
+    this._emitProfilesUpdate();
     this._emitUsersUpdate();
+    this._scheduleSave();
     return Object.assign({}, user);
+  }
+
+  /**
+   * Phase 6.1: normalize every loaded actor matrix. Ownership is only granted
+   * through the GM's matrix (`setActorOwnership`) — linking `characterId` is a
+   * chat-identity concern and must never be able to escalate permissions.
+   */
+  _ensureActorOwnershipClaims() {
+    for (const actor of this.directories.actors.entries) {
+      actor.ownership = normalizeOwnership(actor.ownership);
+    }
   }
 
   /**
@@ -858,6 +1177,18 @@ class EncounterSession {
     for (const listener of this._listeners) {
       try {
         listener("room:users-update", payload);
+      } catch (error) {
+        // A broken broadcast listener must not interrupt the room.
+      }
+    }
+  }
+
+  /** Broadcast persistent accounts (lobby/profile changes, Phase 6.1). */
+  _emitProfilesUpdate() {
+    const payload = { sessionId: this.id, users: this.getProfiles() };
+    for (const listener of this._listeners) {
+      try {
+        listener("room:profiles-update", payload);
       } catch (error) {
         // A broken broadcast listener must not interrupt the room.
       }
@@ -888,21 +1219,18 @@ class EncounterSession {
   }
 
   /**
-   * Write `directories` and `chatLog` to disk as JSON.
-   *
-   * @param {string} [filePath] defaults to the configured file or
-   *   `packages/server/data/session.json`
-   * @returns {Promise<string>} absolute path written
+   * Step 6.4: build the complete world payload used by `session.json` and the
+   * `GET /api/lobby/export` download. The object is JSON-safe and contains the
+   * same root keys as the persisted file.
    */
-  async saveToDisk(filePath) {
-    const target = filePath
-      ? path.resolve(filePath)
-      : this.dataFile || DEFAULT_SESSION_FILE;
-
-    const payload = {
+  exportWorld() {
+    return {
       version: SESSION_FILE_VERSION,
       sessionId: this.id,
       savedAt: new Date().toISOString(),
+      // Phase 6.1: persistent lobby accounts. Connected members live in
+      // `this.users` and are intentionally not persisted.
+      users: this.getProfiles(),
       directories: this.getDirectories(),
       chatLog: clonePlainData(this.chatLog),
       activeSceneId: this.activeSceneId,
@@ -914,8 +1242,24 @@ class EncounterSession {
         journalPage: this._journalPageSequence,
         chat: this._chatSequence,
         sceneToken: this._sceneTokenSequence,
+        profile: this._profileSequence,
       },
     };
+  }
+
+  /**
+   * Write `directories` and `chatLog` to disk as JSON.
+   *
+   * @param {string} [filePath] defaults to the configured file or
+   *   `packages/server/data/session.json`
+   * @returns {Promise<string>} absolute path written
+   */
+  async saveToDisk(filePath) {
+    const target = filePath
+      ? path.resolve(filePath)
+      : this.dataFile || DEFAULT_SESSION_FILE;
+
+    const payload = this.exportWorld();
 
     await fs.mkdir(path.dirname(target), { recursive: true });
     const temporary = target + ".tmp";
@@ -956,6 +1300,64 @@ class EncounterSession {
       return { ok: false, reason: "invalid-format", path: target };
     }
 
+    this._applyPersistedWorld(parsed);
+    return { ok: true, path: target };
+  }
+
+  /**
+   * Step 6.4: validate an imported world document. The import API and the
+   * persistence loader share the exact same validation and restore pipeline,
+   * so a file accepted from the UI can never take a different code path.
+   *
+   * @param {object} world
+   * @returns {{ok:boolean, reason?:string}}
+   */
+  importWorld(world) {
+    if (world === null || typeof world !== "object" || Array.isArray(world)) {
+      return { ok: false, reason: "invalid-format" };
+    }
+    if (
+      !Object.prototype.hasOwnProperty.call(world, "directories") ||
+      !Object.prototype.hasOwnProperty.call(world, "users")
+    ) {
+      return { ok: false, reason: "missing-root-keys" };
+    }
+    if (
+      world.directories === null ||
+      typeof world.directories !== "object" ||
+      Array.isArray(world.directories)
+    ) {
+      return { ok: false, reason: "invalid-directories" };
+    }
+    if (!Array.isArray(world.users)) {
+      return { ok: false, reason: "invalid-users" };
+    }
+
+    this._applyPersistedWorld(world);
+
+    // A world import replaces the campaign, so any in-memory encounter that
+    // refers to the previous actors must not survive. Clients reload through
+    // `room:reload` and reconnect to the imported world.
+    this.combatants.clear();
+    this.encounter = null;
+    this.combatLog = [];
+    this._logSequence = 0;
+    this.status = SESSION_STATUS.LOBBY;
+    this._ensureEncounter();
+
+    this._emitDirectoriesUpdate();
+    this._emitProfilesUpdate();
+    this._scheduleSave();
+    return { ok: true };
+  }
+
+  /**
+   * Replace the persisted portion of the room state from a parsed
+   * `session.json` document (shared by loadFromDisk and importWorld).
+   *
+   * @param {object} parsed
+   */
+  _applyPersistedWorld(parsed) {
     this.directories = mergeDirectories(parsed.directories);
     this.baseSceneCanvas = sanitizeSceneCanvas(parsed.baseSceneCanvas);
     this.baseSceneFogExploration = sanitizePersistedFog(
@@ -977,6 +1379,43 @@ class EncounterSession {
           })
           .map(clonePlainData)
       : [];
+
+    // Phase 6.1: restore persistent accounts from the `users` array.
+    this.profiles = new Map();
+    if (Array.isArray(parsed.users)) {
+      for (const raw of parsed.users) {
+        if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+          continue;
+        }
+        const id = asNonEmptyString(raw.id);
+        const name = asNonEmptyString(raw.name);
+        if (!id || !name) {
+          continue;
+        }
+        this.profiles.set(id, {
+          id: id,
+          name: name.slice(0, 80),
+          role: roles.normalizeRole(raw.role),
+          color:
+            normalizeHexColor(raw.color) ||
+            (roles.normalizeRole(raw.role) === roles.ROLES.GM
+              ? GM_COLOR
+              : randomPlayerColor()),
+          pronouns:
+            typeof raw.pronouns === "string"
+              ? raw.pronouns.trim().slice(0, 60)
+              : "",
+          characterId:
+            typeof raw.characterId === "string" && raw.characterId !== ""
+              ? raw.characterId
+              : null,
+          createdAt:
+            typeof raw.createdAt === "string" && raw.createdAt !== ""
+              ? raw.createdAt
+              : new Date().toISOString(),
+        });
+      }
+    }
 
     // Recover id counters so newly created entries never collide with loaded
     // ones, even if the file predates the `sequences` block.
@@ -1038,8 +1477,17 @@ class EncounterSession {
       Number.isInteger(sequences.sceneToken) ? sequences.sceneToken : 0,
       maxSequenceFrom(tokenIds, /^token-(\d+)$/),
     );
+    this._profileSequence = Math.max(
+      Number.isInteger(sequences.profile) ? sequences.profile : 0,
+      maxSequenceFrom(
+        Array.from(this.profiles.keys()),
+        /^user-(\d+)$/,
+      ),
+    );
 
-    return { ok: true, path: target };
+    // Phase 6.1: normalize every actor matrix and re-apply character claims so
+    // a reload never loses the owner's editing permission.
+    this._ensureActorOwnershipClaims();
   }
 
   // ----------------------------------------------------------- directories
@@ -1162,10 +1610,19 @@ class EncounterSession {
         typeof input.img === "string" && input.img.trim() !== ""
           ? input.img.trim()
           : null;
-      entry.walls = [];
-      entry.drawings = [];
-      entry.lights = [];
-      entry.tokens = [];
+      // Step 6.3: persisted scene configuration.
+      entry.gridSize = normalizeSceneGridSize(
+        input.gridSize === undefined ? DEFAULT_SCENE_GRID_SIZE : input.gridSize,
+      );
+      entry.backgroundColor =
+        normalizeHexColor(input.backgroundColor) || DEFAULT_SCENE_BACKGROUND;
+      // Step 6.8: duplicating/importing a scene carries its canvas arrays.
+      // Empty input keeps the previous behaviour (a fresh scene).
+      const canvas = sanitizeSceneCanvas(input);
+      entry.walls = canvas.walls;
+      entry.drawings = canvas.drawings;
+      entry.lights = canvas.lights;
+      entry.tokens = canvas.tokens;
     } else if (normalized === "actors") {
       entry.actorType =
         input.actorType === "npc" || input.type === "npc" ? "npc" : "character";
@@ -1185,6 +1642,13 @@ class EncounterSession {
           : {};
       // Step 4.8.1: embedded class features / spellcasting entries.
       entry.items = sanitizeActorItems(input.items);
+      // Phase 6.1: Foundry-compatible ownership matrix. The GM may seed the
+      // matrix; the WS handler only passes a trusted `ownerId` for players.
+      entry.ownership = normalizeOwnership(input.ownership);
+      const ownerId = asNonEmptyString(input.ownerId);
+      if (ownerId) {
+        entry.ownership[ownerId] = OWNERSHIP_LEVELS.OWNER;
+      }
     } else if (normalized === "items") {
       entry.itemType =
         asNonEmptyString(input.itemType) !== null
@@ -1200,17 +1664,140 @@ class EncounterSession {
     return clonePlainData(entry);
   }
 
+  /**
+   * Remove a scene / actor / item / journal entry (Step 5.5).
+   *
+   * Directory management is shared, but deleting a claimed actor is restricted
+   * to that actor's owner or the GM, mirroring `updateActor`.
+   *
+   * @param {"scenes"|"actors"|"items"|"journals"} kind
+   * @param {string} entryId
+   * @param {string} [memberId]
+   * @param {"gm"|"player"} [role]
+   */
+  deleteDirectoryEntry(kind, entryId, memberId, role) {
+    const normalized = this._requireDirectory(kind);
+    const entries = this.directories[normalized].entries;
+    const index = entries.findIndex(function (entry) {
+      return entry.id === entryId;
+    });
+    if (index === -1) {
+      throw new RangeError("Unknown " + normalized + " entry: " + String(entryId) + ".");
+    }
+
+    if (
+      normalized === "actors" &&
+      role !== "gm" &&
+      this.getActorPermission(entryId, memberId, role) < OWNERSHIP_LEVELS.OWNER
+    ) {
+      throw new Error("Only the owner or the GM can delete this actor.");
+    }
+
+    const [removed] = entries.splice(index, 1);
+    // Step 6.8: deleting the active scene must not leave the room pointing at
+    // a missing directory entry. Fall back to the base scene and notify every
+    // client with a normal activation payload.
+    const wasActiveScene =
+      normalized === "scenes" && this.activeSceneId === entryId;
+    this._emitDirectoriesUpdate();
+    this._scheduleSave();
+    if (wasActiveScene) {
+      this.activateScene(null);
+    }
+    return clonePlainData(removed);
+  }
+
   // -------------------------------------------------------- actor sheets (4.8)
+
+  /**
+   * Phase 6.1: effective Foundry permission level for one member.
+   * The GM always resolves to OWNER. Explicit per-user entries override the
+   * `default` row, exactly like Foundry's ownership matrix.
+   *
+   * @param {string} actorId
+   * @param {string} [memberId]
+   * @param {"gm"|"player"} [role]
+   * @returns {number} 0..3
+   */
+  getActorPermission(actorId, memberId, role) {
+    const actor = this.directories.actors.entries.find(function (entry) {
+      return entry.id === actorId;
+    });
+    if (!actor) {
+      return OWNERSHIP_LEVELS.NONE;
+    }
+    const member = this.members.get(memberId);
+    if (role === "gm" || roles.isGM(member)) {
+      return OWNERSHIP_LEVELS.OWNER;
+    }
+    const ownership = normalizeOwnership(actor.ownership);
+    if (
+      typeof memberId === "string" &&
+      memberId !== "" &&
+      Object.prototype.hasOwnProperty.call(ownership, memberId)
+    ) {
+      return ownership[memberId];
+    }
+    return ownership.default;
+  }
+
+  /**
+   * Replace an actor's ownership matrix. Only the GM may call this; players
+   * can never grant themselves access.
+   *
+   * @param {string} actorId
+   * @param {object} ownership
+   * @param {string} [memberId]
+   * @param {"gm"|"player"} [role]
+   */
+  setActorOwnership(actorId, ownership, memberId, role) {
+    if (role !== "gm" && !roles.isGM(this.members.get(memberId))) {
+      throw new Error("Only the GM can change actor ownership.");
+    }
+    const actor = this.directories.actors.entries.find(function (entry) {
+      return entry.id === actorId;
+    });
+    if (!actor) {
+      throw new RangeError("Unknown actor: " + String(actorId) + ".");
+    }
+
+    // Keep only `default` and known profile/member ids so a malicious client
+    // cannot grow session.json with thousands of dead keys.
+    const normalized = normalizeOwnership(ownership);
+    const allowed = new Set(["default"]);
+    for (const id of this.profiles.keys()) {
+      allowed.add(id);
+    }
+    for (const id of this.users.keys()) {
+      allowed.add(id);
+    }
+    for (const key of Object.keys(normalized)) {
+      if (!allowed.has(key)) {
+        delete normalized[key];
+      }
+    }
+
+    actor.ownership = normalized;
+    this._emitDirectoriesUpdate();
+    this._emitActorUpdate({
+      sessionId: this.id,
+      actorId: actor.id,
+      actor: clonePlainData(actor),
+    });
+    this._scheduleSave();
+    return clonePlainData(actor);
+  }
 
   /**
    * Atomically replace a character actor's sheet payload.
    *
-   * Permission mirrors the UI: the GM may edit any actor, a player only the
-   * actor linked to their profile. An unclaimed actor is editable by anyone so
-   * the GM can prepare sheets before handing them out.
+   * Permission mirrors Foundry: the GM may edit any actor, a player only an
+   * actor whose ownership level is Owner (3). The GM alone may change the
+   * ownership matrix itself. An unclaimed actor is editable by the GM so the
+   * world can be prepared before handing ownership out.
    *
    * @param {string} actorId
-   * @param {{name?:string,system?:object}} data
+   * @param {{name?:string,system?:object,items?:array,ownership?:object}} data
    * @param {string} [memberId]
    * @param {"gm"|"player"} [role]
    */
@@ -1222,18 +1809,19 @@ class EncounterSession {
       throw new RangeError("Unknown actor: " + String(actorId) + ".");
     }
 
-    if (role !== "gm") {
-      const users = Array.from(this.users.values());
-      const claimedBy = users.find(function (user) {
-        return user.characterId === actorId;
-      });
-      if (claimedBy && claimedBy.id !== memberId) {
-        throw new Error("Only the owner or the GM can edit this actor.");
-      }
-    }
-
     const input =
       data !== null && typeof data === "object" && !Array.isArray(data) ? data : {};
+
+    const permission = this.getActorPermission(actorId, memberId, role);
+    if (permission < OWNERSHIP_LEVELS.OWNER) {
+      throw new Error("Only the owner or the GM can edit this actor.");
+    }
+    if (input.ownership !== undefined) {
+      if (role !== "gm" && !roles.isGM(this.members.get(memberId))) {
+        throw new Error("Only the GM can change actor ownership.");
+      }
+      this.setActorOwnership(actorId, input.ownership, memberId, role);
+    }
 
     if (typeof input.name === "string") {
       const name = input.name.trim();
@@ -1305,14 +1893,121 @@ class EncounterSession {
   }
 
   /**
-   * Persisted fog-of-war texture for one scene (`null` = nothing explored).
-   * The scene canvas itself stays a compact arrays-only contract; the encoded
-   * texture travels next to it in activation/snapshot payloads.
+   * Step 6.3: public scene configuration used by the canvas. The base scene
+   * (`null`) has no directory entry and reports the defaults.
    *
    * @param {string|null} sceneId
+   * @returns {{id:string|null,name:string,img:string|null,gridSize:number,backgroundColor:string}}
+   */
+  getSceneSettings(sceneId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    const scene = id === null ? null : this._findSceneEntry(id);
+    if (!scene) {
+      return {
+        id: id,
+        name: id === null ? "Базовая сцена" : "Сцена",
+        img: null,
+        gridSize: DEFAULT_SCENE_GRID_SIZE,
+        backgroundColor: DEFAULT_SCENE_BACKGROUND,
+      };
+    }
+    return {
+      id: id,
+      name: scene.name,
+      img:
+        typeof scene.img === "string" && scene.img.trim() !== ""
+          ? scene.img.trim()
+          : null,
+      gridSize: normalizeSceneGridSize(scene.gridSize),
+      backgroundColor:
+        normalizeHexColor(scene.backgroundColor) || DEFAULT_SCENE_BACKGROUND,
+    };
+  }
+
+  /**
+   * Step 6.3: update the editable properties of a scene. Only configuration is
+   * touched; walls/drawings/lights/tokens keep their own update path.
+   *
+   * @param {string|null} sceneId
+   * @param {{img?:string|null,gridSize?:number,backgroundColor?:string}} data
+   * @param {string} [sourceMemberId]
+   * @returns {object} the normalized scene settings
+   */
+  updateSceneSettings(sceneId, data, sourceMemberId) {
+    const id =
+      typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
+    if (id === null) {
+      throw new RangeError("The base scene has no editable settings.");
+    }
+    const scene = this._findSceneEntry(id);
+    if (!scene) {
+      throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+    }
+    const input =
+      data !== null && typeof data === "object" && !Array.isArray(data) ? data : {};
+
+    if (input.img !== undefined) {
+      const image =
+        typeof input.img === "string" && input.img.trim() !== ""
+          ? input.img.trim().slice(0, 2048)
+          : null;
+      scene.img = image;
+    }
+    if (input.gridSize !== undefined) {
+      scene.gridSize = normalizeSceneGridSize(input.gridSize);
+    }
+    if (input.backgroundColor !== undefined) {
+      scene.backgroundColor =
+        normalizeHexColor(input.backgroundColor) || DEFAULT_SCENE_BACKGROUND;
+    }
+
+    this._emitDirectoriesUpdate();
+    this._scheduleSave();
+    const settings = this.getSceneSettings(id);
+    settings.sourceMemberId = sourceMemberId || null;
+    return settings;
+  }
+
+  /**
+   * Persisted fog-of-war texture for one scene/actor (`null` = nothing
+   * explored). The scene canvas itself stays a compact arrays-only contract;
+   * the encoded texture travels next to it in activation/snapshot payloads.
+   *
+   * `fogExploration` may be a legacy flat PNG string (pre-5.4 sessions) or an
+   * `{ [actorId]: dataUrl }` map. A legacy string is returned as a fallback
+   * for every actor so old saves keep working.
+   *
+   * @param {string|null} sceneId
+   * @param {string|null} [actorId]
    * @returns {string|null}
    */
-  getSceneFog(sceneId) {
+  getSceneFog(sceneId, actorId = null) {
+    const stored = this.getSceneFogCollection(sceneId);
+    if (typeof stored === "string") {
+      // Legacy flat texture: shared fallback for every actor.
+      return stored;
+    }
+    if (!stored || typeof stored !== "object") {
+      return null;
+    }
+    const key =
+      typeof actorId === "string" && actorId !== "" ? actorId : null;
+    if (key && stored[key]) {
+      return stored[key];
+    }
+    return stored[FOG_SCENE_FALLBACK_KEY] || null;
+  }
+
+  /**
+   * Raw persisted fog payload for one scene: a legacy PNG string or a
+   * per-actor map. Used by snapshot/activation payloads so the client can
+   * restore every actor's exploration at once.
+   *
+   * @param {string|null} sceneId
+   * @returns {string|Record<string,string>|null}
+   */
+  getSceneFogCollection(sceneId) {
     const id =
       typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
     if (id === null) {
@@ -1335,7 +2030,8 @@ class EncounterSession {
       sessionId: this.id,
       activeSceneId: this.activeSceneId,
       canvas: canvas,
-      fogExploration: this.getSceneFog(this.activeSceneId),
+      scene: this.getSceneSettings(this.activeSceneId),
+      fogExploration: this.getSceneFogCollection(this.activeSceneId),
     });
     this._scheduleSave();
     return canvas;
@@ -1375,36 +2071,68 @@ class EncounterSession {
   }
 
   /**
-   * Step 5.3: persist the accumulated fog-of-war texture for a scene.
+   * Step 5.3/5.4: persist the accumulated fog-of-war texture for a scene.
    *
-   * The texture lives on `scenes[sceneId].fogExploration` (or the base-scene
-   * counterpart) and is written to `session.json`. A dedicated broadcast keeps
-   * every client's fog in sync without touching the scene-canvas contract.
+   * With an `actorId` the texture is stored per owner:
+   * `scenes[sceneId].fogExploration[actorId]`. Without one the legacy flat
+   * scene-wide PNG is written (used by older clients and pre-5.4 saves).
+   * A dedicated broadcast keeps every client's fog in sync without touching
+   * the scene-canvas contract.
    *
    * @param {string|null} sceneId
    * @param {string|null} fogExploration PNG data URL or null
    * @param {string} [sourceMemberId]
-   * @returns {string|null} stored value
+   * @param {string|null} [actorId]
+   * @returns {string|null} stored texture for the written slot
    */
-  updateFog(sceneId, fogExploration, sourceMemberId) {
+  updateFog(sceneId, fogExploration, sourceMemberId, actorId = null) {
     const id =
       typeof sceneId === "string" && sceneId.trim() !== "" ? sceneId : null;
     const fog = sanitizeFogExploration(fogExploration);
+    const actorKey =
+      typeof actorId === "string" && actorId.trim() !== "" ? actorId : null;
 
-    if (id === null) {
-      this.baseSceneFogExploration = fog;
-    } else {
-      const scene = this._findSceneEntry(id);
-      if (!scene) {
-        throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+    if (actorKey === null) {
+      if (id === null) {
+        this.baseSceneFogExploration = fog;
+      } else {
+        const scene = this._findSceneEntry(id);
+        if (!scene) {
+          throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+        }
+        scene.fogExploration = fog;
       }
-      scene.fogExploration = fog;
+    } else {
+      let current;
+      if (id === null) {
+        current = this.baseSceneFogExploration;
+      } else {
+        const scene = this._findSceneEntry(id);
+        if (!scene) {
+          throw new RangeError("Unknown scene: " + String(sceneId) + ".");
+        }
+        current = scene.fogExploration;
+      }
+      const map =
+        current !== null && typeof current === "object" && !Array.isArray(current)
+          ? Object.assign({}, current)
+          : typeof current === "string" && current !== ""
+            ? { [FOG_SCENE_FALLBACK_KEY]: current }
+            : {};
+      map[actorKey] = fog;
+      const collection = sanitizeFogCollection(map);
+      if (id === null) {
+        this.baseSceneFogExploration = collection;
+      } else {
+        this._findSceneEntry(id).fogExploration = collection;
+      }
     }
 
     this._scheduleSave();
     this._emitFogUpdate({
       sessionId: this.id,
       sceneId: id,
+      actorId: actorKey,
       fogExploration: fog,
       sourceMemberId: sourceMemberId || null,
     });
@@ -1743,6 +2471,7 @@ class EncounterSession {
       text: text.trim(),
       image: normalizeChatImage(input.image),
       visibility: normalizeChatVisibility(input.visibility),
+      card: normalizeChatCard(input.card),
       dice: dice,
     };
 
@@ -2126,6 +2855,198 @@ class EncounterSession {
 
   // ----------------------------------------------------------- action pipeline
 
+  /** True when a player owns the given directory actor (profile or assignment). */
+  _memberControlsActor(member, actorId) {
+    if (!member) {
+      return false;
+    }
+    if (roles.isGM(member)) {
+      return true;
+    }
+    if (Array.isArray(member.controlledIds) && member.controlledIds.indexOf(actorId) !== -1) {
+      return true;
+    }
+    const user = this.users ? this.users.get(member.id) : null;
+    return Boolean(user && user.characterId === actorId);
+  }
+
+  /**
+   * Step 5.6: roll initiative for one directory actor from the character sheet.
+   *
+   * Foundry behaviour:
+   *   - the actor becomes a combatant (the encounter is created on demand),
+   *   - only that combatant's initiative is rolled,
+   *   - the combat tracker order is refreshed immediately.
+   *
+   * @param {object} actorEntry directory actor
+   * @param {object} [options] `{ statistic, secret }`
+   * @returns {{active:object|null, initiative:object, order:object[]}}
+   */
+  rollActorInitiative(actorEntry, options) {
+    const opts = options !== null && typeof options === "object" ? options : {};
+    const prepared = PrepareData.prepareActorData(actorEntry);
+    const system = prepared.system || {};
+    const actorId = actorEntry.id;
+    const requested =
+      typeof opts.statistic === "string" && opts.statistic.trim() !== ""
+        ? opts.statistic
+        : system.initiative && system.initiative.statistic;
+    const statistic = String(requested || "perception").trim().toLowerCase();
+    const modifier = initiativeModifierForSystem(system, statistic);
+
+    const scene = this.getSceneCanvas(this.activeSceneId);
+    const sceneToken = Array.isArray(scene.tokens)
+      ? scene.tokens.find(function (token) {
+          return token && token.actorId === actorId;
+        })
+      : null;
+
+    const skills = {};
+    for (const [key, value] of Object.entries(system.skills || {})) {
+      skills[key] = finiteInteger(value && typeof value === "object" ? value.mod : value, 0);
+    }
+    const saves = {};
+    for (const key of ["fortitude", "reflex", "will"]) {
+      const save = system.saves ? system.saves[key] : null;
+      saves[key] = finiteInteger(save && typeof save === "object" ? save.mod : save, 0);
+    }
+    // Initiative reads the chosen statistic from `skills` (see core Initiative).
+    skills.perception = finiteInteger(system.perception && system.perception.mod, 0);
+    for (const key of Object.keys(saves)) {
+      skills[key] = saves[key];
+    }
+
+    const maxHP = Math.max(
+      1,
+      finiteInteger(
+        system.derived && system.derived.hp
+          ? system.derived.hp.max
+          : system.attributes && system.attributes.hp
+            ? system.attributes.hp.max
+            : 1,
+        1,
+      ),
+    );
+    const rawCurrent = finiteInteger(
+      system.attributes && system.attributes.hp ? system.attributes.hp.value : maxHP,
+      maxHP,
+    );
+
+    const spec = {
+      id: actorId,
+      actorId: actorId,
+      name: actorEntry.name || actorId,
+      img: actorEntry.img || null,
+      alliance: actorEntry.actorType === "npc" ? "enemy" : "player",
+      x: sceneToken ? finiteInteger(sceneToken.gridX, 0) : 0,
+      y: sceneToken ? finiteInteger(sceneToken.gridY, 0) : 0,
+      maxHP: maxHP,
+      currentHP: Math.max(1, Math.min(maxHP, rawCurrent)),
+      ac: Math.max(
+        1,
+        finiteInteger(
+          system.attributes && system.attributes.ac
+            ? system.attributes.ac.value
+            : system.derived && system.derived.armorClass
+              ? system.derived.armorClass.value
+              : 10,
+          10,
+        ),
+      ),
+      saves: saves,
+      skills: skills,
+    };
+
+    let encounter = this.encounter;
+    let combatant =
+      this.combatants.get(actorId) ||
+      Array.from(this.combatants.values()).find(function (entry) {
+        return entry && entry.actorId === actorId;
+      }) ||
+      null;
+
+    if (!combatant) {
+      const liveEncounter = this.encounter;
+      if (liveEncounter && liveEncounter.started) {
+        // A started (or finished) encounter cannot accept `addCombatant`, so
+        // append directly to the live roster and register it for tie-breaking.
+        combatant = new Combatant(spec);
+        this._applyCombatantPresentation(combatant, spec);
+        this.combatants.set(combatant.id, combatant);
+        liveEncounter.combatants.push(combatant);
+        if (typeof liveEncounter._register === "function") {
+          liveEncounter._register(combatant);
+        }
+      } else {
+        combatant = this.addCombatant(spec);
+        encounter = this.encounter;
+      }
+    } else {
+      // Refresh sheet-derived numbers without disturbing the current HP pool.
+      combatant.name = spec.name;
+      combatant.ac = spec.ac;
+      combatant.saves = Object.assign({}, combatant.saves, saves);
+      combatant.maxHP = spec.maxHP;
+      combatant.currentHP = Math.max(
+        1,
+        Math.min(
+          spec.maxHP,
+          Number.isInteger(combatant.currentHP) ? combatant.currentHP : spec.currentHP,
+        ),
+      );
+    }
+
+    if (!encounter) {
+      encounter = this._ensureEncounter();
+    }
+    if (!encounter) {
+      throw new Error("Could not create an encounter for " + actorId + ".");
+    }
+
+    const d20 = 1 + Math.floor(Math.random() * 20);
+    combatant.initiativeRoll = d20;
+    combatant.initiativeStatistic = statistic;
+    combatant.initiativeModifier = modifier;
+    combatant.initiative = d20 + modifier;
+    combatant.skills = Object.assign({}, combatant.skills, { [statistic]: modifier });
+
+    let active;
+    if (!encounter.started) {
+      active = encounter.startEncounter();
+      this.status = SESSION_STATUS.RUNNING;
+      this.startedAt = this.startedAt || new Date().toISOString();
+      this._emit("room:started", { sessionId: this.id, order: this.getOrder() });
+    } else {
+      const activeId = encounter.activeCombatant ? encounter.activeCombatant.id : null;
+      encounter.combatants = Initiative.sortInitiative(
+        encounter.combatants,
+        encounter.registration,
+      );
+      if (activeId) {
+        const index = encounter.combatants.findIndex(function (entry) {
+          return entry.id === activeId;
+        });
+        if (index !== -1) {
+          encounter.activeCombatantIndex = index;
+        }
+      }
+      this._syncEncounterRound(encounter);
+      active = encounter.activeCombatant;
+    }
+
+    return {
+      active: active,
+      initiative: {
+        combatantId: combatant.id,
+        d20: d20,
+        modifier: modifier,
+        statistic: statistic,
+        total: d20 + modifier,
+      },
+      order: this.getOrder(),
+    };
+  }
+
   /**
    * Validate and execute one action intent on behalf of a connected client.
    *
@@ -2160,6 +3081,53 @@ class EncounterSession {
       !Array.isArray(command.payload)
         ? command.payload
         : {};
+    const isGM = roles.isGM(member) || role === roles.ROLES.GM;
+
+    // Step 5.6: rolling initiative from a character sheet. The target is a
+    // directory actor, not a pre-registered combatant, so this path runs before
+    // the encounter/turn checks and creates the encounter on demand.
+    const sheetActorId =
+      action === "roll-initiative" ? asNonEmptyString(payload.actorId) : null;
+    if (sheetActorId !== null) {
+      const actorEntry = this.directories.actors.entries.find(function (entry) {
+        return entry && entry.id === sheetActorId;
+      });
+      if (actorEntry) {
+        if (!this._memberControlsActor(member, sheetActorId)) {
+          return {
+            ok: false,
+            reason: "permission-denied",
+            message: "Players may only roll initiative for their own character.",
+          };
+        }
+        // Remember ownership so the player's subsequent turn actions resolve.
+        if (
+          Array.isArray(member.controlledIds) &&
+          member.controlledIds.indexOf(sheetActorId) === -1
+        ) {
+          member.controlledIds.push(sheetActorId);
+        }
+        const logStart = this.combatLog.length;
+        let outcome;
+        try {
+          outcome = this.rollActorInitiative(actorEntry, payload);
+        } catch (error) {
+          return {
+            ok: false,
+            reason: "invalid-action",
+            message: error instanceof Error ? error.message : String(error),
+          };
+        }
+        return {
+          ok: true,
+          action: action,
+          result: outcome,
+          state: this.serializeState(),
+          logEntries: this.combatLog.slice(logStart),
+        };
+      }
+    }
+
     const encounter = this.encounter;
     if (!encounter) {
       return {
@@ -2170,7 +3138,6 @@ class EncounterSession {
     }
 
     const activeId = encounter.activeCombatant ? encounter.activeCombatant.id : null;
-    const isGM = roles.isGM(member) || role === roles.ROLES.GM;
 
     if (GM_ONLY_ACTIONS.has(action) && !isGM) {
       return {
@@ -2496,11 +3463,13 @@ class EncounterSession {
         return { id: member.id, name: member.name, role: member.role };
       }),
       users: this.getUsers(),
+      profiles: this.getProfiles(),
       directories: this.getDirectories({ includeFog: false }),
       activeSceneId: this.activeSceneId,
       sceneCanvas: this.getSceneCanvas(this.activeSceneId),
-      // Step 5.3: encoded fog texture of the active scene.
-      sceneFogExploration: this.getSceneFog(this.activeSceneId),
+      scene: this.getSceneSettings(this.activeSceneId),
+      // Step 5.3/5.4: encoded per-actor fog textures of the active scene.
+      sceneFogExploration: this.getSceneFogCollection(this.activeSceneId),
     };
   }
 }

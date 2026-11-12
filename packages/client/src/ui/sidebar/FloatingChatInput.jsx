@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { VISIBILITIES } from "../ChatPanel.jsx";
+import { formatMessage, useTranslation } from "../i18n.js";
 import { useStore } from "../StoreContext.jsx";
 
 const DEFAULT_DICE = "1d20";
@@ -15,6 +16,7 @@ const DEFAULT_DICE = "1d20";
  */
 export default function FloatingChatInput({ onExpand }) {
   const { networkClient } = useStore();
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [visibilityIndex, setVisibilityIndex] = useState(0);
   const [error, setError] = useState("");
@@ -26,7 +28,9 @@ export default function FloatingChatInput({ onExpand }) {
       return;
     }
     if (!networkClient) {
-      setError("Нет соединения с сервером.");
+      setError(
+        t("PF2E.Platform.Chat.NoConnection", "No connection to the server."),
+      );
       return;
     }
     setError("");
@@ -34,7 +38,10 @@ export default function FloatingChatInput({ onExpand }) {
       .sendChatMessage({ text: trimmed, visibility: visibility.id })
       .then(() => setText(""))
       .catch((sendError) => {
-        setError(sendError.message || "Не удалось отправить сообщение.");
+        setError(
+          sendError.message ||
+            t("PF2E.Platform.Chat.SendFailed", "Failed to send the message."),
+        );
       });
   };
 
@@ -66,13 +73,13 @@ export default function FloatingChatInput({ onExpand }) {
     <form
       className="floating-chat"
       onSubmit={handleSubmit}
-      aria-label="Быстрый ввод чата"
+      aria-label={t("PF2E.Platform.Chat.QuickInput", "Quick chat input")}
     >
       <button
         type="button"
         className="floating-chat__icon-button"
-        title={visibility.title}
-        aria-label={visibility.label}
+        title={t(visibility.titleKey, visibility.titleFallback)}
+        aria-label={t(visibility.labelKey, visibility.labelFallback)}
         onClick={cycleVisibility}
       >
         {visibility.icon}
@@ -82,7 +89,10 @@ export default function FloatingChatInput({ onExpand }) {
         className="floating-chat__input"
         rows={1}
         value={text}
-        placeholder="Сообщение… или /r 1d20"
+        placeholder={t(
+          "PF2E.Platform.Chat.QuickPlaceholder",
+          "Message… or /r 1d20",
+        )}
         spellCheck={false}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={handleKeyDown}
@@ -91,8 +101,14 @@ export default function FloatingChatInput({ onExpand }) {
       <button
         type="button"
         className="floating-chat__icon-button floating-chat__dice"
-        title={"Бросить " + DEFAULT_DICE}
-        aria-label={"Бросить " + DEFAULT_DICE}
+        title={formatMessage(
+          t("PF2E.Platform.Chat.RollDice", "Roll {formula}"),
+          { formula: DEFAULT_DICE },
+        )}
+        aria-label={formatMessage(
+          t("PF2E.Platform.Chat.RollDice", "Roll {formula}"),
+          { formula: DEFAULT_DICE },
+        )}
         onClick={roll}
       >
         🎲
@@ -101,8 +117,8 @@ export default function FloatingChatInput({ onExpand }) {
       <button
         type="submit"
         className="floating-chat__icon-button floating-chat__send"
-        title="Отправить (Enter)"
-        aria-label="Отправить сообщение"
+        title={t("PF2E.Platform.Chat.SendTitle", "Send message (Enter)")}
+        aria-label={t("PF2E.Platform.Chat.Send", "Send message")}
         disabled={text.trim() === ""}
       >
         ➤
@@ -112,8 +128,14 @@ export default function FloatingChatInput({ onExpand }) {
         <button
           type="button"
           className="floating-chat__icon-button floating-chat__expand"
-          title="Развернуть панель чата"
-          aria-label="Развернуть панель чата"
+          title={t(
+            "PF2E.Platform.Chat.QuickExpand",
+            "Expand the chat panel",
+          )}
+          aria-label={t(
+            "PF2E.Platform.Chat.QuickExpand",
+            "Expand the chat panel",
+          )}
           onClick={onExpand}
         >
           ⤢

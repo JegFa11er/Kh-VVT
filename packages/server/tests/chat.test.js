@@ -68,6 +68,60 @@ test("chat messages use the bound character identity and roll /r commands", func
   assert.equal(playerMessage.author.color, "#3b9eff");
 });
 
+test("chat cards persist the validated spell payload and stay hidden on blind messages", function () {
+  const session = new EncounterSession({ id: "chat-cards" });
+  session.addMember({ id: "gm-1", role: "gm" });
+  session.addMember({ id: "player-1", role: "player" });
+  session.addMember({ id: "player-2", role: "player" });
+
+  const message = session.addChatMessage("player-1", {
+    text: "✦ Огненный шар",
+    visibility: "public",
+    card: {
+      type: "spell-card",
+      spellId: "fireball",
+      name: "Огненный шар",
+      dc: 22,
+      saveType: "reflex",
+      damageFormula: "6d6 fire",
+      description: "Взрыв огня.",
+      ignored: "not persisted",
+    },
+  });
+  assert.equal(message.card.type, "spell-card");
+  assert.equal(message.card.dc, 22);
+  assert.equal(message.card.saveType, "reflex");
+  assert.equal(message.card.damageFormula, "6d6 fire");
+  assert.equal(message.card.ignored, undefined);
+
+  const invalid = session.addChatMessage("player-1", {
+    text: "не карточка",
+    card: { type: "not-a-card", dc: 10 },
+  });
+  assert.equal(invalid.card, null);
+
+  const blind = session.addChatMessage("player-1", {
+    text: "тайный огненный шар",
+    visibility: "blind",
+    card: { type: "spell-card", dc: 18, saveType: "will", damageFormula: "2d6" },
+  });
+  const seenByOther = session
+    .getChatLogFor({ id: "player-2", role: "player" })
+    .find(function (entry) {
+      return entry.id === blind.id;
+    });
+  assert.equal(seenByOther.hidden, true);
+  assert.equal(seenByOther.card, null);
+
+  const seenByAuthor = session
+    .getChatLogFor({ id: "player-1", role: "player" })
+    .find(function (entry) {
+      return entry.id === blind.id;
+    });
+  assert.equal(seenByAuthor.hidden, undefined);
+  assert.equal(seenByAuthor.card.dc, 18);
+});
+
 test("chat visibility is filtered per viewer (gm / blind / self)", function () {
   const session = new EncounterSession({ id: "chat-visibility" });
   session.addMember({ id: "gm-1", role: "gm" });

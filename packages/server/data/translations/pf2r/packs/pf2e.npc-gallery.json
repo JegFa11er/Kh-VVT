@@ -1,0 +1,230 @@
+{
+	"label": "Неигровые персонажи",
+	"mapping": {
+		"descriptionGM": "system.details.privateNotes"
+	},
+	"entries": {
+		"Acolyte of Nethys": {
+			"name": "Послушник Нэфиса",
+			"description": "<p>Жрецы-послушники, всё ещё изучающие догматы своей веры и подчиняющиеся вышестоящему священнику. Их дни проходят в уединении в храмах, в преданности и обучении.</p><hr /><p>Религии вдохновляют набожных людей отстаивать их догматы. Многие из них стремятся принести облегчение и надежду, но у других более тёмные мотивы.</p>",
+			"items": [
+				{
+					"id": "nu42JIeBWdi2MnrN",
+					"name": "Подготовленные сакральные заклинания"
+				},
+				{
+					"id": "ItJWnelnPHXRTb86",
+					"name": "Заклинания домена жреца"
+				},
+				{
+					"id": "d1CLaCtFlghOslm4",
+					"name": "Религиозный символ Нэфиса",
+					"description": "<p>Этот кусок дерева или серебра гравирован изображением, представляющим божество. Некоторые сакральные заклинатели, такие как жрецы, могут использовать религиозный символ своего божества как сакральный фокус при использовании некоторых умений и сотворении некоторых заклинаний. Чтобы использовать религиозный символ, его надо держать в одной руке.</p>"
+				},
+				{
+					"id": "uf3cFRfFs23gJ4eW",
+					"name": "Религиозное писание Нефиса",
+					"description": "<p>Эта рукопись содержит священное писание определённой религии. Некоторые сакральные заклинатели, такие как жрецы, могут использовать религиозный символ своего божества как сакральный фокус при использовании некоторых умений и сотворении некоторых заклинаний. Чтобы использовать религиозное писание, его надо держать в одной руке.</p>"
+				},
+				{
+					"id": "uMvy7NgRGRADz6zB",
+					"name": "Посох"
+				},
+				{
+					"id": "zKVUU94IzSXLEDLT",
+					"name": "Арбалет"
+				}
+			]
+		},
+		"Antipaladin": {
+			"name": "Антипаладин",
+			"description": "<p>Пожалуй, нет ничего более окаянного для мира, чем антипаладин. Преданные святые воины самых темнейших и отвратительных божеств, антипаладины трудятся над исполнением мерзких желаний своих злых хозяев. Рвение, с которым они воплощают в жизнь планы темных богов, делает их поистине страшными врагами для всех, кто находится в союзе с силами добра.</p><hr /><p>Злодеи преследуют эгоистичные и жестокие цели, сокрушая всех, кто достаточно глуп или чист сердцем, чтобы встать на их пути.</p>",
+			"items": [
+				{
+					"id": "YEsqZ1pmCAbdEHfI",
+					"name": "Заклинания преданности чемпиона"
+				},
+				{
+					"id": "ZcVfcVHFVcJZhIQI",
+					"name": "Секира"
+				},
+				{
+					"id": "087PGXgVjLNGs7lG",
+					"name": "Метательное копьё"
+				},
+				{
+					"id": "XFo44PTU8F1rJam8",
+					"name": "Разрушительная месть",
+					"description": "<p><strong>Триггер:</strong> Враг в радиусе 15 футов наносит урон антипаладину</p><hr /><p><strong>Эффект:</strong> Антипаладин увеличивает получаемый собой урон на @Damage[2d6[untyped]] и наносит 2d6 урона спровоцировавшему врагу, выбирая, будет ли это @Damage[2d6[spirit]] или @Damage[2d6[void]], каждый раз, когда используете реакцию. Дополнительно, до конца следующего хода антипаладина, его \"Удары\" по спровоцировавшему существу наносят дополнительные 2 урона выбранного типа.</p>"
+				},
+				{
+					"id": "iWiQjH6UZGPhap8G",
+					"name": "Запугивающий удар",
+					"description": "<p>Антипаладин наносит \"Удар\" ближнего боя. Если он попадает и наносит урон, цель становится @UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугана 1} (@UUID[Compendium.pf2e.conditionitems.Item.TBSHQspnbcqxsmjL]{Напугана 2} при критическом попадании).</p>"
+				}
+			]
+		},
+		"Barkeep": {
+			"name": "Бармен",
+			"description": "<p>Бармены часто становятся друзьями и наставниками в общине, выслушивая других и поставляя им выпивку. Лучшие бармены обладают талантом рассказывать истории и давать ценные советы.</p><hr /><p>Бесчисленные приключения начинаются в таверне или пабе. Может быть, потому, что такие места привлекают склонных к риску, а может быть, потому, что каждому нужно немного жидкой храбрости, прежде чем он решит сразиться с группой разъярённых огров.</p>",
+			"items": [
+				{
+					"id": "HuqsExeC8DG7dt5Z",
+					"name": "Фартук бармена",
+					"description": "<p>Этот доспех представляет собой просто слой тяжёлой стёганой ткани, но его иногда используют, потому что он такой недорогой. Стёганый доспех легче повредить и уничтожить, чем другие доспехи. Тяжёлый доспех поставляется вместе с включенным в стоимость стёганым доспехом, в качестве надеваемого под низ, хоть он и теряет свой признак @Trait[Comfort]{удобный}, когда носится вместе с тяжёлым доспехом. Вы можете носить только эту стёганую подложку, чтобы спать в ней, если ваш тяжёлый доспех уничтожен, или когда вы не носите полный тяжёлый доспех. Это позволяет вам держать доспехи инвестированными и получать преимущества от силы любых рун связанного тяжёлого доспеха, но никто другой не сможет надеть ваш тяжёлый доспех без стёганого доспеха.</p>"
+				},
+				{
+					"id": "JtEtXdQY26QW7Yh7",
+					"name": "Оловянная кружка"
+				},
+				{
+					"id": "un2PSYOK7aGBLat2",
+					"name": "Фляга с виски",
+					"description": "<p>Алкоголь — распространенное вещество, доступное в потрясающем разнообразии. Цена дозы алкоголя зависит от конкретного напитка. Во время действия алкоголя вы не можете оправиться от состояния @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Тошноты}.</p><p>Если вы проваливаете спасбросок против алкоголя, за исключением первичных спасбросков, стадия недуга не увеличивается сама; единственный способ увеличить стадию недуга алкоголя — употребить больше алкоголя.</p><hr /><p><strong>Активация:</strong> @Glyph[Action 1] @UUID[Compendium.pf2e.actionspf2e.Item.pvQ5rY2zrtPI614F] (@Trait[Ingested]{глотаемый})</p><p><strong>Спасбросок:</strong> @Check[fortitude|dc:12|name:Алкоголь]</p><p><strong>Возникновение:</strong> 10 минут</p><p><strong>Стадия 1:</strong> бонус предмета +1 к спасброскам против эффектов страха (10 минут)</p><p><strong>Стадия 2:</strong> @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнут врасплох}, бонус предмета +1 к спасброскам против эффектов страха (10 минут)</p><p><strong>Стадия 3:</strong> @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжесть 1}, @UUID[Compendium.pf2e.conditionitems.Item.AJh5ex99aV6VTggg]{Застигнут врасплох}, @UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманен 2} (10 минут)</p><p><strong>Стадия 4:</strong> @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжесть 1}, @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Тошнота 2} (10 минут)</p><p><strong>Стадия 5:</strong> @UUID[Compendium.pf2e.conditionitems.Item.i3OJZU2nk64Df3xm]{Неуклюжесть 2}, @UUID[Compendium.pf2e.conditionitems.Item.fesd1n5eVhpCSS18]{Тошнота 2}, и @UUID[Compendium.pf2e.conditionitems.Item.e1XGnhKNSQIm5IXg]{Одурманен 2} (10 минут)</p><p><strong>Стадия 6:</strong> @UUID[Compendium.pf2e.conditionitems.Item.fBnFDH2MTzgFijKf]{Без сознания} (8 часов)</p><p><strong>Стадия 7:</strong> смерть</p>"
+				},
+				{
+					"id": "MlZNOt3aiHAeXqiD",
+					"name": "Мягкая дубинка"
+				},
+				{
+					"id": "7ydMyqCO1oh7cHUR",
+					"name": "Кулак"
+				},
+				{
+					"id": "McH1gJqQMQRVSagF",
+					"name": "Оловянная кружка"
+				},
+				{
+					"id": "eAaIdI0UJUrcmPzC",
+					"name": "Барный драчун",
+					"description": "<p>Бармен достаточно участвовал в барных драках, чтобы знать, как нанести несколько ударов. Когда бармен дерётся в своем баре и совершает @Trait[Nonlethal]{несмертельную} атаку, он получает бонус обстоятельства +1 к броскам атаки и наносит дополнительные 1d4 урона.</p>"
+				},
+				{
+					"id": "wvyx4nEskJ9Imojt",
+					"name": "Совет бармена",
+					"description": "<p><strong>Частота:</strong> Раз в день</p><hr /><p><strong>Эффект:</strong> Бармен дает несколько уместных советов 1 существу, кроме себя. В течение 24 часов, когда это существо проваливает проверку навыка или спасбросок, оно может вспомнить этот совет и перебросить проверку, используя вместо неё второй результат. Как только существо использует эту возможность, её действие заканчивается.</p><p>Существо, получившее <em>\"Совет бармена\"</em>, временно иммунно к этому умению на 1 месяц.</p>"
+				},
+				{
+					"id": "Rpv1wLy0PVmx5FE6",
+					"name": "Знания алкоголя"
+				}
+			]
+		},
+		"Nyctessa": {
+			"name": "Никтесса",
+			"hp": "исцеление пустотой",
+			"items": [
+				{
+					"id": "8r4FWLqkrugnXCdg",
+					"name": "Подготовленные арканные заклинания"
+				},
+				{
+					"id": "h2EmzFVIzh193RQj",
+					"name": "Книга заклинаний",
+					"description": "<p>Книга заклинаний содержит записанные знания, необходимые для изучения и подготовки различных заклинаний. Она необходима волшебникам (которые обычно получают её бесплатно) и является полезной роскошью для других заклинателей, желающих выучить дополнительные заклинания. Каждая книга заклинаний может содержать вплоть до 100 заклинаний. Цена указана для пустой книги.</p>"
+				},
+				{
+					"id": "w3mUZdnSGcG4CWVk",
+					"name": "Посох Никтессы"
+				},
+				{
+					"id": "ECWeqa61G7ko1EgL",
+					"name": "Клыки"
+				},
+				{
+					"id": "jAda7NsHDYnZYrJv",
+					"name": "Опытный ремесленник",
+					"description": "<p>Nyctessa can use the @UUID[Compendium.pf2e.actionspf2e.Item.rmwa3OyhTZ2i2AHl] activity to create alchemical and magical items. In addition to her known spells, her spellbook contains the formulas for @UUID[Compendium.pf2e.equipment-srd.Item.p4ZEGzwteCB5fz6i], @UUID[Compendium.pf2e.equipment-srd.Item.UqinuuCWePTYGhVO], @UUID[Compendium.pf2e.equipment-srd.Item.3Klm2gPmzOw6ntVb], @UUID[Compendium.pf2e.equipment-srd.Item.biHvCGfajSjUDGBS], @UUID[Compendium.pf2e.equipment-srd.Item.BSInwFNVBVkfFK0B], @UUID[Compendium.pf2e.equipment-srd.Item.EGhUorZhB7nV73Ev], and @UUID[Compendium.pf2e.equipment-srd.Item.1gBkH409yTYM6jeZ].</p>"
+				},
+				{
+					"id": "vqqUVMi0yaoc393y",
+					"name": "Deathly Inquisition",
+					"description": "<p>Once per day, Nyctessa can cast @UUID[Compendium.pf2e.spells-srd.Item.FM3SmEW8N1FCRjqt] as an innate occult spell on an @UUID[Compendium.pf2e.conditionitems.Item.eIcWbB5o3pP6OIMe] or willing undead creature (DC 21), with a casting time of 1 minute. This provides more detailed answers than speaking with a non-undead corpse.</p>"
+				},
+				{
+					"id": "6SF8zJaD77XBIW5R",
+					"name": "Исцеление пустотой"
+				},
+				{
+					"id": "Cn29P8X7FcXvzsb3",
+					"name": "Drain Bonded Staff",
+					"description": "<p><strong>Частота:</strong> Раз в день</p><hr /><p><strong>Эффект:</strong> Nyctessa expends the power stored in her staff. This turn she can cast one spell she prepared today and already cast, without spending a spell slot.</p>"
+				},
+				{
+					"id": "4kIfAvkI20nX4Gv7",
+					"name": "Sepulchral Drain",
+					"description": "<p>When the <em>Nyctessa's staff</em> deals damage to a living creature with a Strike, that creature gains a weakness 2 to void damage until the end of Nyctessa's next turn.</p><p>@UUID[Compendium.pf2e.bestiary-effects.Item.HiLwUXS35dNZgnfC]</p>"
+				},
+				{
+					"id": "UXuZHs3lY04JOZYJ",
+					"name": "Вкус крови",
+					"description": "<p><strong>Требования:</strong> Nyctessa's last action was a fangs Strike that damaged the target</p><hr /><p><strong>Эффект:</strong> Nyctessa drinks blood from the target, which must be a living humanoid, gaining 5 temporary Hit Points for 10 minutes. The target must succeed at a @Check[fortitude|dc:21] save or become @UUID[Compendium.pf2e.conditionitems.Item.4D2KBtexWXa6oUMR]{Drained 1}. Regardless of the outcome, the target is temporarily immune to Nyctessa's Taste Blood for 1 day.</p>"
+				}
+			]
+		},
+		"Priest of Pharasma": {
+			"name": "Священник Фаразмы",
+			"description": "<p>Священнослужители оберегают свои храмы и общины. Они являются непоколебимыми хранителями догмат своего бога и посвящают себя распространению их слова. Их наставления или исцеление предоставляются за пожертвование.</p><hr /><p>Религии вдохновляют набожных людей отстаивать их догматы. Многие из них стремятся принести облегчение и надежду, но у других более темные мотивы.</p>",
+			"items": [
+				{
+					"id": "3lmMOkUuWRYkYOfO",
+					"name": "Подготовленные сакральные заклинания"
+				},
+				{
+					"id": "JCFQaCMK8sKMFgL2",
+					"name": "Заклинания домена жреца"
+				},
+				{
+					"id": "mOC9pnzLIeqAQ8i0",
+					"name": "Религиозный символ Фаразмы",
+					"description": "<p>Этот кусок дерева или серебра гравирован изображением, представляющим божество. Некоторые сакральные заклинатели, такие как жрецы, могут использовать религиозный символ своего божества как сакральный фокус при использовании некоторых умений и сотворении некоторых заклинаний. Чтобы использовать религиозный символ, его надо держать в одной руке.</p>"
+				},
+				{
+					"id": "dbDMr7uWS78nPenZ",
+					"name": "Кинжал"
+				},
+				{
+					"id": "ufJVnIjBde8zNbAj",
+					"name": "Кинжал"
+				},
+				{
+					"id": "6SS8rVfwSj7Oy7WY",
+					"name": "Исцеляющие руки",
+					"description": "<p>Когда священник сотворяет @UUID[Compendium.pf2e.spells-srd.Item.rfZpqmj0AIIdkVIs]{Исцеление}, то бросает d10 вместо d8.</p>"
+				},
+				{
+					"id": "1VRZfyweUQjfqW3F",
+					"name": "Стойкое колдовство",
+					"description": "<p>Если реакция другого существа прервёт заклинательское действие священника, он совершает @Check[flat|dc:15]{Чистую проверку}. При успехе его действие не прерывается.</p>"
+				}
+			]
+		},
+		"Server": {
+			"name": "Обслуга",
+			"description": "<p>Постоянно перемещаясь от посетителя к посетителю, обслуга является основой любой таверны или закусочной. Их работа оттачивает как ловкость, так и дипломатичность.</p><hr /><p>Бесчисленные приключения начинаются в таверне или пабе. Может быть, потому, что такие места привлекают склонных к риску, а может быть, потому, что каждому нужно немного жидкой храбрости, прежде чем он решит сразиться с группой разъярённых огров.</p>",
+			"items": [
+				{
+					"id": "qX24xR2DF5OwD6iF",
+					"name": "Оловянная кружка"
+				},
+				{
+					"id": "DsXup6n3udnCKVoX",
+					"name": "Поднос"
+				},
+				{
+					"id": "zecbW6qIhXuKa8Yu",
+					"name": "Кулак"
+				},
+				{
+					"id": "1dkm6dgNqE06TZD0",
+					"name": "Оловянная кружка"
+				},
+				{
+					"id": "ZmfzXnEaPSxGh2J4",
+					"name": "Быстро поймать",
+					"description": "<div data-visibility=\"gm\"><p><strong>Триггер:</strong> В досягаемости обслуги падает объект, который обслуга может держать одной рукой</p><p><strong>Требования:</strong> У обслуги свободная хотя бы 1 рука</p></div><p><strong>Эффект:</strong> Обслуга ловит упавший объект до того, как он упадет на пол или покинет их досягаемость.</p>"
+				}
+			]
+		}
+	}
+}

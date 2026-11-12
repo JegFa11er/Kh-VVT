@@ -4,6 +4,7 @@ import { Application } from "pixi.js";
 
 import { NetworkClient } from "./net/network-client.js";
 import { Viewport } from "./canvas/viewport.js";
+import { BackgroundLayer, normalizeBackgroundColor } from "./canvas/background-layer.js";
 import { GridLayer } from "./canvas/grid-layer.js";
 import { TokenLayer } from "./canvas/token-layer.js";
 import { InteractionLayer } from "./canvas/interaction.js";
@@ -17,6 +18,11 @@ import { ChatBubbleLayer } from "./canvas/chat-bubble-layer.js";
 import { GRID_SIZE, createGrid } from "./canvas/grid.js";
 import { StoreProvider } from "./ui/StoreContext.jsx";
 import App from "./ui/App.jsx";
+import StartScreen from "./ui/StartScreen.jsx";
+import {
+  readStoredLanguage,
+  setLanguage as setI18nLanguage,
+} from "./ui/i18n.js";
 import {
   ACTOR_TOKEN_PAYLOAD_TYPE,
   readDragPayload,
@@ -24,15 +30,43 @@ import {
 import "./ui/styles.css";
 
 const params = new URLSearchParams(window.location.search);
-const role = params.get("role") === "gm" ? "gm" : "player";
-const name = params.get("name") || (role === "gm" ? "Game Master" : "Player");
+// The URL role is only a convenience hint for the lobby form. The authoritative
+// identity comes from the chosen profile (`profile.role`), which the server
+// validates again when the WebSocket joins.
+const urlRole = params.get("role") === "gm" ? "gm" : "player";
 const sessionId = params.get("session") || "default";
-const playerId =
-  params.get("player") ||
-  (role === "gm" ? "gm-1" : "player-" + Math.random().toString(36).slice(2, 8));
+const preferredUserId = params.get("player") || null;
 const statusEl = document.getElementById("status");
 
-async function bootstrap() {
+// Step 6.6: apply the persisted RU/EN choice before the lobby/React tree mounts.
+// This keeps the global language (UI + Compendium Browser) stable across reloads
+// and prevents the initial render from briefly using the default dictionary.
+setI18nLanguage(readStoredLanguage());
+
+/**
+ * Phase 6.2: the PixiJS canvas and the main game socket are created only after
+ * the player picks a lobby profile.
+ */
+async function startGame(profile) {
+  const role =
+    profile && profile.role === "gm"
+      ? "gm"
+      : profile && profile.role === "player"
+        ? "player"
+        : urlRole;
+  const name =
+    profile && typeof profile.name === "string" && profile.name.trim() !== ""
+      ? profile.name.trim()
+      : role === "gm"
+        ? "Game Master"
+        : "Player";
+  const playerId =
+    profile && typeof profile.id === "string" && profile.id !== ""
+      ? profile.id
+      : role === "gm"
+        ? "gm-1"
+        : "player-" + Math.random().toString(36).slice(2, 8);
+
   const app = new Application();
 
   await app.init({
@@ -47,9 +81,17 @@ async function bootstrap() {
 
   const viewport = new Viewport(app).mount();
 
-  const cellSize = GRID_SIZE;
-  const grid = createGrid({ gridSize: cellSize });
-  const gridLayer = new GridLayer({ cols: 24, rows: 16, cellSize });
+  let cellSize = GRID_SIZE;
+  let gridCols = 24;
+  let gridRows = 16;
+  let grid = createGrid({ gridSize: cellSize });
+  const backgroundLayer = new BackgroundLayer({
+    gridSize: cellSize,
+    cols: gridCols,
+    rows: gridRows,
+    backgroundColor: "#12151c",
+  });
+  const gridLayer = new GridLayer({ cols: gridCols, rows: gridRows, cellSize });
   const drawLayer = new DrawLayer(app, viewport, grid);
   const wallLayer = new WallLayer(app, viewport, grid);
   const tokenLayer = new TokenLayer({ cellSize });
@@ -59,6 +101,8 @@ async function bootstrap() {
   const visionLayer = new VisionLayer(app, viewport, grid, {
     tokenLayer: tokenLayer,
     wallLayer: wallLayer,
+    lightLayer: lightLayer,
+    viewerRole: role,
   });
   const fogLayer = new FogLayer(app, viewport, grid, {
     width: gridLayer.cols * cellSize,
@@ -70,6 +114,7 @@ async function bootstrap() {
   // < fog of war < ruler. Fog sits above tokens so explored ground stays dim
   // even while a foreign token is hidden by `TokenLayer.applyVisionState`.
   viewport.world.addChild(
+    backgroundLayer,
     gridLayer,
     drawLayer,
     wallLayer,
@@ -79,6 +124,9 @@ async function bootstrap() {
     fogLayer,
     rulerLayer,
   );
+  // Step 5.8.1: floating HP numbers must never be hidden by fog/light, so the
+  // token layer's detached text overlay is reparented above the scene stack.
+  viewport.world.addChild(tokenLayer.floatingTextLayer);
 
   // Step 5.3: the vision raycast feeds both the persistent exploration texture
   // and the "currently visible" fog mask.
@@ -103,16 +151,19 @@ async function bootstrap() {
 
   const network = new NetworkClient({ sessionId, name });
   interactionLayer.networkClient = network;
+  // Circular condition badges optimistically repaint and persist through the
+  // same actor-update channel as the token HUD.
+  tokenLayer.networkClient = network;
 
   // Step 5.3 persistence: the layer debounces Base64 extraction (2 s) and the
   // client forwards the result to `room:update-fog`; a reset broadcasts
   // `room:reset-fog`. Responses from other members replace/clear this texture.
-  fogLayer.onFogChanged = (dataUrl, sceneId) => {
+  fogLayer.onFogChanged = (dataUrl, sceneId, actorId) => {
     if (!network.connected) {
       return;
     }
     network
-      .updateFog(sceneId, dataUrl)
+      .updateFog(sceneId, dataUrl, actorId)
       .catch((error) => console.warn("[pf2e] fog save failed", error));
   };
   fogLayer.onFogReset = (sceneId) => {
@@ -132,6 +183,8 @@ async function bootstrap() {
   // Scene canvas arrays are loaded from `room:scene-activated` (or the join
   // snapshot) and saved back after every canvas mutation with a short debounce.
   let activeSceneId = null;
+  let viewedSceneId = null;
+  let lastActiveSceneState = null;
   let appliedSceneId;
   let lastCombatants = [];
   let lastActiveCombatantId = null;
@@ -139,6 +192,86 @@ async function bootstrap() {
   let sceneTokenPositions = [];
   let sceneActorTokens = [];
   let scenePositionsPending = false;
+  let appliedSceneSettingsKey = "";
+
+  /**
+   * Step 6.3: apply scene configuration (background image, cell size, outside
+   * colour). The grid object is recreated because every canvas layer closes
+   * over it; token data is stored in grid cells, so changing the cell size only
+   * changes world pixels and never the saved coordinates.
+   */
+  const applySceneSettings = (settings) => {
+    const source = settings && typeof settings === "object" ? settings : {};
+    const nextGridSize = Math.max(
+      20,
+      Math.min(400, Math.round(Number(source.gridSize) || GRID_SIZE)),
+    );
+    const nextBackground = normalizeBackgroundColor(source.backgroundColor);
+    const nextImage =
+      typeof source.img === "string" && source.img.trim() !== ""
+        ? source.img.trim()
+        : "";
+    const key = nextGridSize + "|" + nextBackground + "|" + nextImage;
+    if (key === appliedSceneSettingsKey) {
+      return;
+    }
+    appliedSceneSettingsKey = key;
+
+    if (nextGridSize !== cellSize) {
+      cellSize = nextGridSize;
+      grid = createGrid({ gridSize: cellSize });
+      for (const layer of [
+        drawLayer,
+        wallLayer,
+        lightLayer,
+        visionLayer,
+        rulerLayer,
+        fogLayer,
+        interactionLayer,
+      ]) {
+        if (layer) {
+          layer.grid = grid;
+        }
+      }
+      tokenLayer.setCellSize(cellSize);
+      tokenLayer.applyScenePositions(sceneTokenPositions);
+      syncTokens(lastCombatants, lastActiveCombatantId);
+    }
+
+    if (!nextImage && (gridCols !== 24 || gridRows !== 16)) {
+      gridCols = 24;
+      gridRows = 16;
+    }
+    gridLayer.resize(gridCols, gridRows, cellSize);
+    backgroundLayer.setGrid(cellSize, gridCols, gridRows);
+    backgroundLayer.setBackgroundColor(nextBackground);
+    app.renderer.background.color = nextBackground;
+    gridLayer.setFillAlpha(nextImage ? 0.08 : 0.55);
+
+    if (!nextImage) {
+      backgroundLayer.setImage("");
+      return;
+    }
+
+    backgroundLayer.setImage(nextImage).then((size) => {
+      if (!size) {
+        return;
+      }
+      // Size the grid to the intrinsic image dimensions when possible.
+      const cols = Math.max(1, Math.ceil(size.width / cellSize));
+      const rows = Math.max(1, Math.ceil(size.height / cellSize));
+      if (cols !== gridCols || rows !== gridRows) {
+        gridCols = cols;
+        gridRows = rows;
+        gridLayer.resize(gridCols, gridRows, cellSize);
+        backgroundLayer.setGrid(cellSize, gridCols, gridRows);
+      }
+      gridLayer.setFillAlpha(0.08);
+      tokenLayer.applyScenePositions(sceneTokenPositions);
+      syncTokens(lastCombatants, lastActiveCombatantId);
+      visionLayer.refresh();
+    });
+  };
 
   const sceneCanvasPayload = () => ({
     walls: wallLayer.serialize(),
@@ -177,12 +310,16 @@ async function bootstrap() {
     tokenLayer.setActors(Array.isArray(actors) ? actors : []);
   };
 
+  /** The scene currently painted by the canvas (GM preview wins locally). */
+  const canvasSceneId = () => viewedSceneId || activeSceneId;
+
   const syncTokens = (combatants, activeCombatantId) => {
     lastCombatants = Array.isArray(combatants) ? combatants : [];
     lastActiveCombatantId =
       activeCombatantId === undefined ? null : activeCombatantId;
     // Tokens added while a scene was active belong to that scene; legacy
     // tokens without a binding remain visible everywhere.
+    const displayedSceneId = canvasSceneId();
     const visible = lastCombatants.filter((combatant) => {
       const boundScene =
         combatant && combatant.sceneId !== undefined
@@ -191,7 +328,7 @@ async function bootstrap() {
       if (boundScene === null || boundScene === undefined) {
         return true;
       }
-      return boundScene === activeSceneId;
+      return boundScene === displayedSceneId;
     });
     tokenLayer.sync(visible, lastActiveCombatantId);
     if (
@@ -204,16 +341,77 @@ async function bootstrap() {
     visionLayer.refresh();
   };
 
-  const applySceneState = (nextSceneId, canvas, fogExploration) => {
+  const applySceneState = (nextSceneId, canvas, fogExploration, sceneSettings) => {
     activeSceneId = nextSceneId || null;
+    viewedSceneId = null;
+    lastActiveSceneState = {
+      activeSceneId,
+      canvas,
+      fogExploration,
+      sceneSettings,
+    };
     appliedSceneId = activeSceneId;
+    // Step 6.3: image/grid/colour must be ready before tokens are placed.
+    applySceneSettings(sceneSettings);
     applySceneCanvas(canvas);
-    // Step 5.3: switch the fog layer to the new scene and restore the encoded
-    // exploration texture (one sprite draw into the persistent RenderTexture).
+    // Step 5.3/5.4: switch the fog layer to the new scene and restore the
+    // per-actor exploration textures. The selected token's own texture is
+    // drawn when `syncTokens()` refreshes the vision layer below.
     fogLayer.setScene(activeSceneId);
-    fogLayer.loadEncoded(fogExploration);
+    fogLayer.loadSceneFog(fogExploration);
     syncTokens(lastCombatants, lastActiveCombatantId);
   };
+
+  /**
+   * Step 6.8: GM-only local scene preview.
+   *
+   * The scene directory entry already contains the same canvas arrays
+   * (`walls/drawings/lights/tokens`), background and grid settings as the
+   * activation payload, so the preview never asks the server for anything.
+   * `activeSceneId` is intentionally untouched: players stay on the
+   * authoritative scene while the GM sees another one locally.
+   */
+  const applyViewedScene = (entry) => {
+    if (!entry || typeof entry.id !== "string" || entry.id === "") {
+      return;
+    }
+    viewedSceneId = entry.id;
+    applySceneSettings(entry);
+    applySceneCanvas(entry);
+    fogLayer.setScene(entry.id);
+    fogLayer.loadSceneFog(entry.fogExploration || null);
+    syncTokens(lastCombatants, lastActiveCombatantId);
+  };
+
+  const restoreActiveScene = () => {
+    if (!viewedSceneId) {
+      return;
+    }
+    if (lastActiveSceneState) {
+      applySceneState(
+        lastActiveSceneState.activeSceneId,
+        lastActiveSceneState.canvas,
+        lastActiveSceneState.fogExploration,
+        lastActiveSceneState.sceneSettings,
+      );
+      return;
+    }
+    viewedSceneId = null;
+    syncTokens(lastCombatants, lastActiveCombatantId);
+  };
+
+  if (typeof window !== "undefined") {
+    // DirectoryPanel dispatches this event after the GM clicks "View" /
+    // "Activate". `sceneId: null` restores the active scene.
+    window.addEventListener("pf2e:view-scene", (event) => {
+      const detail = event && event.detail ? event.detail : {};
+      if (!detail.sceneId) {
+        restoreActiveScene();
+        return;
+      }
+      applyViewedScene(detail.scene || null);
+    });
+  }
 
   const scheduleSceneSave = () => {
     if (sceneUpdateTimer !== null) {
@@ -235,7 +433,7 @@ async function bootstrap() {
         (token) => token && typeof token.combatantId === "string",
       );
       network
-        .updateSceneCanvas(activeSceneId, payload)
+        .updateSceneCanvas(canvasSceneId(), payload)
         .catch((error) => console.warn("[pf2e] scene save failed", error));
     }, 250);
   };
@@ -258,6 +456,7 @@ async function bootstrap() {
       payload.activeSceneId,
       payload.canvas,
       payload.fogExploration,
+      payload.scene,
     );
   });
 
@@ -269,11 +468,22 @@ async function bootstrap() {
       return;
     }
     const payloadScene = payload.sceneId || null;
-    if (payloadScene !== activeSceneId) {
+    if (payloadScene !== canvasSceneId()) {
       return;
     }
     applySceneCanvas(payload.canvas);
     syncTokens(lastCombatants, lastActiveCombatantId);
+  });
+
+  // Step 6.8: background image preloading. Every client receives the scene
+  // image URL and decodes it into the browser cache without switching scenes.
+  network.onPreloadScene((payload) => {
+    if (!payload || typeof payload.img !== "string" || payload.img === "") {
+      return;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    image.src = payload.img;
   });
 
   // Step 5.3: another member stamped new exploration into their texture. The
@@ -290,10 +500,10 @@ async function bootstrap() {
       typeof payload.sceneId === "string" && payload.sceneId !== ""
         ? payload.sceneId
         : null;
-    if (payloadScene !== activeSceneId) {
+    if (payloadScene !== canvasSceneId()) {
       return;
     }
-    fogLayer.loadEncoded(payload.fogExploration);
+    fogLayer.applyRemoteFog(payload.actorId || null, payload.fogExploration);
   });
 
   // Fog reset is authoritative for the whole room: clear the local texture
@@ -309,10 +519,12 @@ async function bootstrap() {
       typeof payload.sceneId === "string" && payload.sceneId !== ""
         ? payload.sceneId
         : null;
-    if (payloadScene !== activeSceneId) {
+    if (payloadScene !== canvasSceneId()) {
       return;
     }
-    fogLayer.clearLocal();
+    fogLayer.clearSceneFog();
+    // Current LOS is always visible, even after exploration is wiped.
+    visionLayer.refresh();
   });
 
   // ---------------------------------------------------- actor tokens (4.8.5)
@@ -321,6 +533,22 @@ async function bootstrap() {
   network.onDirectoriesUpdate((directories) => {
     if (directories && directories.actors) {
       applyActors(directories.actors.entries);
+    }
+    // Step 6.3: saving Scene Settings broadcasts the directory tree, so the
+    // active scene's background/grid updates immediately for every client.
+    const directorySceneId = canvasSceneId();
+    if (
+      directories &&
+      directories.scenes &&
+      directorySceneId &&
+      Array.isArray(directories.scenes.entries)
+    ) {
+      const activeScene = directories.scenes.entries.find(
+        (entry) => entry.id === directorySceneId,
+      );
+      if (activeScene) {
+        applySceneSettings(activeScene);
+      }
     }
   });
 
@@ -351,7 +579,7 @@ async function bootstrap() {
     const row = Math.max(0, Math.floor(world.y / cellSize));
     return network.createToken({
       actorId: actorId,
-      sceneId: activeSceneId,
+      sceneId: canvasSceneId(),
       x: col,
       y: row,
     });
@@ -404,11 +632,20 @@ async function bootstrap() {
     if (statusEl) {
       statusEl.textContent = "Joined " + sessionId + " as " + role;
     }
+    // The server is authoritative for the joined member's role; keep the
+    // canvas vision rules in sync with it (GM vs player).
+    const joinedRole =
+      payload && payload.member && payload.member.role
+        ? payload.member.role
+        : network.role;
+    tokenLayer.setGMViewer(joinedRole === "gm");
+    visionLayer.setViewerRole(joinedRole);
     if (payload && payload.session) {
       applySceneState(
         payload.session.activeSceneId,
         payload.session.sceneCanvas,
         payload.session.sceneFogExploration,
+        payload.session.scene,
       );
       syncTokens(
         payload.session.combatants,
@@ -432,7 +669,11 @@ async function bootstrap() {
           nextSceneId,
           snapshot.sceneCanvas,
           snapshot.sceneFogExploration,
+          snapshot.scene,
         );
+      } else {
+        // Same scene: a snapshot may still carry freshly saved settings.
+        applySceneSettings(snapshot.scene);
       }
     }
     syncTokens(snapshot.combatants || [], snapshot.activeCombatantId);
@@ -486,6 +727,7 @@ async function bootstrap() {
     app,
     viewport,
     grid,
+    backgroundLayer,
     gridLayer,
     drawLayer,
     wallLayer,
@@ -499,16 +741,49 @@ async function bootstrap() {
     network,
     uiRoot,
     getActiveSceneId: () => activeSceneId,
+    getGrid: () => grid,
     applySceneCanvas,
+    applySceneSettings,
     sceneCanvasPayload,
     createActorTokenAt,
     syncActorDirectory: applyActors,
   };
 }
 
-bootstrap().catch((error) => {
-  console.error("[pf2e] failed to start client", error);
-  if (statusEl) {
-    statusEl.textContent = "Startup failed: " + error.message;
+/**
+ * Render the lobby first. Only a successful profile login unmounts it and
+ * starts the PixiJS runtime + WebSocket connection.
+ */
+function bootstrap() {
+  const uiRootElement = document.getElementById("ui-root");
+  if (!uiRootElement) {
+    throw new Error("Missing #ui-root element.");
   }
-});
+  if (statusEl) {
+    statusEl.textContent = "Лобби — выберите профиль";
+  }
+
+  const lobbyRoot = createRoot(uiRootElement);
+  lobbyRoot.render(
+    createElement(StartScreen, {
+      sessionId,
+      defaultRole: urlRole,
+      preferredUserId,
+      onLogin: (profile) => {
+        // Defer the unmount until the click handler finishes so React does not
+        // unmount the root while it is still rendering the event.
+        window.setTimeout(() => {
+          lobbyRoot.unmount();
+          startGame(profile).catch((error) => {
+            console.error("[pf2e] failed to start client", error);
+            if (statusEl) {
+              statusEl.textContent = "Startup failed: " + error.message;
+            }
+          });
+        }, 0);
+      },
+    }),
+  );
+}
+
+bootstrap();

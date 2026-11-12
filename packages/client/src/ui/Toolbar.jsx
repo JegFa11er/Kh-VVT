@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { formatMessage, useTranslation } from "./i18n.js";
 import { useStore } from "./StoreContext.jsx";
 
 /**
@@ -10,6 +11,10 @@ import { useStore } from "./StoreContext.jsx";
  * level). The selected category/tool live in StoreContext so PixiJS layers can
  * read them later. Every click also emits a `pf2e:toolbar-action` DOM event,
  * which is the hand-off point for canvas-side drawing/wall/light handlers.
+ *
+ * Step 6.8: every visible label, tooltip, aria-label and status line goes
+ * through `t()` and the local platform dictionary, so EN mode translates the
+ * whole scene-controls chrome.
  */
 
 const DRAW_COLORS = [
@@ -24,9 +29,21 @@ const DRAW_COLORS = [
 ];
 
 const DARKNESS_LEVELS = [
-  { id: "light", label: "светлая" },
-  { id: "dim", label: "тусклая" },
-  { id: "dark", label: "тьма" },
+  {
+    id: "light",
+    labelKey: "PF2E.Platform.Toolbar.Darkness.Light",
+    labelFallback: "bright",
+  },
+  {
+    id: "dim",
+    labelKey: "PF2E.Platform.Toolbar.Darkness.Dim",
+    labelFallback: "dim",
+  },
+  {
+    id: "dark",
+    labelKey: "PF2E.Platform.Toolbar.Darkness.Dark",
+    labelFallback: "dark",
+  },
 ];
 
 const DICE_TYPES = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -36,80 +53,106 @@ const CATEGORIES = [
   {
     id: "token",
     icon: "👤",
-    title: "Токены",
-    description: "Управление токенами: выделение и линейка расстояния.",
+    titleKey: "PF2E.Platform.Toolbar.Category.Token",
+    titleFallback: "Tokens",
+    descriptionKey: "PF2E.Platform.Toolbar.Category.TokenDesc",
+    descriptionFallback: "Token controls: selection and distance measurement.",
     tools: [
       {
         id: "select",
         icon: "🔲",
-        name: "Выбор токенов",
-        description: "Выделение токена кликом или рамкой.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SelectTokens",
+        nameFallback: "Select Tokens",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SelectTokensDesc",
+        descriptionFallback: "Select a token with a click or a selection box.",
       },
       {
         id: "ruler",
         icon: "📐",
-        name: "Измерение расстояния",
-        description:
-          "Линейка замера дистанции по сетке PF2e (правило 5-10-5 футов).",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Ruler",
+        nameFallback: "Measure Distance",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.RulerDesc",
+        descriptionFallback:
+          "Measure distance on the PF2e grid (5-10-5 feet rule).",
       },
     ],
   },
   {
     id: "draw",
     icon: "✏️",
-    title: "Рисование",
-    description: "Рисование на сцене: фигуры, полигоны, текст и палитра.",
+    titleKey: "PF2E.Platform.Toolbar.Category.Draw",
+    titleFallback: "Drawing",
+    descriptionKey: "PF2E.Platform.Toolbar.Category.DrawDesc",
+    descriptionFallback:
+      "Draw on the scene: shapes, polygons, text and palette.",
     tools: [
       {
         id: "select",
         icon: "🔲",
-        name: "Выбор рисунков",
-        description: "Выбор готовых объектов рисования.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SelectDrawings",
+        nameFallback: "Select Drawings",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SelectDrawingsDesc",
+        descriptionFallback: "Select existing drawing objects.",
       },
       {
         id: "rect",
         icon: "▭",
-        name: "Прямоугольник",
-        description: "Рисование прямоугольников.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Rect",
+        nameFallback: "Rectangle",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.RectDesc",
+        descriptionFallback: "Draw rectangles.",
       },
       {
         id: "ellipse",
         icon: "⬭",
-        name: "Окружность",
-        description: "Рисование эллипсов и кругов.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Ellipse",
+        nameFallback: "Ellipse",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.EllipseDesc",
+        descriptionFallback: "Draw ellipses and circles.",
       },
       {
         id: "polygon",
         icon: "⬡",
-        name: "Полигон",
-        description:
-          "ЛКМ+тянуть — начать полигон, клики добавляют вершины, двойной клик завершает.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Polygon",
+        nameFallback: "Polygon",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.PolygonDesc",
+        descriptionFallback:
+          "Drag with the left button to start a polygon, click to add vertices, double-click to finish.",
       },
       {
         id: "freehand",
         icon: "〰️",
-        name: "Свободное рисование",
-        description: "Рисование от руки с зажатой ЛКМ.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Freehand",
+        nameFallback: "Freehand",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.FreehandDesc",
+        descriptionFallback:
+          "Draw by hand while holding the left mouse button.",
       },
       {
         id: "text",
         icon: "🅰️",
-        name: "Текст",
-        description: "Создание текстовых блоков.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Text",
+        nameFallback: "Text",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.TextDesc",
+        descriptionFallback: "Create text blocks.",
       },
       {
         id: "color",
         icon: "🎨",
-        name: "Палитра",
-        description:
-          "Выбор цвета обводки и заливки для новых рисунков. Клик открывает палитру.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Palette",
+        nameFallback: "Palette",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.PaletteDesc",
+        descriptionFallback:
+          "Choose stroke and fill colors for new drawings. Click to open the palette.",
         kind: "color",
       },
       {
         id: "clear",
         icon: "🗑️",
-        name: "Очистить рисунки",
-        description: "Удаление всех рисунков текущей сцены.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.ClearDrawings",
+        nameFallback: "Clear Drawings",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.ClearDrawingsDesc",
+        descriptionFallback: "Delete all drawings on the current scene.",
         kind: "action",
       },
     ],
@@ -117,62 +160,80 @@ const CATEGORIES = [
   {
     id: "wall",
     icon: "🧱",
-    title: "Стены",
-    description:
-      "Стены и двери: блокировка движения, зрения и слуха; ландшафтные и секретные стены.",
+    titleKey: "PF2E.Platform.Toolbar.Category.Wall",
+    titleFallback: "Walls",
+    descriptionKey: "PF2E.Platform.Toolbar.Category.WallDesc",
+    descriptionFallback:
+      "Walls and doors: block movement, sight and sound; terrain and secret walls.",
     tools: [
       {
         id: "select",
         icon: "🔲",
-        name: "Выбор стен",
-        description: "Выделение и редактирование отрезков стен.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SelectWalls",
+        nameFallback: "Select Walls",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SelectWallsDesc",
+        descriptionFallback: "Select and edit wall segments.",
       },
       {
         id: "normal",
         icon: "☰",
-        name: "Обычная стена",
-        description: "Блокирует: движение, зрение, слух.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.NormalWall",
+        nameFallback: "Normal Wall",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.NormalWallDesc",
+        descriptionFallback: "Blocks: movement, sight, sound.",
       },
       {
         id: "terrain",
         icon: "▲",
-        name: "Ландшафтная стена",
-        description:
-          "Блокирует: Зрение после второй стены, движение, слух. Позволяет видеть то, что находится внутри первой стены.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.TerrainWall",
+        nameFallback: "Terrain Wall",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.TerrainWallDesc",
+        descriptionFallback:
+          "Blocks: sight after the second wall, movement, sound. Lets you see what lies inside the first wall.",
       },
       {
         id: "invisible",
         icon: "👁️‍🗨️",
-        name: "Невидимая стена",
-        description:
-          "Блокирует только движение, пропускает зрение и слух.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.InvisibleWall",
+        nameFallback: "Invisible Wall",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.InvisibleWallDesc",
+        descriptionFallback:
+          "Blocks movement only; sight and sound pass through.",
       },
       {
         id: "ethereal",
         icon: "🎭",
-        name: "Бесплотная стена",
-        description:
-          "Блокирует зрение и слух, но пропускает сквозь себя движение.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.EtherealWall",
+        nameFallback: "Ethereal Wall",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.EtherealWallDesc",
+        descriptionFallback:
+          "Blocks sight and sound but lets movement pass through.",
       },
       {
         id: "door",
         icon: "🚪",
-        name: "Дверь",
-        description:
-          "ЛКМ — открыть/закрыть, ПКМ — запереть на замок (блокирует открытие игроками).",
+        nameKey: "PF2E.Platform.Toolbar.Tool.Door",
+        nameFallback: "Door",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.DoorDesc",
+        descriptionFallback:
+          "Left-click to open/close, right-click to lock (blocks players from opening).",
       },
       {
         id: "secret",
         icon: "🕵️",
-        name: "Скрытая дверь",
-        description:
-          "Невидима для игроков. Блокирует движение, зрение и слух; мастер может открыть.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SecretDoor",
+        nameFallback: "Secret Door",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SecretDoorDesc",
+        descriptionFallback:
+          "Invisible to players. Blocks movement, sight and sound; the GM can open it.",
       },
       {
         id: "clear",
         icon: "🗑️",
-        name: "Удалить все стены",
-        description: "Полная очистка стен на текущем слое сцены.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.ClearWalls",
+        nameFallback: "Delete All Walls",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.ClearWallsDesc",
+        descriptionFallback: "Remove every wall on the current scene layer.",
         kind: "action",
       },
     ],
@@ -180,52 +241,66 @@ const CATEGORIES = [
   {
     id: "light",
     icon: "💡",
-    title: "Освещение",
-    description:
-      "Освещение: источники света, уровень тьмы сцены и зрение мастера.",
+    titleKey: "PF2E.Platform.Toolbar.Category.Light",
+    titleFallback: "Lighting",
+    descriptionKey: "PF2E.Platform.Toolbar.Category.LightDesc",
+    descriptionFallback:
+      "Lighting: light sources, scene darkness and GM vision.",
     tools: [
       {
         id: "select",
         icon: "🔲",
-        name: "Выбор источников",
-        description: "Выделение источников света.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SelectLights",
+        nameFallback: "Select Lights",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SelectLightsDesc",
+        descriptionFallback: "Select light sources.",
       },
       {
         id: "draw",
         icon: "💡",
-        name: "Создать источник света",
-        description:
-          "Размещение источника света. Двойной клик открывает настройку радиусов тусклого и яркого света PF2e.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.CreateLight",
+        nameFallback: "Create Light",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.CreateLightDesc",
+        descriptionFallback:
+          "Place a light source. Double-click to configure PF2e dim and bright light radii.",
       },
       {
         id: "darkness",
         icon: "🌓",
-        name: "Темнота сцены",
-        description:
-          "Переключение глобального уровня освещения сцены: светлая / тусклая / тьма.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.SceneDarkness",
+        nameFallback: "Scene Darkness",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.SceneDarknessDesc",
+        descriptionFallback:
+          "Cycle the scene's global lighting: bright / dim / dark.",
         kind: "cycle",
       },
       {
         id: "gm-vision",
         icon: "💡",
-        name: "Зрение мастера",
-        description:
-          "Переключатель: позволяет мастеру видеть сквозь тьму без источников света.",
+        nameKey: "PF2E.Platform.Toolbar.GmVision",
+        nameFallback: "GM Vision",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.GmVisionDesc",
+        descriptionFallback:
+          "The GM without a selected token sees the whole map automatically. This toggle also reveals every token outside the selected character's line of sight.",
         kind: "toggle",
       },
       {
         id: "reset-fog",
         icon: "☁️",
-        name: "Сброс тумана войны",
-        description:
-          "Полностью очищает исследованные области тумана войны на текущей сцене и синхронизирует сброс со всеми участниками.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.ResetFog",
+        nameFallback: "Reset Fog of War",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.ResetFogDesc",
+        descriptionFallback:
+          "Completely clears explored fog-of-war areas on the current scene and synchronizes the reset with every participant.",
         kind: "action",
       },
       {
         id: "clear",
         icon: "🗑️",
-        name: "Удалить свет",
-        description: "Удаление всех источников света на сцене.",
+        nameKey: "PF2E.Platform.Toolbar.Tool.DeleteLights",
+        nameFallback: "Delete Lights",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.DeleteLightsDesc",
+        descriptionFallback: "Delete every light source on the scene.",
         kind: "action",
       },
     ],
@@ -233,16 +308,20 @@ const CATEGORIES = [
   {
     id: "dice",
     icon: "🎲",
-    title: "Кубики",
-    description:
-      "Матрица бросков: выберите тип кубика слева и количество справа.",
+    titleKey: "PF2E.Platform.Toolbar.Category.Dice",
+    titleFallback: "Dice",
+    descriptionKey: "PF2E.Platform.Toolbar.Category.DiceDesc",
+    descriptionFallback:
+      "Dice matrix: choose a die type on the left and a count on the right.",
     tools: [
       {
         id: "roll",
         icon: "🎲",
-        name: "Бросок кубиков",
-        description:
-          "Клик по типу бросает один кубик, клик по количеству — NdX (2–8).",
+        nameKey: "PF2E.Platform.Toolbar.Tool.RollDice",
+        nameFallback: "Roll Dice",
+        descriptionKey: "PF2E.Platform.Toolbar.Tool.RollDiceDesc",
+        descriptionFallback:
+          "Click a die type to roll one die, click a count to roll NdX (2–8).",
       },
     ],
   },
@@ -257,8 +336,18 @@ function emitToolbarAction(detail) {
   );
 }
 
-function categoryById(categoryId) {
-  return CATEGORIES.find((category) => category.id === categoryId) || null;
+/** Resolve every category/tool label through the active interface language. */
+function localizeCategory(category, t) {
+  return {
+    ...category,
+    title: t(category.titleKey, category.titleFallback),
+    description: t(category.descriptionKey, category.descriptionFallback),
+    tools: category.tools.map((tool) => ({
+      ...tool,
+      name: t(tool.nameKey, tool.nameFallback),
+      description: t(tool.descriptionKey, tool.descriptionFallback),
+    })),
+  };
 }
 
 export default function Toolbar() {
@@ -269,6 +358,7 @@ export default function Toolbar() {
     setActiveTool,
     setActiveSubTool,
   } = useStore();
+  const { t, language } = useTranslation();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [drawColor, setDrawColor] = useState(DRAW_COLORS[0]);
   const [gmVision, setGmVision] = useState(false);
@@ -276,8 +366,26 @@ export default function Toolbar() {
   const [doorLocked, setDoorLocked] = useState(false);
   const [status, setStatus] = useState("");
 
-  const activeCategory = categoryById(activeTool);
-  const darkness = DARKNESS_LEVELS[darknessIndex];
+  // Step 6.8: rebuild the labels when RU/EN changes. `t` reads the global
+  // language at call time, so `language` is the only changing dependency.
+  const categories = useMemo(
+    () => CATEGORIES.map((category) => localizeCategory(category, t)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [language],
+  );
+
+  const activeCategory =
+    categories.find((category) => category.id === activeTool) || null;
+  const darkness = {
+    ...DARKNESS_LEVELS[darknessIndex],
+    label: t(
+      DARKNESS_LEVELS[darknessIndex].labelKey,
+      DARKNESS_LEVELS[darknessIndex].labelFallback,
+    ),
+  };
+
+  const tr = (key, fallback, values) =>
+    formatMessage(t(key, fallback), values);
 
   // Let the PixiJS camera/interaction layers react to scene-control changes.
   // This is a global DOM event so canvas modules do not need React context.
@@ -299,26 +407,52 @@ export default function Toolbar() {
       setActiveTool(null);
       setActiveSubTool(null);
       setPaletteOpen(false);
-      setStatus(category.title + ": панель инструментов свёрнута");
+      setStatus(
+        category.title +
+          ": " +
+          t("PF2E.Platform.Toolbar.Collapsed", "toolbar collapsed"),
+      );
       return;
     }
 
     setActiveTool(category.id);
     setActiveSubTool(category.tools[0].id);
     setPaletteOpen(false);
-    setStatus(category.title + ": выберите инструмент справа");
+    setStatus(
+      category.title +
+        ": " +
+        t("PF2E.Platform.Toolbar.ChooseTool", "choose a tool on the right"),
+    );
   };
 
   const handleDiceRoll = (sides, count) => {
     const formula = String(count || 1) + "d" + String(sides);
     if (!networkClient) {
-      setStatus("Нет соединения: бросок " + formula + " не отправлен");
+      setStatus(
+        tr(
+          "PF2E.Platform.Toolbar.NoConnectionRoll",
+          "No connection: roll {formula} was not sent",
+          { formula },
+        ),
+      );
       return;
     }
     networkClient
       .sendChatMessage({ text: "/r " + formula, visibility: "public" })
-      .catch(() => setStatus("Не удалось отправить бросок " + formula));
-    setStatus("Бросок " + formula + " отправлен в чат");
+      .catch(() =>
+        setStatus(
+          tr(
+            "PF2E.Platform.Toolbar.RollFailed",
+            "Failed to send roll {formula}",
+            { formula },
+          ),
+        ),
+      );
+    setStatus(
+      tr("PF2E.Platform.Toolbar.RollSent", "Roll {formula} sent to chat", {
+        formula,
+      }),
+    );
     emitToolbarAction({
       category: "dice",
       tool: "roll",
@@ -343,31 +477,79 @@ export default function Toolbar() {
     };
 
     if (category.id === "draw" && tool.id === "clear") {
-      setStatus("Очистка рисунков: подтвердите действие в диалоге");
+      setStatus(
+        t(
+          "PF2E.Platform.Toolbar.ClearDrawingsConfirm",
+          "Clear drawings: confirm the action in the dialog",
+        ),
+      );
     } else if (category.id === "wall" && tool.id === "clear") {
-      setStatus("Очистка стен: подтвердите действие в диалоге");
+      setStatus(
+        t(
+          "PF2E.Platform.Toolbar.ClearWallsConfirm",
+          "Clear walls: confirm the action in the dialog",
+        ),
+      );
     } else if (category.id === "light" && tool.id === "clear") {
-      setStatus("Очистка света: подтвердите действие в диалоге");
+      setStatus(
+        t(
+          "PF2E.Platform.Toolbar.ClearLightsConfirm",
+          "Clear lights: confirm the action in the dialog",
+        ),
+      );
     } else if (category.id === "light" && tool.id === "reset-fog") {
-      setStatus("Туман войны сброшен: карта снова полностью чёрная");
+      setStatus(
+        t(
+          "PF2E.Platform.Toolbar.FogReset",
+          "Fog of war reset: the map is fully black again",
+        ),
+      );
     } else if (category.id === "light" && tool.id === "gm-vision") {
       const next = !gmVision;
       setGmVision(next);
       detail = { ...detail, enabled: next };
-      setStatus("Зрение мастера: " + (next ? "включено" : "выключено"));
+      setStatus(
+        t("PF2E.Platform.Toolbar.GmVision", "GM Vision") +
+          ": " +
+          t(
+            next
+              ? "PF2E.Platform.Toolbar.Enabled"
+              : "PF2E.Platform.Toolbar.Disabled",
+            next ? "enabled" : "disabled",
+          ),
+      );
     } else if (category.id === "light" && tool.id === "darkness") {
       const nextIndex = (darknessIndex + 1) % DARKNESS_LEVELS.length;
       const next = DARKNESS_LEVELS[nextIndex];
+      const nextLabel = t(next.labelKey, next.labelFallback);
       setDarknessIndex(nextIndex);
       detail = { ...detail, level: next.id };
-      setStatus("Освещение сцены: " + next.label);
+      setStatus(
+        tr(
+          "PF2E.Platform.Toolbar.SceneLighting",
+          "Scene lighting: {label}",
+          { label: nextLabel },
+        ),
+      );
     } else if (category.id === "draw" && tool.id === "color") {
-      setStatus("Палитра: выбран цвет " + drawColor);
+      setStatus(
+        tr(
+          "PF2E.Platform.Toolbar.PaletteColor",
+          "Palette: selected color {color}",
+          { color: drawColor },
+        ),
+      );
     } else if (category.id === "wall" && tool.id === "door") {
       setStatus(
         doorLocked
-          ? "Дверь заперта: игроки не могут открыть её (ПКМ — снять замок)"
-          : "Дверь: ЛКМ — открыть/закрыть, ПКМ — запереть на замок",
+          ? t(
+              "PF2E.Platform.Toolbar.DoorLockedHint",
+              "Door locked: players cannot open it (right-click to unlock)",
+            )
+          : t(
+              "PF2E.Platform.Toolbar.DoorHint",
+              "Door: left-click to open/close, right-click to lock",
+            ),
       );
     } else {
       setStatus(tool.name);
@@ -385,8 +567,14 @@ export default function Toolbar() {
     setDoorLocked(next);
     setStatus(
       next
-        ? "Дверь заперта на замок: игроки не смогут открыть её"
-        : "Замок двери снят: игроки снова могут открывать дверь",
+        ? t(
+            "PF2E.Platform.Toolbar.DoorLocked",
+            "Door locked: players cannot open it",
+          )
+        : t(
+            "PF2E.Platform.Toolbar.DoorUnlocked",
+            "Door unlocked: players can open it again",
+          ),
     );
     emitToolbarAction({
       category: category.id,
@@ -397,7 +585,11 @@ export default function Toolbar() {
 
   const handleSwatchClick = (color) => {
     setDrawColor(color);
-    setStatus("Цвет рисунков: " + color);
+    setStatus(
+      tr("PF2E.Platform.Toolbar.DrawingColor", "Drawing color: {color}", {
+        color,
+      }),
+    );
     emitToolbarAction({ category: "draw", tool: "color", color });
   };
 
@@ -422,7 +614,12 @@ export default function Toolbar() {
       return (
         tool.name +
         " (" +
-        (gmVision ? "включено" : "выключено") +
+        t(
+          gmVision
+            ? "PF2E.Platform.Toolbar.Enabled"
+            : "PF2E.Platform.Toolbar.Disabled",
+          gmVision ? "enabled" : "disabled",
+        ) +
         ") — " +
         tool.description
       );
@@ -432,22 +629,25 @@ export default function Toolbar() {
         tool.name +
         " — " +
         tool.description +
-        " Сейчас: " +
+        " " +
+        t("PF2E.Platform.Toolbar.Currently", "Currently") +
+        ": " +
         darkness.label +
         "."
       );
-    }
-    if (category.id === "wall" && tool.id === "door") {
-      return tool.name + " — " + tool.description;
     }
     return tool.name + " — " + tool.description;
   };
 
   return (
-    <div className="toolbar" role="toolbar" aria-label="Панель инструментов">
+    <div
+      className="toolbar"
+      role="toolbar"
+      aria-label={t("PF2E.Platform.Toolbar.Aria", "Toolbar")}
+    >
       <div className="toolbar__columns">
         <div className="toolbar__column toolbar__column--categories">
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <button
               key={category.id}
               type="button"
@@ -472,19 +672,30 @@ export default function Toolbar() {
               <div
                 className="dice-matrix"
                 role="group"
-                aria-label="Матрица бросков кубиков"
+                aria-label={t(
+                  "PF2E.Platform.Toolbar.DiceMatrix",
+                  "Dice roll matrix",
+                )}
               >
                 <div className="dice-matrix__caption">
-                  <span>Тип</span>
-                  <span>Количество</span>
+                  <span>{t("PF2E.Platform.Toolbar.Type", "Type")}</span>
+                  <span>{t("PF2E.Platform.Toolbar.Count", "Count")}</span>
                 </div>
                 {DICE_TYPES.map((sides) => (
                   <div className="dice-matrix__row" key={sides}>
                     <button
                       type="button"
                       className="dice-matrix__type"
-                      title={"Бросить 1d" + sides}
-                      aria-label={"Бросить 1d" + sides}
+                      title={tr(
+                        "PF2E.Platform.Toolbar.RollOne",
+                        "Roll 1d{sides}",
+                        { sides },
+                      )}
+                      aria-label={tr(
+                        "PF2E.Platform.Toolbar.RollOne",
+                        "Roll 1d{sides}",
+                        { sides },
+                      )}
                       onClick={() => handleDiceRoll(sides, 1)}
                     >
                       d{sides}
@@ -495,8 +706,16 @@ export default function Toolbar() {
                           key={count}
                           type="button"
                           className="dice-matrix__count"
-                          title={"Бросить " + count + "d" + sides}
-                          aria-label={"Бросить " + count + "d" + sides}
+                          title={tr(
+                            "PF2E.Platform.Toolbar.RollMany",
+                            "Roll {count}d{sides}",
+                            { count, sides },
+                          )}
+                          aria-label={tr(
+                            "PF2E.Platform.Toolbar.RollMany",
+                            "Roll {count}d{sides}",
+                            { count, sides },
+                          )}
                           onClick={() => handleDiceRoll(sides, count)}
                         >
                           {count}
@@ -541,7 +760,10 @@ export default function Toolbar() {
               <div
                 className="toolbar__palette"
                 role="group"
-                aria-label="Цвет рисунков"
+                aria-label={t(
+                  "PF2E.Platform.Toolbar.DrawingColors",
+                  "Drawing colors",
+                )}
               >
                 {DRAW_COLORS.map((color) => (
                   <button
@@ -552,8 +774,16 @@ export default function Toolbar() {
                       (color === drawColor ? " toolbar__swatch--active" : "")
                     }
                     style={{ backgroundColor: color }}
-                    title={"Цвет обводки/заливки: " + color}
-                    aria-label={"Выбрать цвет " + color}
+                    title={tr(
+                      "PF2E.Platform.Toolbar.SwatchTitle",
+                      "Stroke/fill color: {color}",
+                      { color },
+                    )}
+                    aria-label={tr(
+                      "PF2E.Platform.Toolbar.ChooseColor",
+                      "Choose color {color}",
+                      { color },
+                    )}
                     onClick={() => handleSwatchClick(color)}
                   />
                 ))}
